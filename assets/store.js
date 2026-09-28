@@ -19,6 +19,7 @@ window.Store = (function () {
     var users = [
       { id: 'u1', role: 'admin', name: 'Zain Ramzan', email: 'zain@researchette.pk', password: 'admin1234', title: 'Founder & lead mentor', joined: ago(120) },
       { id: 'u2', role: 'admin', name: 'Sobia', email: 'sobia@researchette.pk', password: 'admin1234', title: 'Senior mentor', joined: ago(90) },
+      { id: 'u8', role: 'admin', name: 'Taimoor Ali', email: 'taimoor@researchette.pk', password: 'admin1234', title: 'Mentor', joined: ago(0) },
       { id: 'u3', role: 'member', name: 'Ayesha Khan', email: 'ayesha@demo.pk', password: 'demo1234', college: 'King Edward Medical University', level: 'MBBS (3rd–5th year)', topic: 'Exam anxiety among MBBS students', joined: ago(9) },
       { id: 'u4', role: 'member', name: 'Hamza Ali', email: 'hamza@demo.pk', password: 'demo1234', college: 'Allama Iqbal Medical College', level: 'MBBS (3rd–5th year)', topic: 'Hand hygiene compliance among house officers', joined: ago(21) },
       { id: 'u5', role: 'member', name: 'Fatima Noor', email: 'fatima@demo.pk', password: 'demo1234', college: 'Services Institute of Medical Sciences', level: 'House officer / graduate doctor', topic: 'Sleep quality and academic performance', joined: ago(34) },
@@ -56,9 +57,17 @@ window.Store = (function () {
     return { users: users, submissions: subs, applications: apps };
   }
 
+  /* Add any mentor accounts introduced after this browser's demo data was created. */
+  function ensureAdmins(s) {
+    var added = false;
+    seed().users.forEach(function (a) {
+      if (a.role === 'admin' && !s.users.some(function (u) { return u.email === a.email; })) { s.users.push(a); added = true; }
+    });
+    return added;
+  }
   function db() {
     if (mem) return mem;
-    try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && s.users) return (mem = s); } catch (e) {}
+    try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && s.users) { mem = s; if (ensureAdmins(s)) save(); return mem; } } catch (e) {}
     mem = seed(); save(); return mem;
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(mem)); } catch (e) {} }
@@ -186,6 +195,13 @@ window.Store = (function () {
       var u = { id: uid('u'), role: 'member', name: a.name, email: a.email, password: pw, college: a.college, level: a.level, topic: '', joined: new Date().toISOString() };
       d.users.push(u); a.status = 'approved'; a.userId = u.id; save();
       return wait({ user: pub(u), password: pw });
+    },
+    changePassword: function (userId, current, next) {
+      var u = user(userId);
+      if (!u || u.password !== current) return fail('Your current password isn’t right.');
+      if (String(next).length < 8) return fail('Use at least 8 characters for the new password.');
+      if (next === current) return fail('Choose a password that’s different from the current one.');
+      u.password = next; save(); return wait(true);
     },
     reset: function () { mem = seed(); save(); setSession(null); return wait(true); }
   };

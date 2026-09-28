@@ -135,6 +135,7 @@
     sheet(
       '<div class="row"><span class="avatar lg ' + (me.role === 'admin' ? '' : 'warm') + '">' + initials(me.name) + '</span><div><h3>' + esc(me.name) + '</h3><p class="small muted">' + esc(me.email) + '</p>' + (me.college ? '<p class="small muted">' + esc(me.college) + '</p>' : '') + '</div></div>' +
       '<div class="field"><span class="small muted">Appearance</span><div class="seg" id="theme-seg" style="--n:3;--i:' + idx + '"><button type="button" data-v="system">System</button><button type="button" data-v="light">Light</button><button type="button" data-v="dark">Dark</button></div></div>' +
+      '<button class="btn btn-glass btn-block" type="button" id="chpw">Change password</button>' +
       '<button class="btn btn-glass btn-block" type="button" id="logout">Log out</button>' +
       (S.demo && me.role === 'admin' ? '<button class="btn btn-quiet btn-block btn-sm" type="button" id="reset">Reset demo data</button>' : '') +
       '<button class="btn btn-quiet btn-block btn-sm" type="button" data-close>Close</button>',
@@ -147,11 +148,38 @@
             store('rt-portal-theme', b.dataset.v === 'system' ? null : b.dataset.v); applyTheme();
           });
         });
+        el.querySelector('#chpw').addEventListener('click', function () { close(); passwordSheet(); });
         el.querySelector('#logout').addEventListener('click', function () { S.signOut().then(function () { close(); app.dataset.shell = ''; go('login'); }); });
         var rs = el.querySelector('#reset');
         if (rs) rs.addEventListener('click', function () {
           if (rs.dataset.armed) { S.reset().then(function () { close(); app.dataset.shell = ''; toast('Demo data reset'); go('login'); }); return; }
           rs.dataset.armed = '1'; rs.textContent = 'Tap again to reset all demo data';
+        });
+      });
+  }
+
+  function passwordSheet() {
+    var field = function (id, label, ac) { return '<div class="field"><label for="' + id + '">' + label + '</label><div class="pw"><input id="' + id + '" type="password" autocomplete="' + ac + '"><button type="button" data-show="' + id + '">Show</button></div></div>'; };
+    sheet(
+      '<h2>Change password</h2><p class="muted small">Use at least 8 characters. You’ll stay logged in on this device.</p>' +
+      '<form id="pwform" class="stack" novalidate>' +
+        field('pw-cur', 'Current password', 'current-password') + field('pw-new', 'New password', 'new-password') + field('pw-rep', 'Repeat new password', 'new-password') +
+        '<p class="error" id="pw-err" role="alert" hidden></p>' +
+        '<button class="btn btn-primary btn-block" type="submit">Save new password</button>' +
+        '<button class="btn btn-quiet btn-block btn-sm" type="button" data-close>Cancel</button>' +
+      '</form>',
+      function (el, close) {
+        el.querySelectorAll('[data-show]').forEach(function (b) {
+          b.addEventListener('click', function () { var i = el.querySelector('#' + b.dataset.show), s = i.type === 'password'; i.type = s ? 'text' : 'password'; b.textContent = s ? 'Hide' : 'Show'; });
+        });
+        var f = el.querySelector('#pwform'), err = el.querySelector('#pw-err');
+        f.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var cur = f.querySelector('#pw-cur').value, nw = f.querySelector('#pw-new').value, rep = f.querySelector('#pw-rep').value;
+          var show = function (m) { err.textContent = m; err.hidden = false; };
+          if (!cur || !nw) return show('Fill in your current and new password.');
+          if (nw !== rep) return show('The new passwords don’t match.');
+          S.changePassword(me.id, cur, nw).then(function () { close(); toast('Password changed'); }, function (x) { show(x.message); });
         });
       });
   }

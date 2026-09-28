@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Researchette Mentors</title>
+<meta name="description" content="Meet the Researchette mentors and read a message from each of them.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&family=Caveat:wght@600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="assets/portal.css">
+<style>
+/* Layout: a quiet letter-like page; one glass card per mentor, facts on the left, their message on the right. */
+body { font-size: 1.0625rem; line-height: 1.65; }
+.wrap { width: 100%; max-width: 1100px; margin-inline: auto; padding-inline: 22px; }
+.nav { position: sticky; top: 0; z-index: 40; padding-top: env(safe-area-inset-top, 0px); background: var(--glass); -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%); border-bottom: 1px solid var(--line); box-shadow: 0 10px 30px -26px rgba(24,32,61,.45); }
+.nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 10px; }
+.nav-links { display: flex; align-items: center; gap: 6px; }
+.nav-links a:not(.btn) { color: var(--muted); text-decoration: none; padding: .45em .85em; border-radius: 999px; font-size: .93rem; }
+.nav-links a:not(.btn):hover { color: var(--ink); background: var(--pen-soft); }
+
+.hero { padding-block: clamp(56px, 10vw, 120px) clamp(40px, 6vw, 72px); display: grid; gap: 20px; max-width: 760px; }
+.hero h1 { font-size: clamp(2.4rem, 1.5rem + 4vw, 4.2rem); font-weight: 800; letter-spacing: -.035em; line-height: 1.04; }
+.hero .lede { color: var(--muted); font-size: 1.1rem; max-width: 52ch; }
+.word { display: inline-block; animation: wordin .9s var(--ease) both; animation-delay: calc(var(--w) * 80ms + 100ms); }
+@keyframes wordin { from { opacity: 0; transform: translateY(.45em); filter: blur(8px); } }
+.fade-up { animation: fadeup .9s var(--ease) both; animation-delay: var(--d, .6s); }
+@keyframes fadeup { from { opacity: 0; transform: translateY(18px); } }
+
+.mentor-list { display: grid; gap: clamp(20px, 3vw, 28px); }
+.letter { padding: clamp(26px, 4.5vw, 52px); display: grid; grid-template-columns: .8fr 1.2fr; gap: clamp(28px, 5vw, 64px); }
+.who { display: grid; gap: 18px; align-content: start; }
+.who .avatar { width: 84px; height: 84px; font-size: 1.6rem; box-shadow: 0 0 0 5px var(--glass-strong), 0 16px 30px -14px #3448D8; }
+.who h2 { font-size: clamp(1.6rem, 1.3rem + 1.2vw, 2.2rem); letter-spacing: -.03em; }
+.who .role { color: var(--teal); font-family: var(--f-mono); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; line-height: 1.5; }
+.facts { list-style: none; margin: 0; padding: 0; display: grid; }
+.facts li { padding-block: 11px; border-top: 1px solid var(--line); font-size: .95rem; color: var(--muted); }
+.facts li b { color: var(--ink); font-weight: 600; }
+.msg { display: grid; gap: 18px; align-content: start; position: relative; }
+.msg::before { content: "“"; position: absolute; top: -.35em; left: -.08em; font: 800 6rem/1 var(--f-display); color: var(--pen-soft); pointer-events: none; }
+.msg p { font-family: var(--f-display); font-weight: 500; font-size: clamp(1.12rem, 1rem + .5vw, 1.32rem); line-height: 1.55; letter-spacing: -.01em; position: relative; }
+.msg .sign { font: 700 2rem/1 var(--f-hand); color: var(--pen); margin-top: 6px; }
+.letter.alt .avatar { background: linear-gradient(135deg, #0B9E8C, #5A9BFF); }
+.letter.warm .avatar { background: linear-gradient(135deg, #DD4460, #F2A65A); }
+@media (max-width: 820px) { .letter { grid-template-columns: 1fr; } .who { grid-template-columns: auto 1fr; align-items: center; column-gap: 18px; } .who .facts { grid-column: 1 / -1; } }
+
+.end { padding-block: clamp(80px, 12vw, 140px) 36px; display: grid; gap: 40px; justify-items: center; text-align: center; }
+.end h2 { font-size: clamp(1.9rem, 1.4rem + 2vw, 2.9rem); letter-spacing: -.03em; }
+.contact { display: grid; gap: 16px; justify-items: center; width: 100%; }
+.contact-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; max-width: 820px; }
+.contact-item { display: grid; justify-items: center; gap: 4px; padding: 20px 16px; text-decoration: none; color: var(--ink); transition: transform .45s var(--ease); min-width: 0; }
+.contact-item:hover { transform: translateY(-4px); }
+.contact-item svg { width: 22px; height: 22px; color: var(--pen); margin-bottom: 4px; }
+.contact-item span { font-size: .8rem; color: var(--muted); }
+.contact-item b { font-weight: 600; font-size: .98rem; overflow-wrap: anywhere; }
+@media (max-width: 640px) { .contact-grid { grid-template-columns: 1fr; } .contact-item { grid-template-columns: auto 1fr; justify-items: start; align-items: center; column-gap: 14px; text-align: left; } .contact-item svg { grid-row: span 2; margin: 0; } }
+.foot-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 22px; padding-top: 28px; border-top: 1px solid var(--line); width: 100%; font-size: .85rem; color: var(--muted); align-items: center; }
+
+.js .reveal { opacity: 0; transform: translateY(40px) scale(.98); filter: blur(8px); transition: opacity 1s var(--ease), transform 1s var(--ease), filter 1s var(--ease); transition-delay: var(--d, 0s); }
+.js .reveal.in { opacity: 1; transform: none; filter: none; }
+@media (prefers-reduced-motion: reduce) { .js .reveal { opacity: 1; transform: none; filter: none; } }
+</style>
+</head>
+<body>
+<script>document.body.classList.add('js');</script>
+<div class="aura" aria-hidden="true"><i></i><i></i><i></i></div>
+
+<header class="nav">
+  <div class="wrap">
+    <div class="nav-inner">
+      <a class="logo" href="index.html" aria-label="Researchette home">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="7" fill="#3448D8"/><path d="M5 13h3l2-5 3 9 2-4h4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>research<i>ette</i></span>
+      </a>
+      <nav class="nav-links" aria-label="Main">
+        <a href="index.html">Home</a>
+        <a class="btn btn-primary btn-sm" href="index.html#join">Join</a>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <span class="eyebrow fade-up" style="--d:.05s">Our mentors</span>
+    <h1 aria-label="A message from the people who’ll read your work.">
+      <span class="word" style="--w:0" aria-hidden="true">A</span>
+      <span class="word" style="--w:1" aria-hidden="true">message</span>
+      <span class="word" style="--w:2" aria-hidden="true">from</span>
+      <span class="word" style="--w:3" aria-hidden="true">the</span>
+      <span class="word" style="--w:4" aria-hidden="true">people</span>
+      <span class="word" style="--w:5" aria-hidden="true">who’ll</span>
+      <span class="word" style="--w:6" aria-hidden="true">read</span>
+      <span class="word" style="--w:7" aria-hidden="true">your</span>
+      <span class="word" style="--w:8" aria-hidden="true">work.</span>
+    </h1>
+    <p class="lede fade-up" style="--d:.8s">Every task you submit at Researchette is reviewed by one of us. Here’s who we are, and what we’d like you to know before you start.</p>
+  </section>
+
+  <!-- Each mentor's message lives in the .msg block below. Replace the text with their own words. -->
+  <div class="mentor-list">
+    <article class="letter glass reveal">
+      <div class="who">
+        <span class="avatar" aria-hidden="true">ZR</span>
+        <div><h2>Zain Ramzan</h2><span class="role">Founder &amp; lead mentor · MBBS</span></div>
+        <ul class="facts">
+          <li><b>50+ students</b> mentored to publication</li>
+          <li><b>Currently</b> mentoring a new batch</li>
+          <li><b>Focus:</b> original articles, case reports, synopsis</li>
+        </ul>
+      </div>
+      <div class="msg">
+        <p>When I started doing research as a medical student, nobody sat down and showed me how. I learnt by making almost every mistake there is.</p>
+        <p>Researchette is the guidance I wish I’d had: one clear step at a time, and someone who actually reads your work and tells you honestly what to fix. You don’t need to be a genius to publish. You need a good question, a little discipline and a mentor who cares. That’s what we’re here for.</p>
+        <span class="sign">Zain</span>
+      </div>
+    </article>
+
+    <article class="letter glass alt reveal">
+      <div class="who">
+        <span class="avatar" aria-hidden="true">S</span>
+        <div><h2>Sobia</h2><span class="role">Senior mentor · PhD, Biochemistry &amp; Oncology</span></div>
+        <ul class="facts">
+          <li><b>Hundreds</b> of research works</li>
+          <li><b>Many students</b> mentored through theses and publications</li>
+          <li><b>Focus:</b> basic sciences, oncology, thesis writing</li>
+        </ul>
+      </div>
+      <div class="msg">
+        <p>Good research is careful research. In the lab, a small slip in method can change the whole result, and the same is true of every study you will write.</p>
+        <p>I will push you to be precise about your methods, honest about your data and clear in your writing. Those habits will stay with you long after your first paper is published.</p>
+        <span class="sign">Sobia</span>
+      </div>
+    </article>
+
+    <article class="letter glass warm reveal">
+      <div class="who">
+        <span class="avatar" aria-hidden="true">TA</span>
+        <div><h2>Taimoor Ali</h2><span class="role">Mentor · MBBS</span></div>
+        <ul class="facts">
+          <li><b>Medical student</b> with hands-on research experience</li>
+          <li><b>Reviews</b> member tasks every week</li>
+          <li><b>Focus:</b> getting first-time researchers started</li>
+        </ul>
+      </div>
+      <div class="msg">
+        <p>I’m a medical student too, so I know what it’s like to juggle classes, wards and exams while trying to start a research project.</p>
+        <p>My advice is simple: start small, stay consistent, and don’t wait until you feel ready. Send me your work, and we’ll improve it together, one step at a time.</p>
+        <span class="sign">Taimoor</span>
+      </div>
+    </article>
+  </div>
+
+  <section class="end">
+    <div class="reveal" style="display:grid;gap:22px;justify-items:center">
+      <h2>Ready to start your first paper?</h2>
+      <a class="btn btn-primary" href="index.html#join">Apply for membership →</a>
+    </div>
+    <div class="contact reveal">
+      <span class="eyebrow">Contact</span>
+      <div class="contact-grid">
+        <a class="contact-item glass" href="mailto:itszainr1@gmail.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M22 6l-10 7L2 6"/></svg><span>Email</span><b>itszainr1@gmail.com</b></a>
+        <a class="contact-item glass" href="https://wa.me/923395888444" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-13.4 7.8L3 21l1.3-4.4A9 9 0 1 1 21 12z"/></svg><span>WhatsApp</span><b>0339 5888444</b></a>
+        <a class="contact-item glass" href="tel:+923395888444"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg><span>Call</span><b>0339 5888444</b></a>
+      </div>
+    </div>
+    <div class="foot-row">
+      <a class="logo" href="index.html"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="7" fill="#3448D8"/><path d="M5 13h3l2-5 3 9 2-4h4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>research<i>ette</i></span></a>
+      <span>© 2026 Researchette</span>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  var items = document.querySelectorAll('.reveal');
+  if (!('IntersectionObserver' in window) || matchMedia('(prefers-reduced-motion: reduce)').matches) { items.forEach(function (e) { e.classList.add('in'); }); return; }
+  var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }); }, { threshold: .1 });
+  items.forEach(function (e) { io.observe(e); });
+  document.addEventListener('pointerdown', function (e) {
+    var b = e.target.closest('.btn'); if (!b) return;
+    var r = b.getBoundingClientRect(), s = Math.max(r.width, r.height), sp = document.createElement('span');
+    sp.className = 'ripple'; sp.style.width = sp.style.height = s + 'px';
+    sp.style.left = (e.clientX - r.left - s / 2) + 'px'; sp.style.top = (e.clientY - r.top - s / 2) + 'px';
+    b.appendChild(sp); setTimeout(function () { sp.remove(); }, 650);
+  });
+})();
+</script>
+</body>
+</html>

@@ -105,7 +105,7 @@
     app.dataset.shell = key;
     var home = me.role === 'admin' ? 'overview' : 'today';
     app.innerHTML =
-      '<header class="topbar"><div class="shell"><div class="topbar-inner glass">' +
+      '<header class="topbar"><div class="shell"><div class="topbar-inner">' +
         '<a class="logo" href="#' + home + '">' + LOGO + '<span>research<i>ette</i></span>' + (me.role === 'admin' ? '<span class="role">Mentor</span>' : '') + '</a>' +
         tabsHtml('top') +
         '<div class="top-actions"><button class="avatar-btn" id="acct" type="button" aria-label="Account and settings"><span class="avatar ' + (me.role === 'admin' ? '' : 'warm') + '">' + initials(me.name) + '</span></button></div>' +
@@ -232,13 +232,9 @@
         '<button class="btn btn-primary btn-block" type="submit">Log in</button>' +
         '<p class="small muted">Forgot your password? Message your mentor and they’ll reset it.</p>' +
         '<p class="small">Not a member yet? <a href="index.html#join">Apply for membership</a></p>' +
-        (S.demo ? '<div class="demo"><b>Demo mode</b><span class="muted">Data is saved only in this browser. Try an account:</span><div class="row wrap"><button class="btn btn-glass btn-sm" type="button" data-demo="ayesha@demo.pk|demo1234">Member · Ayesha</button><button class="btn btn-glass btn-sm" type="button" data-demo="zain@researchette.pk|admin1234">Mentor · Zain</button></div></div>' : '') +
       '</form></div>';
     var f = document.getElementById('login'), err = document.getElementById('l-err'), pw = document.getElementById('l-pw');
     document.getElementById('l-show').addEventListener('click', function () { var s = pw.type === 'password'; pw.type = s ? 'text' : 'password'; this.textContent = s ? 'Hide' : 'Show'; });
-    f.querySelectorAll('[data-demo]').forEach(function (b) {
-      b.addEventListener('click', function () { var p = b.dataset.demo.split('|'); f.querySelector('#l-email').value = p[0]; pw.value = p[1]; f.requestSubmit(); });
-    });
     f.addEventListener('submit', function (e) {
       e.preventDefault();
       var email = f.querySelector('#l-email').value, btn = f.querySelector('[type=submit]');

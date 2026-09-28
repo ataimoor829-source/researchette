@@ -77,6 +77,12 @@ button { font: inherit; color: inherit; }
 .btn-primary { background: var(--pen); color: var(--on-pen); box-shadow: 0 12px 26px -14px var(--pen), inset 0 1px 0 rgba(255,255,255,.3); }
 .btn-teal { background: var(--teal); color: var(--on-pen); box-shadow: 0 12px 26px -14px var(--teal); }
 .btn-glass { background: var(--glass-strong); border-color: var(--glass-edge); color: var(--ink); box-shadow: inset 0 1px 0 var(--glass-hi); }
+.btn-wa { background: #25D366; color: #fff; box-shadow: 0 12px 26px -14px #25D366, inset 0 1px 0 rgba(255,255,255,.3); }
+.btn-wa svg { width: 18px; height: 18px; flex: none; }
+.btn-glass svg { width: 18px; height: 18px; flex: none; }
+.help-card { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 20px; }
+.help-card h3 { margin-bottom: 2px; }
+@media (max-width: 760px) { .help-card .btn { width: 100%; } }
 .btn-quiet { background: transparent; color: var(--muted); padding-inline: .9em; }
 .btn-quiet:hover { color: var(--ink); background: var(--pen-soft); }
 .btn-sm { padding: .55em 1em; font-size: .86rem; }

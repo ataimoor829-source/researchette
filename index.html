@@ -213,7 +213,7 @@ section { padding-block: var(--gap-section) 0; }
 .sig .avatar { width: 40px; height: 40px; font-size: .85rem; color: #fff; }
 .sig b { display: block; font-size: .98rem; }
 .sig span { color: var(--muted); font-size: .85rem; }
-.stats { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); padding-top: clamp(24px, 3vw, 32px); }
+.stats { display: grid; grid-template-columns: repeat(2, 1fr); max-width: 520px; border-top: 1px solid var(--line); padding-top: clamp(24px, 3vw, 32px); }
 .stat { display: grid; gap: 4px; padding-inline: 4px; }
 .stat + .stat { border-left: 1px solid var(--line); padding-left: clamp(14px, 3vw, 28px); }
 .stat b { font-family: var(--f-display); font-weight: 800; font-size: clamp(1.8rem, 1.3rem + 2vw, 2.8rem); letter-spacing: -.035em; line-height: 1; font-variant-numeric: tabular-nums; background: linear-gradient(120deg, var(--pen), var(--teal)); -webkit-background-clip: text; background-clip: text; color: transparent; }
@@ -448,13 +448,17 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
   <div class="wrap">
     <div class="hero-copy">
       <span class="eyebrow fade-up" style="--d:.1s">Medical research mentorship</span>
-      <h1 aria-label="From ward question to published paper.">
+      <h1 aria-label="From an idea in your mind to a published paper.">
         <span class="word" style="--w:0" aria-hidden="true">From</span>
-        <span class="word" style="--w:1" aria-hidden="true">ward</span>
-        <span class="word" style="--w:2" aria-hidden="true">question</span>
-        <span class="word" style="--w:3" aria-hidden="true">to</span>
-        <span class="word hl" style="--w:4" aria-hidden="true">published</span>
-        <span class="word hl" style="--w:5" aria-hidden="true">paper.</span>
+        <span class="word" style="--w:1" aria-hidden="true">an</span>
+        <span class="word" style="--w:2" aria-hidden="true">idea</span>
+        <span class="word" style="--w:3" aria-hidden="true">in</span>
+        <span class="word" style="--w:4" aria-hidden="true">your</span>
+        <span class="word" style="--w:5" aria-hidden="true">mind</span>
+        <span class="word" style="--w:6" aria-hidden="true">to</span>
+        <span class="word" style="--w:7" aria-hidden="true">a</span>
+        <span class="word hl" style="--w:8" aria-hidden="true">published</span>
+        <span class="word hl" style="--w:9" aria-hidden="true">paper.</span>
       </h1>
       <p class="lede fade-up" style="--d:.7s">Learn to write and publish medical research, one guided step a day, with every draft reviewed by mentors who publish.</p>
       <div class="hero-ctas fade-up" style="--d:.85s">
@@ -506,7 +510,6 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
       <div class="sig"><span class="avatar" aria-hidden="true">ZR</span><div><b>Zain Ramzan</b><span>Founder, MBBS</span></div></div>
       <div class="stats">
         <div class="stat"><b data-count="50" data-suffix="+">50+</b><span>students mentored</span></div>
-        <div class="stat"><b data-count="7">7</b><span>paper types</span></div>
         <div class="stat"><b>48h</b><span>review time</span></div>
       </div>
     </div>
@@ -869,13 +872,6 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
     ticking = false;
     var h = root.scrollHeight - innerHeight;
     bar.style.transform = 'scaleX(' + (h > 0 ? scrollY / h : 0) + ')';
-    for (var i = 0; i < phases.length - 1; i++) {
-      var cur = phases[i].getBoundingClientRect(), next = phases[i + 1].getBoundingClientRect();
-      var k = Math.min(1, Math.max(0, 1 - (next.top - cur.top) / cur.height));
-      var inner = phases[i].firstElementChild;
-      inner.style.transform = k > 0 && !reduce ? 'scale(' + (1 - k * .06).toFixed(3) + ')' : '';
-      inner.style.opacity = k > 0 ? (1 - k * .25).toFixed(3) : '';
-    }
   }
   function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
   addEventListener('scroll', onScroll, { passive: true }); addEventListener('resize', onScroll); update();

@@ -25,7 +25,7 @@
 }
 @media (max-width: 760px) { :root { --lg-blur: 14px; } }
 
-html { scroll-behavior: auto; }
+html { scroll-behavior: smooth; scroll-padding-top: 80px; }
 body { animation: lg-pagein .7s var(--ease-out) both; }
 @keyframes lg-pagein { from { opacity: 0; } }
 .aura { transform: none !important; bottom: -20vh; }

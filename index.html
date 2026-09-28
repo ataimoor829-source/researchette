@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Researchette</title>
+<meta name="description" content="Researchette is a mentorship programme that teaches students to write research titles, synopses, theses and papers through daily tasks and real feedback from mentors.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600&family=Caveat:wght@500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one calm reading column that opens into a two-up hero, a stepped roadmap and a portal mock.
+   Motif: a student's draft marked up by a mentor — ballpoint-blue ink, highlighter yellow, red-pen notes. */
+:root {
+  --paper: #F6F6FB;        /* page, faint lavender-grey */
+  --sheet: #FFFFFF;        /* cards / draft paper */
+  --ink: #1F1D36;          /* text */
+  --muted: #5E5C78;        /* secondary text */
+  --line: #E3E2EE;         /* hairlines */
+  --pen: #3A47C4;          /* ballpoint blue: primary accent */
+  --pen-soft: #E6E8FB;
+  --highlight: #FFE270;    /* highlighter yellow */
+  --redpen: #D6455D;       /* mentor corrections */
+  --on-pen: #FFFFFF;
+  --shadow: 0 1px 2px rgba(31,29,54,.06), 0 8px 24px -12px rgba(31,29,54,.18);
+
+  --f-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-hand: "Caveat", "Bradley Hand", "Comic Sans MS", cursive;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --s-1: clamp(2.4rem, 1.6rem + 3.6vw, 4.2rem);
+  --s-2: clamp(1.7rem, 1.3rem + 1.6vw, 2.4rem);
+  --s-3: 1.25rem;
+  --s-body: 1.0625rem;
+  --s-small: .875rem;
+  --radius: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #15142A; --sheet: #1E1D38; --ink: #ECEBF7; --muted: #A9A7C6; --line: #302E52;
+    --pen: #8E98FF; --pen-soft: #272A55; --highlight: #E8C94A; --redpen: #FF8197; --on-pen: #13122A;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 28px -12px rgba(0,0,0,.6);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #15142A; --sheet: #1E1D38; --ink: #ECEBF7; --muted: #A9A7C6; --line: #302E52;
+  --pen: #8E98FF; --pen-soft: #272A55; --highlight: #E8C94A; --redpen: #FF8197; --on-pen: #13122A;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 28px -12px rgba(0,0,0,.6);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation: none !important; transition: none !important; } }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font-family: var(--f-body); font-size: var(--s-body); line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { width: 100%; max-width: 1120px; margin-inline: auto; padding-inline: 20px; }
+h1, h2, h3 { font-family: var(--f-display); line-height: 1.08; letter-spacing: -.02em; text-wrap: balance; margin: 0; }
+h1 { font-size: var(--s-1); font-weight: 800; }
+h2 { font-size: var(--s-2); font-weight: 700; }
+h3 { font-size: var(--s-3); font-weight: 700; letter-spacing: -.01em; }
+p { margin: 0; }
+a { color: var(--pen); }
+:focus-visible { outline: 3px solid var(--pen); outline-offset: 3px; border-radius: 6px; }
+.eyebrow { font-family: var(--f-mono); font-size: .75rem; letter-spacing: .12em; text-transform: uppercase; color: var(--pen); }
+.lede { color: var(--muted); max-width: 60ch; }
+.hl { background: linear-gradient(transparent 55%, var(--highlight) 55%, var(--highlight) 92%, transparent 92%); padding-inline: .1em; color: inherit; }
+.hand { font-family: var(--f-hand); color: var(--redpen); font-weight: 700; }
+
+section { padding-block: clamp(56px, 8vw, 104px); }
+.section-head { display: grid; gap: 14px; margin-bottom: 40px; max-width: 680px; }
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; gap: .5em; font: 600 1rem var(--f-body); padding: .8em 1.3em; border-radius: 999px; text-decoration: none; border: 1.5px solid transparent; cursor: pointer; transition: transform .15s ease, background-color .15s ease; }
+.btn:hover { transform: translateY(-1px); }
+.btn-primary { background: var(--pen); color: var(--on-pen); }
+.btn-ghost { border-color: var(--line); color: var(--ink); background: var(--sheet); }
+.btn-ghost:hover { border-color: var(--pen); }
+
+/* nav */
+.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; background: color-mix(in srgb, var(--paper) 88%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.nav .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 14px; }
+.logo { font-family: var(--f-display); font-weight: 800; font-size: 1.35rem; letter-spacing: -.03em; color: var(--ink); text-decoration: none; display: inline-flex; align-items: baseline; }
+.logo i { font-style: normal; color: var(--pen); }
+.logo::after { content: ""; width: .32em; height: .32em; border-radius: 50%; background: var(--highlight); margin-left: .12em; }
+.nav-links { display: flex; align-items: center; gap: 22px; font-size: .95rem; }
+.nav-links a { color: var(--muted); text-decoration: none; }
+.nav-links a:hover { color: var(--ink); }
+.nav-links .btn { color: var(--on-pen); padding: .55em 1.05em; font-size: .9rem; }
+@media (max-width: 820px) { .nav-links a:not(.btn) { display: none; } }
+
+/* hero */
+.hero { padding-block: clamp(40px, 7vw, 88px) clamp(56px, 8vw, 96px); }
+.hero .wrap { display: grid; grid-template-columns: 1.05fr .95fr; gap: clamp(32px, 5vw, 64px); align-items: center; }
+.hero-copy { display: grid; gap: 22px; min-width: 0; }
+.hero-copy .lede { font-size: 1.15rem; }
+.hero-ctas { display: flex; flex-wrap: wrap; gap: 12px; }
+.hero-note { font-size: var(--s-small); color: var(--muted); }
+@media (max-width: 900px) { .hero .wrap { grid-template-columns: 1fr; } }
+
+.draft { position: relative; background: var(--sheet); border-radius: var(--radius); box-shadow: var(--shadow); padding: 26px 26px 22px; display: grid; gap: 18px; min-width: 0;
+  background-image: repeating-linear-gradient(var(--sheet) 0 31px, var(--line) 31px 32px); background-position: 0 14px; }
+.draft::before { content: ""; position: absolute; left: 18px; top: 0; bottom: 0; width: 1.5px; background: color-mix(in srgb, var(--redpen) 45%, transparent); }
+.draft > * { padding-left: 18px; }
+.draft-label { font-family: var(--f-mono); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.draft-v1 { font-family: var(--f-display); font-weight: 500; font-size: 1.2rem; color: var(--muted); position: relative; width: fit-content; }
+.strike { position: absolute; left: 14px; right: -4px; top: 52%; height: 3px; background: var(--redpen); border-radius: 3px; transform-origin: left; animation: strike .6s .5s ease-out both; transform: rotate(-1.5deg); }
+@keyframes strike { from { transform: scaleX(0) rotate(-1.5deg); } to { transform: scaleX(1) rotate(-1.5deg); } }
+.notes { display: grid; gap: 2px; font-size: 1.45rem; line-height: 1.15; }
+.draft-v2 { font-family: var(--f-display); font-weight: 700; font-size: 1.3rem; line-height: 1.3; }
+.draft-v2 .hl { animation: none; }
+.tick { display: flex; align-items: center; gap: 10px; font-size: var(--s-small); color: var(--muted); }
+.avatar { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font: 700 .75rem var(--f-display); color: var(--on-pen); background: var(--pen); flex: none; }
+.stamp { margin-left: auto; font: 700 1.3rem var(--f-hand); color: var(--redpen); border: 2px solid var(--redpen); border-radius: 8px; padding: 0 .45em; transform: rotate(-6deg); }
+
+/* promise strip */
+.promise { border-block: 1px solid var(--line); padding-block: 28px; }
+.promise ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.promise li { display: grid; gap: 4px; min-width: 0; }
+.promise b { font-family: var(--f-display); font-size: 1.05rem; }
+.promise span { color: var(--muted); font-size: var(--s-small); }
+@media (max-width: 820px) { .promise ul { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 440px) { .promise ul { grid-template-columns: 1fr; } }
+
+/* idea */
+.idea .wrap { display: grid; grid-template-columns: 1fr 1.2fr; gap: clamp(28px, 5vw, 72px); align-items: start; }
+.idea-body { display: grid; gap: 18px; color: var(--ink); max-width: 62ch; min-width: 0; }
+.idea-body p { color: var(--muted); }
+.idea-body .sig { font: 700 1.7rem var(--f-hand); color: var(--pen); }
+@media (max-width: 820px) { .idea .wrap { grid-template-columns: 1fr; } }
+
+/* roadmap */
+.roadmap { background: var(--sheet); border-block: 1px solid var(--line); }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; counter-reset: step; }
+@media (max-width: 1000px) { .steps { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .steps { grid-template-columns: 1fr; } }
+.steps li { counter-increment: step; border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 18px 20px; display: grid; gap: 8px; align-content: start; background: var(--paper); min-width: 0; }
+.steps li::before { content: "Step " counter(step, decimal-leading-zero); font-family: var(--f-mono); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--pen); }
+.steps p { color: var(--muted); font-size: .95rem; }
+.steps li.final { background: var(--pen); border-color: var(--pen); color: var(--on-pen); }
+.steps li.final::before, .steps li.final p { color: color-mix(in srgb, var(--on-pen) 80%, transparent); }
+
+/* portal */
+.portal .wrap { display: grid; grid-template-columns: .9fr 1.1fr; gap: clamp(28px, 5vw, 64px); align-items: center; }
+.loop { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 18px; }
+.loop li { display: grid; grid-template-columns: 40px 1fr; gap: 14px; align-items: start; }
+.loop .dot { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--pen-soft); color: var(--pen); font: 700 1rem var(--f-display); }
+.loop b { font-family: var(--f-display); display: block; font-size: 1.05rem; }
+.loop span { color: var(--muted); font-size: .95rem; }
+@media (max-width: 900px) { .portal .wrap { grid-template-columns: 1fr; } }
+
+.app { background: var(--sheet); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); overflow: hidden; min-width: 0; }
+.app-bar { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: var(--s-small); color: var(--muted); }
+.app-bar .logo { font-size: 1rem; }
+.app-bar .who { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.app-bar .avatar { width: 26px; height: 26px; font-size: .68rem; background: var(--redpen); }
+.app-body { padding: 20px; display: grid; gap: 16px; }
+.progress { display: grid; gap: 8px; }
+.progress-top { display: flex; justify-content: space-between; font-size: var(--s-small); color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar { height: 8px; border-radius: 99px; background: var(--pen-soft); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 20%; background: var(--pen); border-radius: 99px; }
+.task { border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; display: grid; gap: 12px; }
+.task-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pill { font: 500 .72rem var(--f-mono); letter-spacing: .06em; text-transform: uppercase; padding: .3em .7em; border-radius: 99px; background: var(--pen-soft); color: var(--pen); white-space: nowrap; }
+.pill.warm { background: color-mix(in srgb, var(--highlight) 45%, transparent); color: var(--ink); }
+.checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: .95rem; }
+.checks li { display: flex; gap: 10px; align-items: flex-start; }
+.checks li::before { content: ""; flex: none; width: 18px; height: 18px; margin-top: 3px; border-radius: 6px; border: 1.5px solid var(--line); }
+.checks li.done { color: var(--muted); }
+.checks li.done::before { background: var(--pen); border-color: var(--pen); box-shadow: inset 0 0 0 3px var(--sheet); }
+.submission { background: var(--paper); border-radius: 10px; padding: 12px 14px; font-size: .95rem; display: grid; gap: 6px; }
+.submission small { color: var(--muted); font-size: .78rem; }
+.feedback { font-size: 1.35rem; line-height: 1.2; }
+
+/* resources */
+.res-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 900px) { .res-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .res-grid { grid-template-columns: 1fr; } }
+.res { background: var(--sheet); border: 1px solid var(--line); border-radius: var(--radius); min-width: 0; }
+.res summary { list-style: none; cursor: pointer; padding: 18px; display: grid; gap: 8px; }
+.res summary::-webkit-details-marker { display: none; }
+.res-meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.res-meta .open { font-size: var(--s-small); color: var(--pen); font-weight: 600; }
+.res[open] .res-meta .open::after { content: " ↑"; }
+.res:not([open]) .res-meta .open::after { content: " ↓"; }
+.res summary p { color: var(--muted); font-size: .95rem; }
+.res-content { padding: 0 18px 18px; font-size: .95rem; display: grid; gap: 10px; }
+.res-content ol, .res-content ul { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+.res-content code { font-family: var(--f-mono); font-size: .82rem; background: var(--pen-soft); color: var(--ink); padding: .1em .4em; border-radius: 5px; }
+.formula { font-family: var(--f-mono); font-size: .82rem; background: var(--paper); border: 1px dashed var(--line); border-radius: 10px; padding: 10px 12px; overflow-wrap: anywhere; }
+
+/* mentors */
+.mentors { background: var(--sheet); border-block: 1px solid var(--line); }
+.mentor-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 900px) { .mentor-grid { grid-template-columns: 1fr; } }
+.mentor { border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; display: grid; gap: 12px; align-content: start; background: var(--paper); min-width: 0; }
+.mentor .avatar { width: 64px; height: 64px; font-size: 1.3rem; }
+.mentor.lead { border-color: var(--pen); }
+.mentor .role { font-family: var(--f-mono); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--pen); }
+.mentor p { color: var(--muted); font-size: .95rem; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tags span { font-size: .78rem; border: 1px solid var(--line); border-radius: 99px; padding: .15em .7em; color: var(--muted); background: var(--sheet); }
+.placeholder-note { margin-top: 18px; font-size: var(--s-small); color: var(--muted); }
+
+/* join */
+.join .wrap { display: grid; grid-template-columns: .85fr 1.15fr; gap: clamp(28px, 5vw, 64px); align-items: start; }
+@media (max-width: 900px) { .join .wrap { grid-template-columns: 1fr; } }
+.price { background: var(--ink); color: var(--paper); border-radius: 20px; padding: 28px; display: grid; gap: 18px; position: relative; overflow: hidden; }
+.price .eyebrow { color: var(--highlight); }
+.amount { font-family: var(--f-display); font-weight: 800; font-size: clamp(2.8rem, 2rem + 3vw, 3.8rem); letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+.amount small { font-size: 1.1rem; font-weight: 500; letter-spacing: 0; opacity: .7; }
+.price ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.price li { display: flex; gap: 10px; }
+.price li::before { content: "✓"; color: var(--highlight); font-weight: 700; }
+.price .fine { font-size: var(--s-small); opacity: .7; }
+.price .hand { color: var(--highlight); font-size: 1.5rem; position: absolute; right: 22px; top: 22px; transform: rotate(6deg); }
+
+form { background: var(--sheet); border: 1px solid var(--line); border-radius: 20px; padding: clamp(20px, 3vw, 32px); display: grid; gap: 16px; grid-template-columns: 1fr 1fr; min-width: 0; }
+.field { display: grid; gap: 6px; min-width: 0; }
+.field.full { grid-column: 1 / -1; }
+@media (max-width: 560px) { form { grid-template-columns: 1fr; } }
+label { font-weight: 600; font-size: .92rem; }
+label .opt { font-weight: 400; color: var(--muted); }
+input, select, textarea { font: inherit; font-size: 1rem; color: var(--ink); background: var(--paper); border: 1.5px solid var(--line); border-radius: 10px; padding: .7em .85em; width: 100%; }
+textarea { min-height: 110px; resize: vertical; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--pen); box-shadow: 0 0 0 3px var(--pen-soft); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips label { font-weight: 500; font-size: .92rem; border: 1.5px solid var(--line); border-radius: 99px; padding: .4em .9em; cursor: pointer; background: var(--paper); }
+.chips input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.chips input:checked + span { color: var(--pen); }
+.chips label:has(input:checked) { border-color: var(--pen); background: var(--pen-soft); }
+.chips label:has(input:focus-visible) { outline: 3px solid var(--pen); outline-offset: 2px; }
+.form-foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.form-foot small { color: var(--muted); font-size: .82rem; flex: 1 1 220px; }
+.error { color: var(--redpen); font-size: .82rem; }
+.thanks { grid-column: 1 / -1; display: grid; gap: 10px; text-align: left; padding: 8px 0; }
+.thanks .hand { font-size: 2rem; }
+
+/* faq */
+.faq-list { display: grid; gap: 10px; max-width: 780px; }
+.faq-list details { border-bottom: 1px solid var(--line); padding-block: 14px; }
+.faq-list summary { cursor: pointer; font-family: var(--f-display); font-weight: 700; font-size: 1.1rem; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+.faq-list summary::-webkit-details-marker { display: none; }
+.faq-list summary::after { content: "+"; color: var(--pen); font-weight: 500; }
+.faq-list details[open] summary::after { content: "–"; }
+.faq-list p { color: var(--muted); padding-top: 8px; max-width: 65ch; }
+
+footer { border-top: 1px solid var(--line); padding-block: 36px; font-size: var(--s-small); color: var(--muted); }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; align-items: center; }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="logo" href="#top" aria-label="Researchette home">research<i>ette</i></a>
+    <nav class="nav-links" aria-label="Main">
+      <a href="#how">How it works</a>
+      <a href="#resources">Free resources</a>
+      <a href="#mentors">Mentors</a>
+      <a href="#faq">FAQ</a>
+      <a class="btn btn-primary" href="#join">Become a member</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-copy">
+      <span class="eyebrow">Research mentorship for students</span>
+      <h1>Write your research, <span class="hl">one small task</span> a day.</h1>
+      <p class="lede">Researchette walks you through a research title, synopsis, thesis or paper step by step. You learn one part, write it yourself, and a real mentor checks it and tells you what to fix.</p>
+      <div class="hero-ctas">
+        <a class="btn btn-primary" href="#join">Join for Rs 2,000</a>
+        <a class="btn btn-ghost" href="#resources">Start with free guides</a>
+      </div>
+      <p class="hero-note">For BS, MPhil/MS and PhD students in any field.</p>
+    </div>
+
+    <figure class="draft" aria-label="Example of a mentor correcting a student's research title">
+      <div class="draft-label"><span>Day 1 · Research title</span><span>Submitted by Hira, BS Psychology</span></div>
+      <p class="draft-v1">A study on social media and students<span class="strike" aria-hidden="true"></span></p>
+      <div class="notes hand">
+        <span>Too broad! Which platform?</span>
+        <span>Which students, where?</span>
+        <span>What exactly are you measuring?</span>
+      </div>
+      <p class="draft-v2"><span class="hl">Effect of Instagram Use on Sleep Quality</span> among Undergraduate Students in Lahore</p>
+      <div class="tick"><span class="avatar" aria-hidden="true">R</span><span>Reviewed by your mentor</span><span class="stamp">Approved</span></div>
+    </figure>
+  </div>
+</section>
+
+<div class="promise">
+  <div class="wrap">
+    <ul>
+      <li><b>Daily tasks</b><span>One clear thing to learn and do each day</span></li>
+      <li><b>Written guidance</b><span>Step-by-step lessons with real examples</span></li>
+      <li><b>Human feedback</b><span>Every submission is read and corrected by a mentor</span></li>
+      <li><b>Title to thesis</b><span>The full journey, in the right order</span></li>
+    </ul>
+  </div>
+</div>
+
+<section class="idea" id="idea">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">The idea</span>
+      <h2>Most students are told to “write a synopsis”. Nobody shows them how.</h2>
+    </div>
+    <div class="idea-body">
+      <p>Supervisors are busy, and YouTube videos can’t read your draft. So students copy old theses, guess at the format and lose months going back and forth.</p>
+      <p>I started Researchette to fix that. I have been guiding students through their research for years, and the method is always the same: break the work into small pieces, explain each piece properly, let the student try, then correct it together. Researchette turns that method into a daily routine you can follow from anywhere.</p>
+      <p>You won’t get a paper written for you. You will learn to write it yourself, with someone checking every step.</p>
+      <p class="sig">Founder, Researchette</p>
+    </div>
+  </div>
+</section>
+
+<section class="roadmap" id="how">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">The roadmap</span>
+      <h2>Ten steps, in the order research is actually written.</h2>
+      <p class="lede">You unlock the next step once a mentor approves the current one, so you never build on a weak foundation.</p>
+    </div>
+    <ol class="steps">
+      <li><h3>Research title</h3><p>Variables, population, place. Narrow a vague topic into a researchable one.</p></li>
+      <li><h3>Problem statement</h3><p>What is wrong, who it affects, and why it hasn’t been solved yet.</p></li>
+      <li><h3>Objectives &amp; questions</h3><p>SMART objectives and research questions that match them one to one.</p></li>
+      <li><h3>Introduction</h3><p>Background, significance and the gap your study fills.</p></li>
+      <li><h3>Literature review</h3><p>Finding, reading and synthesising sources instead of summarising them.</p></li>
+      <li><h3>Methodology</h3><p>Design, sampling, instruments and ethics, justified for your study.</p></li>
+      <li><h3>Data &amp; analysis</h3><p>Collecting data and choosing the right test or coding approach.</p></li>
+      <li><h3>Results &amp; discussion</h3><p>Reporting findings clearly and linking them back to the literature.</p></li>
+      <li><h3>Referencing</h3><p>APA 7th edition, in-text citations and avoiding plagiarism.</p></li>
+      <li class="final"><h3>Synopsis or thesis</h3><p>Putting it all together into one polished, submittable document.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section class="portal" id="portal">
+  <div class="wrap">
+    <div>
+      <div class="section-head">
+        <span class="eyebrow">The member portal</span>
+        <h2>Your own desk, with today’s task waiting.</h2>
+        <p class="lede">After you join, you get your own login. Every day the portal shows you exactly one thing to do.</p>
+      </div>
+      <ol class="loop">
+        <li><span class="dot">1</span><div><b>Learn</b><span>Read a short, step-by-step lesson with examples of good and bad work.</span></div></li>
+        <li><span class="dot">2</span><div><b>Write</b><span>Do the task yourself and submit it in the portal.</span></div></li>
+        <li><span class="dot">3</span><div><b>Get corrected</b><span>A mentor reviews it, marks mistakes and approves it or asks for a revision.</span></div></li>
+      </ol>
+    </div>
+
+    <div class="app" aria-label="Preview of the member portal">
+      <div class="app-bar">
+        <span class="logo">research<i>ette</i></span>
+        <span class="who"><span>Hira</span><span class="avatar" aria-hidden="true">H</span></span>
+      </div>
+      <div class="app-body">
+        <div class="progress">
+          <div class="progress-top"><span>Your roadmap</span><span>Step 2 of 10</span></div>
+          <div class="bar"><i></i></div>
+        </div>
+        <div class="task">
+          <div class="task-head">
+            <h3>Write your problem statement</h3>
+            <span class="pill">Today’s task</span>
+          </div>
+          <ul class="checks">
+            <li class="done">Read: What a problem statement is (6 min)</li>
+            <li class="done">Read: 3 good and 3 weak examples</li>
+            <li>Write yours in 150–200 words and submit</li>
+          </ul>
+        </div>
+        <div class="task">
+          <div class="task-head">
+            <h3>Research title</h3>
+            <span class="pill warm">Approved</span>
+          </div>
+          <div class="submission">
+            <span>Effect of Instagram Use on Sleep Quality among Undergraduate Students in Lahore</span>
+            <small>Submitted Monday · Reviewed Tuesday</small>
+          </div>
+          <p class="feedback hand">Much better. Clear variables and population. Move on!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="resources">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Free resources</span>
+      <h2>Free guides you can use today.</h2>
+      <p class="lede">No sign-up needed. Tap a guide to open it.</p>
+    </div>
+    <div class="res-grid">
+      <details class="res">
+        <summary><div class="res-meta"><span class="pill">Guide</span><span class="open">Open</span></div><h3>How to write a research title</h3><p>A formula and a 5-point checklist.</p></summary>
+        <div class="res-content">
+          <p class="formula">[Effect / Relationship / Role] of [Variable 1] on [Variable 2] among [Population] in [Place]</p>
+          <ol><li>Name your main variables.</li><li>Say who you are studying.</li><li>Say where, if it matters.</li><li>Keep it under about 15–20 words.</li><li>Remove filler like “A study on…”.</li></ol>
+        </div>
+      </details>
+      <details class="res">
+        <summary><div class="res-meta"><span class="pill">Cheat sheet</span><span class="open">Open</span></div><h3>APA 7 referencing basics</h3><p>The formats you will use most.</p></summary>
+        <div class="res-content">
+          <p><b>Journal article:</b> Author, A. A., &amp; Author, B. B. (Year). Title of article. <i>Journal Name, Volume</i>(Issue), pages. https://doi.org/xxxx</p>
+          <p><b>In-text:</b> <code>(Khan &amp; Ali, 2023)</code> or <code>Khan and Ali (2023)</code>. Three or more authors: <code>(Khan et al., 2023)</code>.</p>
+        </div>
+      </details>
+      <details class="res">
+        <summary><div class="res-meta"><span class="pill">Template</span><span class="open">Open</span></div><h3>Synopsis structure</h3><p>The sections most universities expect.</p></summary>
+        <div class="res-content">
+          <ol><li>Title</li><li>Introduction and background</li><li>Problem statement</li><li>Objectives and research questions / hypotheses</li><li>Significance of the study</li><li>Brief literature review</li><li>Methodology</li><li>Timeline (work plan)</li><li>References</li></ol>
+          <p>Always check your own department’s format first.</p>
+        </div>
+      </details>
+      <details class="res">
+        <summary><div class="res-meta"><span class="pill">Tool</span><span class="open">Open</span></div><h3>Literature review matrix</h3><p>Stop summarising. Start comparing.</p></summary>
+        <div class="res-content">
+          <p>Make a table with one row per source and these columns:</p>
+          <ul><li>Author &amp; year</li><li>Aim</li><li>Sample &amp; method</li><li>Key findings</li><li>Limitations</li><li>How it relates to your study</li></ul>
+          <p>Patterns across rows become the paragraphs of your review.</p>
+        </div>
+      </details>
+      <details class="res">
+        <summary><div class="res-meta"><span class="pill">Guide</span><span class="open">Open</span></div><h3>Searching Google Scholar well</h3><p>Find better sources faster.</p></summary>
+        <div class="res-content">
+          <ul><li>Put exact phrases in quotes: <code>"sleep quality"</code></li><li>Use <code>OR</code> for synonyms: <code>Instagram OR "social media"</code></li><li>Filter to the last 5–7 years using “Since”.</li><li>Open “Cited by” on a strong paper to find newer work.</li></ul>
+        </div>
+      </details>
+      <details class="res">
+        <summary><div class="res-meta"><span class="pill">Checklist</span><span class="open">Open</span></div><h3>6 common methodology mistakes</h3><p>What supervisors send back most often.</p></summary>
+        <div class="res-content">
+          <ol><li>No justification for the research design.</li><li>Sample size with no calculation or reference.</li><li>Sampling technique doesn’t match the population.</li><li>Instrument source and reliability not reported.</li><li>Ethics and consent left out.</li><li>Analysis plan doesn’t answer the research questions.</li></ol>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section class="mentors" id="mentors">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Mentors</span>
+      <h2>The people reviewing your work.</h2>
+      <p class="lede">Every submission is read by a mentor with real research and publication experience.</p>
+    </div>
+    <div class="mentor-grid">
+      <article class="mentor lead">
+        <span class="avatar" aria-hidden="true">R</span>
+        <div><h3>Founder name</h3><span class="role">Founder &amp; lead mentor</span></div>
+        <p>Short bio: your degree, research area, how many students you have guided and what you care about in mentoring.</p>
+        <div class="tags"><span>Synopsis</span><span>Thesis writing</span><span>Quantitative methods</span></div>
+      </article>
+      <article class="mentor">
+        <span class="avatar" aria-hidden="true">M2</span>
+        <div><h3>Mentor name</h3><span class="role">Senior mentor</span></div>
+        <p>Short bio: designation, university, key publications or areas of expertise.</p>
+        <div class="tags"><span>Literature review</span><span>Qualitative research</span></div>
+      </article>
+      <article class="mentor">
+        <span class="avatar" aria-hidden="true">M3</span>
+        <div><h3>Mentor name</h3><span class="role">Mentor</span></div>
+        <p>Short bio: designation, university, key publications or areas of expertise.</p>
+        <div class="tags"><span>Statistics</span><span>SPSS</span><span>Referencing</span></div>
+      </article>
+    </div>
+    <p class="placeholder-note">These cards are placeholders. Send me the names, photos and bios and I’ll fill them in.</p>
+  </div>
+</section>
+
+<section class="join" id="join">
+  <div class="wrap">
+    <div class="price">
+      <span class="hand" aria-hidden="true">founding batch!</span>
+      <span class="eyebrow">Membership</span>
+      <div class="amount">Rs 2,000</div>
+      <ul>
+        <li>Your own member portal login</li>
+        <li>Daily lessons and tasks for all 10 steps</li>
+        <li>Mentor review and corrections on every submission</li>
+        <li>Templates, examples and checklists</li>
+      </ul>
+      <p class="fine">Founding-batch price. It will go up for later batches. Payment details are shared after you apply.</p>
+    </div>
+
+    <form id="join-form" novalidate>
+      <div class="field">
+        <label for="f-name">Full name</label>
+        <input id="f-name" name="name" autocomplete="name" required placeholder="Hira Ahmed">
+      </div>
+      <div class="field">
+        <label for="f-email">Email</label>
+        <input id="f-email" name="email" type="email" autocomplete="email" required placeholder="hira@example.com">
+      </div>
+      <div class="field">
+        <label for="f-phone">WhatsApp number <span class="opt">(optional)</span></label>
+        <input id="f-phone" name="phone" type="tel" autocomplete="tel" placeholder="03xx xxxxxxx">
+      </div>
+      <div class="field">
+        <label for="f-uni">University</label>
+        <input id="f-uni" name="university" required placeholder="University of the Punjab">
+      </div>
+      <div class="field">
+        <label for="f-level">Education level</label>
+        <select id="f-level" name="level" required>
+          <option value="">Choose one</option>
+          <option>BS / Undergraduate</option>
+          <option>MPhil / MS</option>
+          <option>PhD</option>
+          <option>Graduate / not enrolled</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-field">Field of study</label>
+        <input id="f-field" name="field" required placeholder="Psychology">
+      </div>
+      <fieldset class="field full" style="border:0;padding:0;margin:0">
+        <legend style="font-weight:600;font-size:.92rem;margin-bottom:6px">What are you working on?</legend>
+        <div class="chips">
+          <label><input type="radio" name="goal" id="g-syn" value="Synopsis"><span>Synopsis</span></label>
+          <label><input type="radio" name="goal" id="g-thesis" value="Thesis"><span>Thesis</span></label>
+          <label><input type="radio" name="goal" id="g-paper" value="Research paper"><span>Research paper</span></label>
+          <label><input type="radio" name="goal" id="g-learn" value="Just learning"><span>Just learning</span></label>
+        </div>
+      </fieldset>
+      <div class="field full">
+        <label for="f-why">Why do you want to learn research?</label>
+        <textarea id="f-why" name="why" required placeholder="Tell us where you’re stuck and what you want to achieve."></textarea>
+      </div>
+      <div class="form-foot">
+        <button class="btn btn-primary" type="submit">Apply for membership</button>
+        <small>We’ll email you payment details. Your portal login is sent once payment is confirmed.</small>
+      </div>
+      <p class="error full" id="form-error" role="alert" hidden></p>
+    </form>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Questions</span>
+      <h2>Frequently asked</h2>
+    </div>
+    <div class="faq-list">
+      <details><summary>Will you write my thesis for me?</summary><p>No. We teach you to write it yourself and correct your work at every step. That’s how you learn, and it keeps your work original.</p></details>
+      <details><summary>How much time do I need each day?</summary><p>Most tasks take 30 to 60 minutes. You can go at your own pace; the next step unlocks once your current one is approved.</p></details>
+      <details><summary>How quickly is my work reviewed?</summary><p>Mentors aim to review submissions within 24 to 48 hours.</p></details>
+      <details><summary>I’m from a non-science field. Is this for me?</summary><p>Yes. The steps apply to social sciences, humanities, business, health sciences and more. Mentors adapt feedback to your field.</p></details>
+      <details><summary>How do I pay?</summary><p>After you apply, we email you the payment details. Once payment is confirmed, you receive your portal email and password.</p></details>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <a class="logo" href="#top">research<i>ette</i></a>
+    <span>Learn research the right way, one step at a time.</span>
+    <span>© 2026 Researchette</span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var form = document.getElementById('join-form');
+  var err = document.getElementById('form-error');
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var missing = [];
+    form.querySelectorAll('[required]').forEach(function (el) {
+      var ok = el.value.trim() !== '' && (el.type !== 'email' || /.+@.+\..+/.test(el.value));
+      el.setAttribute('aria-invalid', ok ? 'false' : 'true');
+      el.style.borderColor = ok ? '' : 'var(--redpen)';
+      if (!ok) missing.push(form.querySelector('label[for="' + el.id + '"]').textContent.trim());
+    });
+    if (missing.length) {
+      err.textContent = 'Please fill in: ' + missing.join(', ') + '.';
+      err.hidden = false;
+      return;
+    }
+    err.hidden = true;
+    var first = form.elements.name.value.trim().split(' ')[0];
+    // TODO: send the application to the backend (e.g. Supabase) once it exists.
+    form.innerHTML =
+      '<div class="thanks"><span class="hand">Thank you, ' + first.replace(/[<>&"]/g, '') + '!</span>' +
+      '<h3>Your application is in.</h3>' +
+      '<p class="lede">We’ll email you payment details shortly. Once payment is confirmed you’ll get your member portal login.</p>' +
+      '<p class="lede" style="font-size:.85rem">Preview note: this form isn’t connected to a database yet, so nothing was saved.</p></div>';
+  });
+})();
+</script>
+</body>
+</html>

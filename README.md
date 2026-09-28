@@ -4,7 +4,7 @@ Research mentorship for students: daily tasks, step-by-step guidance and mentor 
 
 ## What's here
 
-- `index.html` — the landing page (single static file, no build step). Open it in a browser or host it on any static host (GitHub Pages, Netlify, Cloudflare Pages).
+- `index.html` — the landing page for the medical research mentorship programme (light / dark, liquid-glass style, scroll animations) (single static file, no build step). Open it in a browser or host it on any static host (GitHub Pages, Netlify, Cloudflare Pages).
 
 ## Planned
 

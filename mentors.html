@@ -15,10 +15,13 @@
 body { font-size: 1.0625rem; line-height: 1.65; }
 .wrap { width: 100%; max-width: 1100px; margin-inline: auto; padding-inline: 22px; }
 .nav { position: sticky; top: 0; z-index: 40; padding-top: env(safe-area-inset-top, 0px); background: var(--glass); -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%); border-bottom: 1px solid var(--line); box-shadow: 0 10px 30px -26px rgba(24,32,61,.45); }
+.nav .wrap { max-width: none; padding-inline: clamp(16px, 3vw, 44px); }
+.letter { scroll-margin-top: 90px; }
 .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 10px; }
 .nav-links { display: flex; align-items: center; gap: 6px; }
 .nav-links a:not(.btn) { color: var(--muted); text-decoration: none; padding: .45em .85em; border-radius: 999px; font-size: .93rem; }
 .nav-links a:not(.btn):hover { color: var(--ink); background: var(--pen-soft); }
+@media (max-width: 480px) { .nav-links a.home-link { display: none; } .nav-links a:not(.btn) { padding-inline: .6em; } }
 
 .hero { padding-block: clamp(56px, 10vw, 120px) clamp(40px, 6vw, 72px); display: grid; gap: 20px; max-width: 760px; }
 .hero h1 { font-size: clamp(2.4rem, 1.5rem + 4vw, 4.2rem); font-weight: 800; letter-spacing: -.035em; line-height: 1.04; }
@@ -74,7 +77,8 @@ body { font-size: 1.0625rem; line-height: 1.65; }
         <span>research<i>ette</i></span>
       </a>
       <nav class="nav-links" aria-label="Main">
-        <a href="index.html">Home</a>
+        <a class="home-link" href="index.html">Home</a>
+        <a href="reviews.html">Reviews</a>
         <a class="btn btn-primary btn-sm" href="index.html#join">Join</a>
       </nav>
     </div>
@@ -100,7 +104,7 @@ body { font-size: 1.0625rem; line-height: 1.65; }
 
   <!-- Each mentor's message lives in the .msg block below. Replace the text with their own words. -->
   <div class="mentor-list">
-    <article class="letter glass reveal">
+    <article class="letter glass reveal" id="zain">
       <div class="who">
         <span class="avatar" aria-hidden="true">ZR</span>
         <div><h2>Zain Ramzan</h2><span class="role">Founder &amp; lead mentor · MBBS</span></div>
@@ -117,7 +121,7 @@ body { font-size: 1.0625rem; line-height: 1.65; }
       </div>
     </article>
 
-    <article class="letter glass alt reveal">
+    <article class="letter glass alt reveal" id="sobia">
       <div class="who">
         <span class="avatar" aria-hidden="true">S</span>
         <div><h2>Sobia</h2><span class="role">Senior mentor · PhD, Biochemistry &amp; Oncology</span></div>
@@ -134,7 +138,7 @@ body { font-size: 1.0625rem; line-height: 1.65; }
       </div>
     </article>
 
-    <article class="letter glass warm reveal">
+    <article class="letter glass warm reveal" id="taimoor">
       <div class="who">
         <span class="avatar" aria-hidden="true">TA</span>
         <div><h2>Taimoor Ali</h2><span class="role">Mentor · MBBS</span></div>

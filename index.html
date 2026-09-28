@@ -144,9 +144,10 @@ section { padding-block: var(--gap-section) 0; }
 :root[data-theme="dark"] .theme-btn .sun { display: none; }
 :root[data-theme="dark"] .theme-btn .moon { display: block; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .theme-btn .sun { display: none; } :root:not([data-theme="light"]) .theme-btn .moon { display: block; } }
+.nav .wrap { max-width: none; padding-inline: clamp(16px, 3vw, 44px); }
 @media (max-width: 860px) { .nav-links a:not(.btn):not(.login-link) { display: none; } }
 .login-link { white-space: nowrap; }
-@media (max-width: 400px) { .nav-links a.login-link { padding-inline: .6em; } }
+@media (max-width: 400px) { .nav-links a.login-link { padding-inline: .5em; } .nav-links { gap: 2px; } .nav .logo { font-size: 1.1rem; } .nav .theme-btn { width: 36px; height: 36px; } .nav-links .btn { padding: .55em .9em; } }
 
 /* ---------- hero ---------- */
 .hero { padding-block: clamp(36px, 7vw, 88px) 0; }
@@ -187,7 +188,7 @@ section { padding-block: var(--gap-section) 0; }
 .care .ok { background: var(--teal); color: var(--on-pen); }
 .care .no { border: 1.5px dashed var(--redpen); color: var(--redpen); }
 .care .note { font-size: 1.3rem; line-height: 1; }
-.ms-foot { display: flex; align-items: center; gap: 10px; font-size: .85rem; color: var(--muted); padding-inline: 4px; }
+.ms-foot { display: flex; align-items: center; gap: 10px; font-size: .85rem; color: var(--muted); padding-inline: 4px 10px; }
 .avatar { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font: 700 .72rem var(--f-display); color: #fff; background: linear-gradient(135deg, #3448D8, #0B9E8C); flex: none; }
 .stamp { margin-left: auto; font: 700 1.25rem var(--f-hand); color: var(--redpen); border: 2px solid var(--redpen); border-radius: 8px; padding: 0 .45em; transform: rotate(-6deg); animation: stamp .5s 2.1s var(--ease) both; white-space: nowrap; }
 @keyframes stamp { from { opacity: 0; transform: rotate(-6deg) scale(1.7); } }
@@ -309,8 +310,17 @@ section { padding-block: var(--gap-section) 0; }
 .narrow { max-width: 780px; margin-inline: auto; }
 
 /* ---------- mentors ---------- */
-.mentors { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-@media (max-width: 760px) { .mentors { grid-template-columns: 1fr; } }
+.mentors { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 1000px) { .mentors { grid-template-columns: 1fr 1fr; } .mentors .mentor:last-child { grid-column: 1 / -1; } }
+@media (max-width: 760px) { .mentors { grid-template-columns: 1fr; } .mentors .mentor:last-child { grid-column: auto; } }
+.mentor .msg-btn { justify-self: start; margin-top: 4px; white-space: nowrap; padding: .7em 1.2em; font-size: .92rem; }
+.mentor .msg-btn svg { width: 16px; height: 16px; color: var(--pen); }
+.mentor.warm .avatar { background: linear-gradient(135deg, #DD4460, #F2A65A); }
+.reviews-cta { margin-top: clamp(28px, 4vw, 40px); padding: clamp(22px, 3.5vw, 32px); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 24px; }
+.reviews-cta .stars { display: inline-flex; gap: 2px; color: #F2B43A; }
+.reviews-cta .stars svg { width: 18px; height: 18px; }
+.reviews-cta h3 { margin-top: 8px; }
+.reviews-cta p { color: var(--muted); font-size: .95rem; margin-top: 4px; }
 .mentor { padding: clamp(24px, 3.5vw, 34px); display: grid; gap: 18px; align-content: start; min-width: 0; transition: transform .5s var(--ease); }
 .mentor:hover { transform: translateY(-5px); }
 .mentor-top { display: flex; align-items: center; gap: 16px; }
@@ -419,6 +429,7 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
         <a href="#roadmap">Roadmap</a>
         <a href="#guides">Free guides</a>
         <a href="#mentors">Mentors</a>
+        <a href="reviews.html">Reviews</a>
         <a class="login-link" href="portal.html">Log in</a>
         <button class="theme-btn" id="theme-btn" type="button" aria-label="Switch between light and dark mode">
           <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
@@ -699,12 +710,25 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
         <div class="mentor-top"><span class="avatar" aria-hidden="true">ZR</span><div><h3>Zain Ramzan</h3><span class="role">Founder &amp; lead mentor · MBBS</span></div></div>
         <p>Published researcher who has guided more than 50 students to publication. Now mentoring a new batch.</p>
         <div class="mentor-facts"><div><b>50+</b><span>students mentored</span></div><div><b>Active</b><span>current batch</span></div></div>
+        <a class="btn btn-glass btn-sm msg-btn" href="mentors.html#zain" aria-label="Read Zain’s message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Read message <span class="btn-arrow" aria-hidden="true">→</span></a>
       </article>
       <article class="mentor glass alt reveal" style="--d:.1s">
         <div class="mentor-top"><span class="avatar" aria-hidden="true">S</span><div><h3>Sobia</h3><span class="role">Senior mentor · PhD, Biochemistry &amp; Oncology</span></div></div>
         <p>Has worked on hundreds of research projects and mentored many students through theses and publications.</p>
         <div class="mentor-facts"><div><b>100s</b><span>research works</span></div><div><b>PhD</b><span>Biochem &amp; Oncology</span></div></div>
+        <a class="btn btn-glass btn-sm msg-btn" href="mentors.html#sobia" aria-label="Read Sobia’s message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Read message <span class="btn-arrow" aria-hidden="true">→</span></a>
       </article>
+      <article class="mentor glass warm reveal" style="--d:.2s">
+        <div class="mentor-top"><span class="avatar" aria-hidden="true">TA</span><div><h3>Taimoor Ali</h3><span class="role">Mentor · MBBS</span></div></div>
+        <p>Medical student with hands-on research experience who helps first-time researchers get started.</p>
+        <div class="mentor-facts"><div><b>MBBS</b><span>medical student</span></div><div><b>Weekly</b><span>task reviews</span></div></div>
+        <a class="btn btn-glass btn-sm msg-btn" href="mentors.html#taimoor" aria-label="Read Taimoor’s message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Read message <span class="btn-arrow" aria-hidden="true">→</span></a>
+      </article>
+    </div>
+    <div class="reviews-cta glass reveal">
+      <div><span class="stars" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/></svg></span>
+        <h3>Student reviews</h3><p>Read what our students say, or share your own experience.</p></div>
+      <a class="btn btn-primary" href="reviews.html">See reviews <span class="btn-arrow" aria-hidden="true">→</span></a>
     </div>
   </div>
 </section>

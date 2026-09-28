@@ -33,8 +33,9 @@ There is no build step. Open `index.html` in a browser, or host the folder on Gi
 |---|---|---|
 | Mentor | zain@researchette.pk | admin1234 |
 | Mentor | sobia@researchette.pk | admin1234 |
+| Mentor | taimoor@researchette.pk | admin1234 |
 | Member | ayesha@demo.pk | demo1234 |
 
-Mentors can reset the demo data from the account menu.
+Anyone can change their password from the account menu (tap your initials, top right). Mentors can also reset the demo data there.
 
 **Before real students use it,** replace `store.js` with a real backend such as Supabase. Demo mode stores passwords in plain text and keeps data in one browser only. The functions in `store.js` (`signIn`, `stepStates`, `submit`, `queue`, `review`, `approveApplication` and the rest) are the interface the pages use, so only that file needs to change.

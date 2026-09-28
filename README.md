@@ -11,6 +11,7 @@ Medical research mentorship: daily tasks, step-by-step lessons and mentor feedba
 - `assets/curriculum.js`: the 10-step roadmap in 3 phases, with a lesson, a weak/strong example and a task for each step. Edit this file to change the course content.
 - `assets/store.js`: the data layer (logins, members, applications, submissions, reviews).
 - `assets/portal.js`, `assets/portal.css`: the portal screens and styles.
+- `assets/liquid.css`, `assets/fx.js`: the shared liquid-glass layer (lit glass edges, pointer spotlight, card tilt, magnetic buttons, smoother reveals) used by every page.
 
 There is no build step. Open `index.html` in a browser, or host the folder on GitHub Pages, Netlify or Cloudflare Pages.
 

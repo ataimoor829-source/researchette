@@ -84,6 +84,7 @@ form.card { display: grid; gap: 16px; padding: clamp(22px, 4vw, 36px); }
 .js .reveal.in { opacity: 1; transform: none; filter: none; }
 @media (prefers-reduced-motion: reduce) { .js .reveal { opacity: 1; transform: none; filter: none; } }
 </style>
+<link rel="stylesheet" href="assets/liquid.css">
 </head>
 <body>
 <script>document.body.classList.add('js');</script>
@@ -159,9 +160,9 @@ form.card { display: grid; gap: 16px; padding: clamp(22px, 4vw, 36px); }
     <div class="contact reveal">
       <span class="eyebrow">Contact</span>
       <div class="contact-grid">
-        <a class="contact-item glass" href="mailto:itszainr1@gmail.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M22 6l-10 7L2 6"/></svg><span>Email</span><b>itszainr1@gmail.com</b></a>
-        <a class="contact-item glass" href="https://wa.me/923395888444" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-13.4 7.8L3 21l1.3-4.4A9 9 0 1 1 21 12z"/></svg><span>WhatsApp</span><b>0339 5888444</b></a>
-        <a class="contact-item glass" href="tel:+923395888444"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg><span>Call</span><b>0339 5888444</b></a>
+        <a data-tilt class="contact-item glass" href="mailto:itszainr1@gmail.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M22 6l-10 7L2 6"/></svg><span>Email</span><b>itszainr1@gmail.com</b></a>
+        <a data-tilt class="contact-item glass" href="https://wa.me/923395888444" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-13.4 7.8L3 21l1.3-4.4A9 9 0 1 1 21 12z"/></svg><span>WhatsApp</span><b>0339 5888444</b></a>
+        <a data-tilt class="contact-item glass" href="tel:+923395888444"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg><span>Call</span><b>0339 5888444</b></a>
       </div>
     </div>
     <div class="foot-row">
@@ -193,7 +194,7 @@ var REVIEWS = [
     sum.innerHTML = '<b>' + avg.toFixed(1) + '</b>' + stars(Math.round(avg)) + '<span class="muted small">from ' + REVIEWS.length + ' review' + (REVIEWS.length > 1 ? 's' : '') + '</span>';
     sum.hidden = false;
     wall.innerHTML = '<div class="wall">' + REVIEWS.map(function (r, i) {
-      return '<article class="review glass reveal" style="--d:' + (i % 3) * .08 + 's">' + stars(+r.rating || 5) +
+      return '<article data-tilt class="review glass reveal" style="--d:' + (i % 3) * .08 + 's">' + stars(+r.rating || 5) +
         '<blockquote>' + esc(r.text) + '</blockquote>' + (r.type ? '<span class="chip">' + esc(r.type) + '</span>' : '') +
         '<div class="by"><span class="avatar">' + initials(r.name) + '</span><div><b>' + esc(r.name) + '</b><span>' + esc(r.detail) + '</span></div></div></article>';
     }).join('') + '</div>';
@@ -237,5 +238,6 @@ var REVIEWS = [
   });
 })();
 </script>
+<script src="assets/fx.js"></script>
 </body>
 </html>

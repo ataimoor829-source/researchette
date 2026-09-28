@@ -869,13 +869,12 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
     ticking = false;
     var h = root.scrollHeight - innerHeight;
     bar.style.transform = 'scaleX(' + (h > 0 ? scrollY / h : 0) + ')';
-    if (!reduce) aura.style.setProperty('--sy', Math.min(scrollY * .06, 160).toFixed(1));
     for (var i = 0; i < phases.length - 1; i++) {
       var cur = phases[i].getBoundingClientRect(), next = phases[i + 1].getBoundingClientRect();
       var k = Math.min(1, Math.max(0, 1 - (next.top - cur.top) / cur.height));
       var inner = phases[i].firstElementChild;
       inner.style.transform = k > 0 && !reduce ? 'scale(' + (1 - k * .06).toFixed(3) + ')' : '';
-      inner.style.filter = k > 0 ? 'brightness(' + (1 - k * .12).toFixed(3) + ')' : '';
+      inner.style.opacity = k > 0 ? (1 - k * .25).toFixed(3) : '';
     }
   }
   function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }

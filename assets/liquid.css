@@ -1,39 +1,42 @@
 /* Liquid glass layer shared by every page (landing, mentors, reviews, portal).
-   Loaded after each page's own styles: deeper blur, a lit edge ring, inner depth,
-   a soft spotlight that follows the pointer, and slower, springier motion. */
+   Loaded after each page's own styles. Tuned for smooth scrolling: moderate blur,
+   no animated filters, and only transform/opacity in motion. */
 :root {
-  --lg-a: rgba(255, 255, 255, .68);
-  --lg-b: rgba(255, 255, 255, .30);
+  --lg-a: rgba(255, 255, 255, .7);
+  --lg-b: rgba(255, 255, 255, .34);
   --ring-a: rgba(255, 255, 255, .98);
   --ring-b: rgba(255, 255, 255, .10);
   --lg-inner: rgba(255, 255, 255, .55);
   --spot: rgba(255, 255, 255, .45);
-  --lg-blur: 34px;
+  --lg-blur: 22px;
   --ease-out: cubic-bezier(.16, 1, .3, 1);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --lg-a: rgba(46, 55, 104, .55); --lg-b: rgba(20, 26, 58, .34);
+    --lg-a: rgba(46, 55, 104, .6); --lg-b: rgba(20, 26, 58, .4);
     --ring-a: rgba(255, 255, 255, .32); --ring-b: rgba(255, 255, 255, .03);
     --lg-inner: rgba(150, 165, 255, .10); --spot: rgba(150, 168, 255, .16);
   }
 }
 :root[data-theme="dark"] {
-  --lg-a: rgba(46, 55, 104, .55); --lg-b: rgba(20, 26, 58, .34);
+  --lg-a: rgba(46, 55, 104, .6); --lg-b: rgba(20, 26, 58, .4);
   --ring-a: rgba(255, 255, 255, .32); --ring-b: rgba(255, 255, 255, .03);
   --lg-inner: rgba(150, 165, 255, .10); --spot: rgba(150, 168, 255, .16);
 }
+@media (max-width: 760px) { :root { --lg-blur: 14px; } }
 
-body { animation: lg-pagein .8s var(--ease-out) both; }
+html { scroll-behavior: auto; }
+body { animation: lg-pagein .7s var(--ease-out) both; }
 @keyframes lg-pagein { from { opacity: 0; } }
-.aura { filter: saturate(1.2); bottom: -30vh; }
+.aura { transform: none !important; bottom: -20vh; }
+.aura i { will-change: transform; }
 
 /* glass surface */
 .glass {
   background: linear-gradient(155deg, var(--lg-a), var(--lg-b));
   border-color: transparent;
-  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(210%) brightness(1.03);
-  backdrop-filter: blur(var(--lg-blur)) saturate(210%) brightness(1.03);
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(180%);
+  backdrop-filter: blur(var(--lg-blur)) saturate(180%);
   box-shadow:
     inset 0 1px 1px var(--glass-hi),
     inset 0 12px 28px -20px var(--lg-inner),
@@ -58,35 +61,51 @@ body { animation: lg-pagein .8s var(--ease-out) both; }
 /* top bars and the phone tab bar */
 .nav, .topbar {
   background: linear-gradient(180deg, var(--lg-a), var(--lg-b));
-  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(210%);
-  backdrop-filter: blur(var(--lg-blur)) saturate(210%);
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(180%);
+  backdrop-filter: blur(var(--lg-blur)) saturate(180%);
   box-shadow: inset 0 -1px 0 var(--ring-b), inset 0 1px 0 var(--glass-hi), 0 12px 34px -26px rgba(24, 32, 61, .5);
 }
 @media (max-width: 760px) {
-  .tabs.bottom { background: linear-gradient(155deg, var(--lg-a), var(--lg-b)); -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(210%); backdrop-filter: blur(var(--lg-blur)) saturate(210%); border-color: var(--ring-a); }
+  .tabs.bottom { background: linear-gradient(155deg, var(--lg-a), var(--lg-b)); border-color: var(--ring-a); }
 }
 
-/* buttons: glossy primary, liquid secondary, magnetic pull (fx.js) */
+/* buttons */
 .btn { transition: transform .5s var(--ease-out), translate .6s var(--ease-out), box-shadow .5s var(--ease-out), background-color .3s, opacity .2s; }
 .btn-primary { background-image: linear-gradient(180deg, rgba(255, 255, 255, .22), rgba(255, 255, 255, 0) 55%); }
-.btn-glass { background: linear-gradient(155deg, var(--lg-a), var(--lg-b)); border-color: var(--ring-a); -webkit-backdrop-filter: blur(20px) saturate(200%); backdrop-filter: blur(20px) saturate(200%); }
+.btn-glass { background: linear-gradient(155deg, var(--lg-a), var(--lg-b)); border-color: var(--ring-a); }
 .btn:active { transform: scale(.95); transition-duration: .15s; }
 
 /* cards that tilt under the pointer (fx.js) */
-[data-tilt] { transition: transform .7s var(--ease-out), box-shadow .7s var(--ease-out); will-change: transform; }
+[data-tilt] { transition: transform .8s var(--ease-out), box-shadow .8s var(--ease-out); }
 
-/* slower, springier scroll reveal with a little depth */
+/* scroll reveal: opacity and transform only, so it stays smooth */
 .js .reveal {
-  transform: perspective(1000px) translateY(46px) rotateX(7deg) scale(.97);
-  transform-origin: 50% 0;
-  filter: blur(10px);
-  transition: opacity 1.1s var(--ease-out), transform 1.3s var(--ease-out), filter 1.1s var(--ease-out);
+  transform: translateY(34px) scale(.985);
+  filter: none;
+  transition: opacity 1s var(--ease-out), transform 1.1s var(--ease-out);
   transition-delay: var(--d, 0s);
 }
-.js .reveal.in { transform: none; filter: none; }
+.js .reveal.in { transform: none; }
+
+/* install-app bar (portal, phones) */
+.install-bar {
+  position: fixed; z-index: 45; left: 50%; transform: translateX(-50%);
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px) + var(--install-offset, 0px));
+  width: min(calc(100% - 32px), 440px); display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 12px;
+  border-radius: 20px; animation: lg-barin .6s var(--ease-out) both;
+}
+.install-bar.glass { background: var(--glass-strong); -webkit-backdrop-filter: blur(28px) saturate(180%); backdrop-filter: blur(28px) saturate(180%); }
+.install-bar img { width: 40px; height: 40px; border-radius: 11px; flex: none; }
+.install-bar .txt { flex: 1; min-width: 0; display: grid; line-height: 1.3; }
+.install-bar .txt b { font-size: .92rem; }
+.install-bar .txt span { font-size: .78rem; color: var(--muted); }
+.install-bar .x { border: 0; background: none; color: var(--muted); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.1rem; flex: none; }
+.install-bar.out { animation: lg-barout .35s var(--ease-out) both; }
+@keyframes lg-barin { from { opacity: 0; transform: translate(-50%, 24px); } }
+@keyframes lg-barout { to { opacity: 0; transform: translate(-50%, 24px); } }
 
 @media (prefers-reduced-motion: reduce) {
   body { animation: none; }
-  .js .reveal { transform: none; filter: none; }
+  .js .reveal { transform: none; }
   [data-tilt] { transition: none; }
 }

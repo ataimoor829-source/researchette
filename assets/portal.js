@@ -217,6 +217,7 @@
     main.classList.remove('view-enter'); void main.offsetWidth; main.classList.add('view-enter');
     scrollTo({ top: 0, behavior: 'instant' });
     if (v.mount) v.mount(main);
+    placeInstall();
   }
   addEventListener('hashchange', render);
 
@@ -556,6 +557,43 @@
     sp.style.left = (e.clientX - r.left - s / 2) + 'px'; sp.style.top = (e.clientY - r.top - s / 2) + 'px';
     b.appendChild(sp); setTimeout(function () { sp.remove(); }, 650);
   });
+
+  /* ---------- install-app bar (phones) ---------- */
+  var deferredPrompt = null, bar = null;
+  var standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  var ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var phone = matchMedia('(max-width: 760px), (pointer: coarse)').matches;
+  function dismissedRecently() { return Date.now() - (+store('rt-install-dismissed') || 0) < 7 * 864e5; }
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(function () {});
+  addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferredPrompt = e; showInstall(); });
+  addEventListener('appinstalled', function () { hideInstall(false); toast('Researchette installed'); });
+  function showInstall() {
+    if (standalone || !phone || bar || dismissedRecently() || (!deferredPrompt && !ios)) return;
+    bar = document.createElement('div'); bar.className = 'install-bar glass'; bar.setAttribute('role', 'region'); bar.setAttribute('aria-label', 'Install the app');
+    bar.innerHTML = '<img src="assets/icons/icon-192.png" alt=""><div class="txt"><b>Install Researchette</b><span>' +
+      (deferredPrompt ? 'One tap from your home screen.' : 'Tap Share, then “Add to Home Screen”.') + '</span></div>' +
+      (deferredPrompt ? '<button class="btn btn-primary btn-sm" type="button" id="inst">Install</button>' : '') +
+      '<button class="x" type="button" aria-label="Not now">×</button>';
+    document.body.appendChild(bar);
+    var ib = bar.querySelector('#inst');
+    if (ib) ib.addEventListener('click', function () {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function (c) { deferredPrompt = null; hideInstall(c.outcome !== 'accepted'); });
+    });
+    bar.querySelector('.x').addEventListener('click', function () { hideInstall(true); });
+    placeInstall();
+  }
+  function hideInstall(remember) {
+    if (remember) store('rt-install-dismissed', String(Date.now()));
+    if (!bar) return;
+    var b = bar; bar = null; b.classList.add('out'); setTimeout(function () { b.remove(); }, 350);
+  }
+  function placeInstall() {
+    if (!bar) return;
+    var t = document.querySelector('.tabs.bottom'), on = t && getComputedStyle(t).display !== 'none';
+    bar.style.setProperty('--install-offset', on ? (t.offsetHeight + 10) + 'px' : '0px');
+  }
+  if (ios) setTimeout(showInstall, 1200);
 
   render();
 })();

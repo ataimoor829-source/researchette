@@ -192,9 +192,13 @@ window.Store = (function () {
       if (!a || a.status !== 'new') return fail('This application has already been handled.');
       if (d.users.some(function (u) { return u.email.toLowerCase() === a.email.toLowerCase(); })) return fail('An account with this email already exists.');
       var pw = tempPassword();
-      var u = { id: uid('u'), role: 'member', name: a.name, email: a.email, password: pw, college: a.college, level: a.level, topic: '', joined: new Date().toISOString() };
+      var u = { id: uid('u'), role: 'member', name: a.name, email: a.email, phone: a.phone || '', password: pw, college: a.college, level: a.level, topic: '', joined: new Date().toISOString() };
       d.users.push(u); a.status = 'approved'; a.userId = u.id; save();
       return wait({ user: pub(u), password: pw });
+    },
+    setPhone: function (userId, phone) {
+      var u = user(userId); if (!u) return fail('Member not found.');
+      u.phone = String(phone || '').trim(); save(); return wait(pub(u));
     },
     changePassword: function (userId, current, next) {
       var u = user(userId);

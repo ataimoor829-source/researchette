@@ -21,6 +21,7 @@
     back: '<path d="M15 18l-6-6 6-6"/>',
     search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
     alert: '<path d="M12 8v5M12 16.5v.5"/><circle cx="12" cy="12" r="9"/>',
+    wa: '<path d="M21 12a9 9 0 0 1-13.4 7.8L3 21l1.3-4.4A9 9 0 1 1 21 12z"/><path d="M9 9.5c.3 1.8 1.7 3.7 3.5 4.6l1.2-1 1.8.8-.4 1.6c-3 .1-6.9-3.4-7-6.6l1.5-.5.8 1.7z"/>',
     done: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/>'
   };
   function ic(n, cls) { return '<svg class="' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + P[n] + '</svg>'; }
@@ -52,6 +53,7 @@
   }
 
   function toast(msg) {
+    document.querySelectorAll('.toast').forEach(function (x) { x.remove(); });
     var t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
     document.body.appendChild(t); setTimeout(function () { t.remove(); }, 3100);
   }
@@ -77,6 +79,18 @@
       var r = document.createRange(); r.selectNodeContents(fallbackEl);
       var s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('Selected. Copy it from here.');
     }
+  }
+  /* WhatsApp links: Pakistani numbers like 0339 5888444 become 923395888444 */
+  var MENTOR_WA = '923395888444';
+  function waNumber(p) {
+    var d = String(p || '').replace(/\D/g, '');
+    if (/^0\d{10}$/.test(d)) d = '92' + d.slice(1);
+    else if (/^3\d{9}$/.test(d)) d = '92' + d;
+    return d.length >= 11 ? d : '';
+  }
+  function waLink(num, text) { return 'https://wa.me/' + num + (text ? '?text=' + encodeURIComponent(text) : ''); }
+  function waButton(num, text, label, cls) {
+    return '<a class="btn btn-wa ' + (cls || '') + '" href="' + esc(waLink(num, text)) + '" target="_blank" rel="noopener">' + ic('wa') + esc(label) + '</a>';
   }
   function go(h) { if (location.hash === '#' + h) render(); else location.hash = h; }
   function setHash(h) { try { history.replaceState(null, '', '#' + h); } catch (e) {} }
@@ -135,6 +149,7 @@
     sheet(
       '<div class="row"><span class="avatar lg ' + (me.role === 'admin' ? '' : 'warm') + '">' + initials(me.name) + '</span><div><h3>' + esc(me.name) + '</h3><p class="small muted">' + esc(me.email) + '</p>' + (me.college ? '<p class="small muted">' + esc(me.college) + '</p>' : '') + '</div></div>' +
       '<div class="field"><span class="small muted">Appearance</span><div class="seg" id="theme-seg" style="--n:3;--i:' + idx + '"><button type="button" data-v="system">System</button><button type="button" data-v="light">Light</button><button type="button" data-v="dark">Dark</button></div></div>' +
+      (me.role === 'member' ? waButton(MENTOR_WA, 'Hi, I’m ' + me.name + ', a Researchette member. I have a question.', 'Contact your mentor on WhatsApp', 'btn-block') : '') +
       '<button class="btn btn-glass btn-block" type="button" id="chpw">Change password</button>' +
       '<button class="btn btn-glass btn-block" type="button" id="logout">Log out</button>' +
       (S.demo && me.role === 'admin' ? '<button class="btn btn-quiet btn-block btn-sm" type="button" id="reset">Reset demo data</button>' : '') +
@@ -266,7 +281,9 @@
     var d = step(cur.step);
     var summary = '<div class="glass card today-head">' + ring(done) + '<div class="txt"><span class="small muted">Your roadmap</span><h3>' + done + ' of 10 steps approved</h3><span class="small muted">Today: Step ' + cur.step + ' · ' + esc(d.title) + '</span></div></div>';
     var body = stepCard(cur.step, st);
-    return { html: head + summary + body.html, mount: function (m) { animateRing(m); body.mount(m); } };
+    var help = '<div class="glass card help-card"><div><h3>Stuck on this step?</h3><p class="small muted">Message your mentor and get help on WhatsApp.</p></div>' +
+      waButton(MENTOR_WA, 'Hi, I’m ' + me.name + ', a Researchette member. I need help with Step ' + cur.step + ': ' + d.title + '.', 'Contact on WhatsApp') + '</div>';
+    return { html: head + summary + body.html + help, mount: function (m) { animateRing(m); body.mount(m); } };
   }
 
   async function vStep(n) {
@@ -408,6 +425,7 @@
     var d = step(s.step), ph = phaseOf(s.step), open = s.status === 'review';
     var html = '<a class="back" href="#reviews">' + ic('back', 'chev') + 'Reviews</a>' +
       '<a class="glass card row" href="#member-' + esc(s.userId) + '" style="text-decoration:none;color:inherit"><span class="avatar lg warm">' + initials(s.member.name) + '</span><div class="li-main"><h3>' + esc(s.member.name) + '</h3><span class="small muted">' + esc(s.member.college || '') + '</span></div>' + ic('chev', 'chev') + '</a>' +
+      (waNumber(s.member.phone) ? '<div class="row">' + waButton(waNumber(s.member.phone), 'Hi ' + s.member.name.split(' ')[0] + ', about your Step ' + s.step + ' submission on Researchette: ', 'WhatsApp ' + s.member.name.split(' ')[0], 'btn-sm') + '</div>' : '') +
       '<article class="glass card stack-lg">' +
         '<div class="step-head"><div class="row spread wrap"><span class="eyebrow">Phase 0' + ph.id + ' · ' + esc(ph.name) + '</span>' + pill(s.status) + '</div><h2>Step ' + s.step + ' · ' + esc(d.title) + '</h2></div>' +
         '<div class="stack"><span class="small muted"><b>Task:</b> ' + esc(d.task.prompt) + '</span></div>' +
@@ -473,7 +491,11 @@
     var subs = await S.submissions(id);
     var html = '<a class="back" href="#members">' + ic('back', 'chev') + 'Members</a>' +
       '<div class="glass card stack">' +
-        '<div class="row"><span class="avatar lg warm">' + initials(u.name) + '</span><div class="li-main"><h2>' + esc(u.name) + '</h2><span class="small muted">' + esc(u.email) + '</span></div></div>' +
+        '<div class="row"><span class="avatar lg warm">' + initials(u.name) + '</span><div class="li-main"><h2>' + esc(u.name) + '</h2><span class="small muted">' + esc(u.email) + (u.phone ? ' · ' + esc(u.phone) : '') + '</span></div></div>' +
+        '<div class="row wrap wa-row">' + (waNumber(u.phone)
+          ? waButton(waNumber(u.phone), 'Hi ' + u.name.split(' ')[0] + ', this is ' + me.name.split(' ')[0] + ' from Researchette.', 'WhatsApp ' + u.name.split(' ')[0]) + '<button class="btn btn-quiet btn-sm" type="button" id="edit-phone">Change number</button>'
+          : '<button class="btn btn-glass btn-sm" type="button" id="edit-phone">' + ic('wa') + 'Add WhatsApp number</button>') + '</div>' +
+        '<form class="row wrap" id="phone-form" hidden><input id="phone-in" type="tel" inputmode="tel" placeholder="03xx xxxxxxx" value="' + esc(u.phone || '') + '" style="flex:1;min-width:180px" aria-label="WhatsApp number"><button class="btn btn-primary btn-sm" type="submit">Save</button></form>' +
         '<div class="chips">' + [u.college, u.level, 'Joined ' + rel(u.joined)].filter(Boolean).map(function (c) { return '<span class="chip">' + esc(c) + '</span>'; }).join('') + '</div>' +
         (u.topic ? '<p><span class="small muted">Study topic</span><br>' + esc(u.topic) + '</p>' : '') +
         '<div class="stack" style="gap:8px"><div class="row spread"><span class="small muted">Progress</span><span class="small"><b>' + u.done + '</b> of 10 approved</span></div>' + dots(u.states) + '</div>' +
@@ -484,7 +506,18 @@
         return s ? '<a class="li" href="#review-' + esc(s.id) + '">' + inner + '</a>' : '<div class="li">' + inner + '</div>';
       }).join('') + '</div></section>' +
       (subs.length ? '<p class="small muted">' + subs.length + ' submissions in total.</p>' : '');
-    return { html: html };
+    return {
+      html: html, mount: function (m) {
+        var f = m.querySelector('#phone-form');
+        m.querySelector('#edit-phone').addEventListener('click', function () { f.hidden = false; f.querySelector('input').focus(); });
+        f.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var v = f.querySelector('input').value;
+          if (v.trim() && !waNumber(v)) { toast('Enter a full number, like 0339 5888444'); return; }
+          S.setPhone(id, v).then(function () { toast(v.trim() ? 'Number saved' : 'Number removed'); render(); });
+        });
+      }
+    };
   }
 
   /* ---------- admin: applications ---------- */
@@ -504,6 +537,7 @@
         (a.goals && a.goals.length ? '<div class="chips">' + a.goals.map(function (g) { return '<span class="chip">' + esc(g) + '</span>'; }).join('') + '</div>' : '') +
         (a.why ? '<p class="quote">' + esc(a.why) + '</p>' : '') +
         '<p class="small"><span class="muted">Contact:</span> ' + esc(a.email) + (a.phone ? ' · ' + esc(a.phone) : '') + '</p>' +
+        (waNumber(a.phone) ? '<div class="row">' + waButton(waNumber(a.phone), 'Hi ' + a.name.split(' ')[0] + ', thank you for applying to Researchette!', 'WhatsApp ' + a.name.split(' ')[0], 'btn-sm') + '</div>' : '') +
         (a.status === 'new' ?
           '<div class="row spread wrap" style="padding-top:12px;border-top:1px solid var(--line)"><label class="switch"><input type="checkbox" data-paid ' + (a.paid ? 'checked' : '') + '><span class="t"></span>Payment received</label>' +
           '<div class="row"><button class="btn btn-quiet btn-sm" type="button" data-decline>Decline</button><button class="btn btn-primary btn-sm" type="button" data-approve>Approve &amp; create login</button></div></div>' : '') +

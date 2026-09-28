@@ -5,6 +5,7 @@ Medical research mentorship: daily tasks, step-by-step lessons and mentor feedba
 ## What's here
 
 - `index.html`: the landing page (light/dark, liquid-glass style, scroll animations). The membership form saves applications into the portal.
+- `mentors.html`: a separate page with each mentor's details and personal message. It isn't linked from the landing page; share the link directly.
 - `portal.html`: one page that holds the login screen, the member portal and the mentor (admin) portal.
 - `assets/curriculum.js`: the 10-step roadmap in 3 phases, with a lesson, a weak/strong example and a task for each step. Edit this file to change the course content.
 - `assets/store.js`: the data layer (logins, members, applications, submissions, reviews).

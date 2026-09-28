@@ -570,7 +570,7 @@
   function showInstall() {
     if (standalone || !phone || bar || dismissedRecently() || (!deferredPrompt && !ios)) return;
     bar = document.createElement('div'); bar.className = 'install-bar glass'; bar.setAttribute('role', 'region'); bar.setAttribute('aria-label', 'Install the app');
-    bar.innerHTML = '<img src="assets/icons/icon-192.png" alt=""><div class="txt"><b>Get the Researchette app</b><span>' +
+    bar.innerHTML = '<img src="assets/icons/icon-192.png" alt=""><div class="txt"><b>Install Researchette</b><span>' +
       (deferredPrompt ? 'One tap from your home screen.' : 'Tap Share, then “Add to Home Screen”.') + '</span></div>' +
       (deferredPrompt ? '<button class="btn btn-primary btn-sm" type="button" id="inst">Install</button>' : '') +
       '<button class="x" type="button" aria-label="Not now">×</button>';

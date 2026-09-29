@@ -309,3 +309,25 @@ a.stat:hover { transform: translateY(-3px); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001s !important; animation-iteration-count: 1 !important; transition-duration: .001s !important; }
 }
+
+/* programmes */
+.prog-switch { display: flex; align-items: center; gap: 10px; width: 100%; padding: 14px 18px; border-radius: 18px; cursor: pointer; text-align: left; font: inherit; color: var(--ink); -webkit-tap-highlight-color: transparent; transition: transform .4s var(--ease); }
+.prog-switch:active { transform: scale(.98); }
+.prog-switch b { flex: 1; font-weight: 600; }
+.chev.down { transform: rotate(90deg); transition: transform .4s var(--ease); }
+details[open] > summary .chev.down { transform: rotate(-90deg); }
+.li-btn { width: 100%; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.li-btn:hover .li-title { color: var(--pen); }
+.chips.pick label { position: relative; font-weight: 500; font-size: .86rem; border: 1px solid var(--glass-edge); border-radius: 99px; padding: .45em .9em; cursor: pointer; background: var(--glass-strong); transition: background-color .25s, color .25s, border-color .25s, transform .3s var(--ease); }
+.chips.pick label:active { transform: scale(.95); }
+.chips.pick input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.chips.pick label:has(input:checked) { background: var(--pen); border-color: var(--pen); color: var(--on-pen); }
+.chips.pick label:has(input:focus-visible) { outline: 3px solid var(--pen); outline-offset: 2px; }
+.track-sec summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; }
+.track-sec summary::-webkit-details-marker { display: none; }
+.track-sec summary h3 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.btn-danger { background: var(--red-soft); color: var(--redpen); border-color: transparent; }
+.btn-danger:hover { background: var(--redpen); color: #fff; }
+.sheet .list { padding: 0 14px; }
+.account-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+@media (max-width: 560px) { .account-actions { display: grid; grid-template-columns: 1fr; } }

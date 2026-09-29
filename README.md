@@ -8,7 +8,7 @@ Medical research mentorship: daily tasks, step-by-step lessons and mentor feedba
 - `mentors.html`: each mentor's details and personal message. Opened from the “Read message” button under each mentor on the landing page.
 - `reviews.html`: the student reviews page, linked from the top bar and the Mentors section. Add real reviews to the `REVIEWS` list at the bottom of the file; until then it shows a “first reviews are on their way” message. Students can send a review through the form, which opens WhatsApp with it filled in.
 - `portal.html`: one page that holds the login screen, the member portal and the mentor (admin) portal.
-- `assets/curriculum.js`: the 10-step roadmap in 3 phases, with a lesson, a weak/strong example and a task for each step. Edit this file to change the course content.
+- `assets/curriculum.js`: the programmes (original article, case report, letter to the editor, synopsis, thesis, meta-analysis). Each has its own steps, with a lesson, a weak/strong example and a task. Edit this file to change the course content.
 - `assets/store.js`: the data layer (logins, members, applications, submissions, reviews).
 - `assets/portal.js`, `assets/portal.css`: the portal screens and styles.
 - `assets/liquid.css`, `assets/fx.js`: the shared liquid-glass layer and motion (smooth eased scrolling, pointer spotlight, card tilt, magnetic buttons, reveals) used by every page.
@@ -23,10 +23,12 @@ There is no build step. Open `index.html` in a browser, or host the folder on Gi
 - **Roadmap:** all 10 steps with their status: approved, in review, needs changes, to do or locked. A step unlocks when the one before it is approved.
 - **Feedback:** every submission and the mentor's comments.
 
+**Programmes:** members pick a programme from Today or Roadmap and can switch any time; progress in each is kept. Mentors can add or remove programmes for any member.
+
 **Mentor portal**
 - **Overview:** waiting reviews, active members, new applications and approvals this week.
 - **Reviews:** the queue, oldest first. Submissions older than 48 hours are flagged. Open one, write feedback, then approve it (unlocking the next step) or request changes.
-- **Members:** search, progress for each member, and every step's submission.
+- **Members:** add a member (creates a login), search, filter to your own students, assign a mentor, choose programmes, reset or set a password, WhatsApp them, or remove them.
 - **Applications:** applications from the website. Mark payment as received, then approve to create a login. The temporary password and a ready-to-send welcome message are shown once.
 
 ## Demo mode (current)

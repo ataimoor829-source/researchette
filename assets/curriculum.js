@@ -1,6 +1,7 @@
-/* Researchette core roadmap: 10 steps in 3 phases.
-   Each step has a short lesson, a weak/strong example and a task the member submits for mentor review. */
-window.CURRICULUM = {
+/* Researchette programmes. Each programme (track) has phases and numbered steps.
+   Every step has a short lesson, a weak/strong example and a task the member submits for mentor review.
+   The original-article roadmap is the core programme; the others follow the same shape. */
+var ORIGINAL = {
   phases: [
     { id: 1, name: 'Plan', blurb: 'Shape a clear question and get approval to start.' },
     { id: 2, name: 'Collect & analyse', blurb: 'Gather clean data and make sense of it.' },
@@ -159,3 +160,287 @@ window.CURRICULUM = {
     }
   ]
 };
+
+(function () {
+  function L(h, p) { return { h: h, p: p }; }
+  function S(n, phase, title, summary, minutes, lesson, weak, strong, why, prompt, minWords) {
+    return { n: n, phase: phase, title: title, summary: summary, minutes: minutes, lesson: lesson,
+      example: { weak: weak, strong: strong, why: why }, task: { prompt: prompt, minWords: minWords } };
+  }
+
+  var CASE = {
+    phases: [{ id: 1, name: 'Prepare', blurb: 'Pick the right case and get consent.' }, { id: 2, name: 'Write', blurb: 'Write it up the way journals expect.' }],
+    steps: [
+      S(1, 1, 'Choose a reportable case', 'What makes a case publishable', 20, [
+        L('Know what journals want', 'A rare disease, an unusual presentation of a common disease, a new diagnostic or treatment insight, or an unexpected drug reaction.'),
+        L('Check that it is new', 'Search PubMed for “[condition] case report” and see how many similar cases exist. Fewer reports and a clear new angle make it stronger.'),
+        L('Find your teaching point', 'Say in one sentence what a doctor should learn from your case. If you can’t, the case isn’t ready yet.')
+      ], 'A patient with typhoid fever.',
+        'Typhoid fever presenting as acute acalculous cholecystitis in a 19-year-old man, an uncommon complication that delayed diagnosis.',
+        'It names the condition, the unusual feature and why it matters clinically.',
+        'Describe your case in 3–4 sentences, state its one teaching point, and say how many similar cases you found on PubMed.', 50),
+      S(2, 1, 'Consent and ethics', 'Permission and privacy', 15, [
+        L('Get written consent', 'Take written informed consent for publication from the patient, or a guardian, including consent for any images.'),
+        L('Remove identifiers', 'No names, initials, dates of birth, hospital numbers, exact dates or faces. Crop or mask images.'),
+        L('Check local rules', 'Some institutions ask for ERC approval or notification even for case reports. Journals will ask for a consent statement.')
+      ], 'Consent was taken.',
+        'Written informed consent was obtained from the patient for publication of this case report and accompanying images. A copy is available to the editor on request.',
+        'It states what was consented to and that proof is available.',
+        'Write your consent statement and list every identifier you will remove from the case details and images.', 30),
+      S(3, 2, 'Case presentation and timeline', 'Following the CARE guidelines', 30, [
+        L('Patient information', 'Age, sex and the relevant history only: symptoms, past illnesses, medicines and family history that matter to the case.'),
+        L('Clinical findings', 'Give the important positive and negative findings on examination, in the order you found them.'),
+        L('Make a timeline', 'A table with day or date, event, findings and intervention makes the story easy to follow.')
+      ], 'The patient came with fever, was given treatment and got better.',
+        'A 19-year-old man presented with 10 days of fever and 2 days of right upper quadrant pain. Murphy’s sign was positive, and ultrasound showed a distended, thick-walled gallbladder without stones.',
+        'It is specific, chronological and includes the findings that point to the diagnosis.',
+        'Write the case presentation (patient information and clinical findings) and a timeline table with at least 5 events.', 120),
+      S(4, 2, 'Diagnosis, treatment and outcome', 'What was done and what happened', 30, [
+        L('Diagnostic assessment', 'List the tests, the differential diagnoses you considered and why each was ruled out.'),
+        L('Treatment', 'Give drugs with doses, routes and durations, and any procedures or changes in plan.'),
+        L('Follow-up and outcome', 'Say how the patient did, how you confirmed it, and any side effects.')
+      ], 'Blood tests confirmed the diagnosis.',
+        'Blood culture grew Salmonella Typhi sensitive to ceftriaxone; hepatitis A and E serology was negative. He received IV ceftriaxone 2 g daily for 14 days. Pain settled by day 5, and a repeat ultrasound at 4 weeks was normal.',
+        'The reader can see exactly how the diagnosis was made and what treatment achieved.',
+        'Write the diagnostic assessment (with differentials), treatment, and follow-up and outcome sections.', 100),
+      S(5, 2, 'Introduction and discussion', 'Put the case in context', 35, [
+        L('Short introduction', 'One paragraph: what the condition is and why this case is worth reading.'),
+        L('Discussion', 'Compare your case with published ones, explain the likely mechanism, and mention strengths and limitations.'),
+        L('Learning points', 'End with 2–3 short, practical take-home messages.')
+      ], 'This is a very rare case.',
+        'Acalculous cholecystitis complicates a small minority of typhoid cases (ref). As in the cases reported by earlier authors (refs), our patient’s pain began in the second week of fever, which suggests…',
+        'It supports “rare” with evidence and links the case to the literature.',
+        'Write the introduction (about 100 words) and the discussion with at least 3 references, ending with 2–3 learning points.', 150),
+      S(6, 2, 'Title, abstract and submission', 'Get it out of the door', 25, [
+        L('A clear title', 'Include the words “case report” and the key diagnosis or feature.'),
+        L('Structured abstract', 'Introduction, case presentation and conclusion in about 150–250 words, plus 3–5 MeSH keywords.'),
+        L('Pick a journal', 'Choose one that publishes case reports in your field, check its fees and format, and follow its author guidelines exactly.')
+      ], 'An interesting case',
+        'Typhoid Fever Presenting as Acute Acalculous Cholecystitis: A Case Report',
+        'Editors and search engines can tell at once what the paper is about.',
+        'Write your title, abstract and keywords, and name the journal you plan to submit to.', 120)
+    ]
+  };
+
+  var LETTER = {
+    phases: [{ id: 1, name: 'Prepare', blurb: 'Pick an article and a point worth making.' }, { id: 2, name: 'Write & submit', blurb: 'A short, sharp, well-referenced letter.' }],
+    steps: [
+      S(1, 1, 'Pick an article', 'Something worth responding to', 20, [
+        L('Choose a recent article', 'Most journals only accept letters about articles they published in the last few months.'),
+        L('Find something to add', 'A limitation, another explanation, newer evidence or local data. A letter that only praises won’t be published.'),
+        L('Read the rules', 'Check the journal’s word, reference and author limits for letters.')
+      ], 'I liked this article about anxiety in students.',
+        'Khan et al. report a 36% anxiety prevalence but used an unvalidated questionnaire; results measured with GAD-7 would allow comparison with other studies.',
+        'It names the article and a specific, useful point.',
+        'Give the full citation of the article, the journal’s limits for letters, and the 1–2 points you will make.', 40),
+      S(2, 1, 'Build your argument', 'One point per paragraph', 25, [
+        L('One idea per paragraph', 'Keep each paragraph to a single point so the editor can follow it quickly.'),
+        L('Back it up', 'Support every claim with a reference or data.'),
+        L('Stay respectful', 'Be constructive: suggest how the problem could be addressed.')
+      ], 'The authors made a big mistake.',
+        'The sample was recruited from a single hostel, which may limit how far the findings apply to day scholars; a multi-centre design (3) could address this.',
+        'It is polite, specific and supported.',
+        'Write your main argument paragraph or paragraphs, with references.', 80),
+      S(3, 2, 'Write the letter', 'Full draft within the limit', 30, [
+        L('Structure', 'Salutation, an opening line citing the article, your points, and a short closing sentence.'),
+        L('Keep it short', 'Usually 300–600 words and 5–10 references. Cut anything that doesn’t support your point.'),
+        L('Vancouver references', 'The article you are responding to is usually reference 1.')
+      ], 'Hello, I am a medical student and I want to say…',
+        'Dear Editor, We read with interest the article by Khan et al. (1) on anxiety among medical students…',
+        'It follows the standard format editors expect.',
+        'Write your full letter within the journal’s limits.', 200),
+      S(4, 2, 'Submit', 'Details editors check', 15, [
+        L('Author details', 'Names, affiliations, a corresponding author email and ORCID IDs if available.'),
+        L('Declarations', 'A conflict of interest statement and funding statement, even if there are none.'),
+        L('Submit as a letter', 'Choose “Letter to the Editor” as the article type and reply quickly to any editor queries.')
+      ], 'Submitted without declarations.',
+        'Conflicts of interest: none declared. Funding: none.',
+        'Missing declarations are a common reason for delays.',
+        'Paste your final letter with its title, author line, conflict of interest and funding statements, and the journal you are submitting to.', 150)
+    ]
+  };
+
+  var SYNOPSIS = {
+    phases: [{ id: 1, name: 'Foundations', blurb: 'Question, background and definitions.' }, { id: 2, name: 'Methods & submission', blurb: 'How the study will run, and getting it approved.' }],
+    steps: [
+      S(1, 1, 'Title, question and objectives', 'The core of the synopsis', 25, [
+        L('A complete title', 'Include the variable, population, setting and study design.'),
+        L('A focused question', 'Use PICO so the question is clear and answerable.'),
+        L('SMART objectives', 'Specific, measurable, achievable, relevant and time-bound. One primary objective is usually enough.')
+      ], 'Study of diabetes.',
+        'Frequency of Diabetic Peripheral Neuropathy among Type 2 Diabetics Presenting to the Medical OPD of Mayo Hospital, Lahore: A Cross-Sectional Study',
+        'It tells the reviewer exactly what, who, where and how.',
+        'Write your synopsis title, research question and objectives.', 40),
+      S(2, 1, 'Introduction and rationale', 'Why the study is needed', 35, [
+        L('Funnel down', 'Start with the problem globally, then in Pakistan, then in your setting.'),
+        L('Use recent numbers', 'Quote the latest local and international figures with references.'),
+        L('A sharp rationale', 'Say what is missing and how your results will be used.')
+      ], 'Diabetes is a very common disease all over the world.',
+        'Pakistan has one of the highest diabetes prevalences worldwide (ref), yet local data on neuropathy screening in OPD patients are limited. Knowing its frequency will help plan routine foot examinations.',
+        'It is specific, referenced and ends with a clear gap.',
+        'Write your introduction and rationale.', 150),
+      S(3, 1, 'Operational definitions', 'Measurable variables', 20, [
+        L('Define every variable', 'Say exactly how each variable will be measured and what counts as positive.'),
+        L('Hypothesis if analytical', 'Comparative studies need null and alternative hypotheses; descriptive studies don’t.'),
+        L('Match your tools', 'Definitions should use the same tools and cut-offs as your proforma.')
+      ], 'Neuropathy: damage to nerves.',
+        'Diabetic peripheral neuropathy: a Michigan Neuropathy Screening Instrument examination score of 2.5 or more.',
+        'Anyone could apply it and get the same answer.',
+        'Write operational definitions for all your main variables, and your hypothesis if your study needs one.', 50),
+      S(4, 2, 'Methodology', 'Design, sample and criteria', 35, [
+        L('Design, setting and duration', 'Name the design, the exact setting, and a duration counted from approval.'),
+        L('Sample size and sampling', 'Show the calculation, the values used and their reference, and the sampling technique.'),
+        L('Inclusion and exclusion', 'Clear, checkable criteria that match your objective.')
+      ], 'Patients will be taken from OPD.',
+        'Non-probability consecutive sampling of type 2 diabetics aged 30–70 years with disease duration over 5 years presenting to the medical OPD, Mayo Hospital, Lahore, for 6 months after approval.',
+        'It is specific enough to repeat.',
+        'Write your methodology up to and including the inclusion and exclusion criteria.', 120),
+      S(5, 2, 'Data collection and analysis', 'Procedure and statistics', 30, [
+        L('Step-by-step procedure', 'From approval and consent to examination, recording on the proforma and storing data.'),
+        L('Analysis plan', 'Software, how each variable will be described, stratification for effect modifiers, and the post-stratification test.'),
+        L('Attach the proforma', 'Your proforma and consent form go in the annexes.')
+      ], 'Data will be analysed on SPSS.',
+        'Data will be analysed in SPSS v26. Age and duration of diabetes will be presented as mean ± SD, and neuropathy as frequency and percentage. Data will be stratified for age, gender and HbA1c, with chi-square applied after stratification (p ≤ 0.05 significant).',
+        'It answers every question a reviewer will ask about the analysis.',
+        'Write your data collection procedure and data analysis plan.', 100),
+      S(6, 2, 'References, timeline and submission', 'Finish and submit', 20, [
+        L('References', 'Usually 10–20 recent references in Vancouver style.'),
+        L('Work plan', 'A simple timeline or Gantt chart from approval to thesis submission.'),
+        L('Submit', 'Follow your university or CPSP format exactly and attach the proforma and consent form.')
+      ], 'Time: 6 months.',
+        'Month 1: approval and piloting. Months 2–5: data collection. Month 6: analysis and write-up.',
+        'Reviewers can see the plan is realistic.',
+        'Write your timeline, list your references, and list the annexes you will attach.', 80)
+    ]
+  };
+
+  var THESIS = {
+    phases: [{ id: 1, name: 'Plan & early chapters', blurb: 'Structure, introduction and literature.' }, { id: 2, name: 'Results & finishing', blurb: 'Methods, results, discussion and final checks.' }],
+    steps: [
+      S(1, 1, 'Plan your chapters', 'Outline and format', 20, [
+        L('Standard structure', 'Introduction, literature review, methodology, results, and discussion with conclusion.'),
+        L('Your university’s format', 'Check margins, fonts, spacing, citation style and word limits before you start.'),
+        L('Outline first', 'Write every heading with a target word count. It makes the writing much faster.')
+      ], 'I will start writing from the introduction.',
+        'Chapter 1 Introduction (2,000 words): background, problem statement, significance, objectives, operational definitions…',
+        'A detailed outline turns a big task into small ones.',
+        'Write your chapter outline with headings and word targets, and list your university’s format requirements.', 60),
+      S(2, 1, 'Introduction chapter', 'Background to objectives', 35, [
+        L('Build on the synopsis', 'Expand the background and update the literature to the present.'),
+        L('Problem and significance', 'State the problem clearly and why solving it matters locally.'),
+        L('Objectives and definitions', 'Keep them identical to your approved synopsis.')
+      ], 'This thesis is about neuropathy.',
+        'Despite high diabetes prevalence in Pakistan, neuropathy is often detected only after ulcers develop. Early detection data from OPD settings are needed to…',
+        'It frames a specific, local problem.',
+        'Write the problem statement and significance section of your introduction.', 150),
+      S(3, 1, 'Literature review', 'Synthesise, don’t summarise', 45, [
+        L('Organise by theme', 'Group studies by topic (prevalence, risk factors, tools), not one paragraph per paper.'),
+        L('Compare and contrast', 'Show where studies agree, where they differ and why.'),
+        L('End with the gap', 'Every theme should lead towards what your study adds.')
+      ], 'Ali (2019) did a study. Khan (2020) also did a study.',
+        'Reported prevalence ranges from 22% to 48% (refs); higher figures come from tertiary centres using nerve conduction studies, while screening instruments give lower estimates (refs).',
+        'It synthesises several sources into one insight.',
+        'Write one themed section of your literature review (at least 300 words) with at least 5 references.', 250),
+      S(4, 2, 'Methodology chapter', 'What you actually did', 30, [
+        L('Past tense', 'Describe what was done, not what will be done.'),
+        L('Report deviations', 'Say honestly what changed from the synopsis and why.'),
+        L('Ethics and statistics', 'Include the approval reference number and the full analysis plan.')
+      ], 'Patients will be enrolled consecutively.',
+        'After approval from the institutional review board (ref. no. …), 196 patients were enrolled consecutively from March to August 2026.',
+        'It records what happened, with evidence.',
+        'Write your methodology chapter in the past tense, including any deviations from the synopsis.', 200),
+      S(5, 2, 'Results', 'Tables and plain facts', 35, [
+        L('Participants first', 'How many were screened, enrolled and analysed, and a baseline characteristics table.'),
+        L('One objective at a time', 'Tables and figures for each objective; text highlights the key numbers.'),
+        L('No interpretation', 'Save the meaning for the discussion. Table titles go above tables, figure titles below figures.')
+      ], 'Most patients had neuropathy, which shows poor control.',
+        'Of 196 patients, 71 (36.2%) had neuropathy. It was more frequent in those with HbA1c above 8% (48.1% vs 24.0%, p = 0.001).',
+        'Facts with denominators; interpretation is left for later.',
+        'Describe your baseline table and the results for your first objective in text.', 120),
+      S(6, 2, 'Discussion and final checks', 'Finish strong', 40, [
+        L('Discuss', 'Main finding first, compare with literature, explain differences, then limitations and recommendations.'),
+        L('Conclude', 'Answer each objective directly in a short conclusion.'),
+        L('Final checks', 'Plagiarism report (HEC generally accepts up to 19%), formatting, abstract, acknowledgements and binding requirements.')
+      ], 'In conclusion, neuropathy is a big problem.',
+        'Diabetic peripheral neuropathy was present in about one in three type 2 diabetics in our OPD, and was associated with poor glycaemic control.',
+        'It answers the objective with the actual finding.',
+        'Write your conclusion, recommendations and one limitations paragraph.', 150)
+    ]
+  };
+
+  var META = {
+    phases: [{ id: 1, name: 'Protocol & search', blurb: 'Question, registration, search and screening.' }, { id: 2, name: 'Analysis & writing', blurb: 'Extract, assess, pool and report.' }],
+    steps: [
+      S(1, 1, 'Question and protocol', 'PICO and eligibility', 30, [
+        L('Frame the question', 'Population, intervention or exposure, comparison, outcomes, and the study designs you will include.'),
+        L('Eligibility criteria', 'Decide inclusion and exclusion rules before searching.'),
+        L('Register on PROSPERO', 'Register the protocol before screening starts. Journals increasingly require it.')
+      ], 'Is vitamin D good?',
+        'In pregnant women (P), does vitamin D supplementation (I), compared with placebo or no supplement (C), reduce pre-eclampsia (O)? Include RCTs only.',
+        'Every part of the question can be searched and judged.',
+        'Write your PICO question, eligibility criteria and planned primary and secondary outcomes.', 60),
+      S(2, 1, 'Search strategy', 'Find every relevant study', 35, [
+        L('At least three databases', 'For example PubMed, Cochrane CENTRAL and Embase or Scopus, plus trial registries.'),
+        L('MeSH plus free text', 'Combine controlled terms and synonyms; avoid language limits where possible.'),
+        L('Record everything', 'Save the date, full search string and number of results for each database.')
+      ], 'vitamin D pregnancy',
+        '("Vitamin D"[Mesh] OR cholecalciferol[tiab] OR "vitamin D"[tiab]) AND ("Pregnancy"[Mesh] OR pregnan*[tiab]) AND ("Pre-Eclampsia"[Mesh] OR preeclampsia[tiab]) AND randomized controlled trial[pt]',
+        'It is complete, reproducible and specific to trials.',
+        'Paste your full PubMed search string, list the other databases, and give the number of results from each.', 50),
+      S(3, 1, 'Screening', 'Two reviewers, two stages', 30, [
+        L('Remove duplicates', 'Use Rayyan, EndNote or Zotero to de-duplicate records.'),
+        L('Two independent reviewers', 'Screen titles and abstracts, then full texts, and resolve disagreements by discussion.'),
+        L('Record reasons', 'Note why each full text was excluded. These numbers fill your PRISMA flow diagram.')
+      ], 'I selected the relevant papers.',
+        '1,248 records identified; 312 duplicates removed; 936 screened; 41 full texts assessed; 12 trials included (29 excluded: 14 wrong outcome, 9 not randomised, 6 wrong population).',
+        'The selection is transparent and reproducible.',
+        'Report your screening numbers at each stage and the main reasons for exclusion.', 50),
+      S(4, 2, 'Data extraction', 'A pilot-tested sheet', 30, [
+        L('Design the sheet', 'Author, year, country, design, sample size, intervention, comparator, and outcome data (events/totals or mean/SD).'),
+        L('Pilot it', 'Test on 2–3 studies and fix unclear fields.'),
+        L('Two extractors', 'Two people extract independently and compare.')
+      ], 'I copied the results from each paper.',
+        'Study | Country | n (I/C) | Dose | Pre-eclampsia events I/C → Ali 2021 | Pakistan | 120/118 | 4,000 IU daily | 6/14',
+        'Structured extraction gives the exact numbers you need to pool.',
+        'List the columns in your extraction sheet and show the data extracted from 2 studies.', 60),
+      S(5, 2, 'Risk of bias', 'Judge study quality', 30, [
+        L('Pick the right tool', 'RoB 2 for randomised trials; ROBINS-I or Newcastle–Ottawa for observational studies.'),
+        L('Judge each domain', 'Give a judgement with a reason for each domain, not just an overall score.'),
+        L('Certainty of evidence', 'Summarise certainty for each outcome with GRADE.')
+      ], 'All studies were good quality.',
+        'Ali 2021: some concerns in the randomisation process (allocation concealment not reported); low risk in the other domains.',
+        'Each judgement has a stated reason.',
+        'Name the tool you will use and give risk-of-bias judgements, with reasons, for 2 included studies.', 60),
+      S(6, 2, 'Pool the results', 'Forest plots and heterogeneity', 40, [
+        L('Effect measure', 'Risk ratio or odds ratio for yes/no outcomes; mean difference or standardised mean difference for numbers.'),
+        L('Model and heterogeneity', 'Use a random-effects model when studies differ; interpret I² (about 25% low, 50% moderate, 75% high).'),
+        L('Check robustness', 'Sensitivity and subgroup analyses, and a funnel plot if you have 10 or more studies.')
+      ], 'The meta-analysis showed vitamin D works.',
+        'Vitamin D reduced pre-eclampsia (RR 0.62, 95% CI 0.45–0.85; 12 trials, 2,410 women; I² = 38%, random effects).',
+        'It gives the effect size, precision, amount of evidence and heterogeneity.',
+        'Describe your pooled analysis: effect measure, model, the pooled result or plan, I², and what the forest plot shows.', 80),
+      S(7, 2, 'Write with PRISMA 2020', 'Report it fully', 40, [
+        L('Follow the checklist', 'PRISMA 2020 has 27 items. Fill in the page number for each before you submit.'),
+        L('Flow diagram', 'Show records identified, screened, excluded (with reasons) and included.'),
+        L('Balanced discussion', 'Summarise the evidence, its certainty, limitations of the studies and of your review, and implications.')
+      ], 'We did a meta-analysis and found good results.',
+        'Background, objectives, methods (databases, dates, eligibility, risk of bias, synthesis), results (studies, participants, pooled estimates), limitations and conclusion, in about 250 words.',
+        'It follows PRISMA for Abstracts, which editors check first.',
+        'Write your abstract (about 250 words) following PRISMA for Abstracts.', 150)
+    ]
+  };
+
+  window.CURRICULUM = {
+    tracks: [
+      { id: 'original', name: 'Original article', short: 'Original article', blurb: 'Plan, run and write your own study, from question to journal.', phases: ORIGINAL.phases, steps: ORIGINAL.steps },
+      { id: 'case', name: 'Case report', short: 'Case report', blurb: 'Turn an interesting patient into a publication.', phases: CASE.phases, steps: CASE.steps },
+      { id: 'letter', name: 'Letter to the editor', short: 'Letter', blurb: 'A short, sharp response to a published article.', phases: LETTER.phases, steps: LETTER.steps },
+      { id: 'synopsis', name: 'Synopsis', short: 'Synopsis', blurb: 'A research proposal your ERC or CPSP will approve.', phases: SYNOPSIS.phases, steps: SYNOPSIS.steps },
+      { id: 'thesis', name: 'Thesis', short: 'Thesis', blurb: 'Chapter by chapter, for MPhil, MS, MD and FCPS.', phases: THESIS.phases, steps: THESIS.steps },
+      { id: 'meta', name: 'Systematic review & meta-analysis', short: 'Meta-analysis', blurb: 'Search, screen, assess bias and pool results.', phases: META.phases, steps: META.steps }
+    ]
+  };
+  window.CURRICULUM.track = function (id) {
+    return window.CURRICULUM.tracks.filter(function (t) { return t.id === id; })[0] || window.CURRICULUM.tracks[0];
+  };
+})();

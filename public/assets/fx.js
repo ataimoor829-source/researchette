@@ -2,6 +2,15 @@
    Scrolling is left to the browser (native scrolling is the smoothest on every device).
    Mouse/trackpad only; phones and reduced-motion users get the static design. */
 (function () {
+  /* mark the page while it scrolls so CSS can pause decorative animations (all devices) */
+  var root = document.documentElement, idle = 0;
+  addEventListener('scroll', function () {
+    if (!root.classList.contains('is-scrolling')) root.classList.add('is-scrolling');
+    clearTimeout(idle); idle = setTimeout(function () { root.classList.remove('is-scrolling'); }, 180);
+  }, { passive: true });
+})();
+
+(function () {
   var fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
   var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (!fine || reduce) return;

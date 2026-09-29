@@ -4,17 +4,24 @@ Medical research mentorship: daily tasks, step-by-step lessons and mentor feedba
 
 ## What's here
 
-- `index.html`: the landing page (light/dark, liquid-glass style, scroll animations). The membership form saves applications into the portal.
-- `mentors.html`: each mentor's details and personal message. Opened from the “Read message” button under each mentor on the landing page.
-- `reviews.html`: the student reviews page, linked from the top bar and the Mentors section. Add real reviews to the `REVIEWS` list at the bottom of the file; until then it shows a “first reviews are on their way” message. Students can send a review through the form, which opens WhatsApp with it filled in.
-- `portal.html`: one page that holds the login screen, the member portal and the mentor (admin) portal.
-- `assets/curriculum.js`: the programmes (original article, case report, letter to the editor, synopsis, thesis, meta-analysis). Each has its own steps, with a lesson, a weak/strong example and a task. Edit this file to change the course content.
-- `assets/store.js`: the data layer (logins, members, applications, submissions, reviews).
-- `assets/portal.js`, `assets/portal.css`: the portal screens and styles.
-- `assets/liquid.css`, `assets/fx.js`: the shared liquid-glass layer and motion (smooth eased scrolling, pointer spotlight, card tilt, magnetic buttons, reveals) used by every page.
-- `manifest.webmanifest`, `sw.js`, `assets/icons/`: make the portal installable as a phone app. On Android the portal shows an Install button; on iPhone it explains Share → Add to Home Screen.
+- `public/`: the website Cloudflare serves.
+  - `index.html`: the landing page. The membership form sends applications straight to the mentor portal.
+  - `mentors.html`: each mentor's details and message, opened from “Read message” on the landing page.
+  - `reviews.html`: student reviews. Add real reviews to the `REVIEWS` list at the bottom of the file.
+  - `portal.html`: login, member portal and mentor portal.
+  - `assets/curriculum.js`: the programmes and all lesson content. Edit this to change the course.
+  - `assets/store.js`: talks to the API. `assets/portal.js`, `portal.css`: portal screens.
+  - `assets/liquid.css`, `assets/fx.js`: shared glass look and pointer effects.
+  - `manifest.webmanifest`, `sw.js`, `assets/icons/`: make the portal installable as a phone app.
+- `worker/index.js`: the API (Cloudflare Worker). Handles logins, applications, members, submissions and reviews.
+- `db/schema.sql`: the database tables (Cloudflare D1, database `researchette-db`).
+- `wrangler.jsonc`: Cloudflare config. `/api/*` goes to the Worker; everything else is served from `public/`.
 
-There is no build step. Open `index.html` in a browser, or host the folder on GitHub Pages, Netlify or Cloudflare Pages.
+## Deploying
+
+Cloudflare Workers Builds deploys automatically when `main` changes (`npx wrangler deploy`). The D1 database `researchette-db` is already created and bound as `DB`.
+
+If you add steps to a programme in `curriculum.js`, update `TRACK_STEPS` in `worker/index.js` to match.
 
 ## How it works
 
@@ -31,17 +38,8 @@ There is no build step. Open `index.html` in a browser, or host the folder on Gi
 - **Members:** add a member (creates a login), search, filter to your own students, assign a mentor, choose programmes, reset or set a password, WhatsApp them, or remove them.
 - **Applications:** applications from the website. Mark payment as received, then approve to create a login. The temporary password and a ready-to-send welcome message are shown once.
 
-## Demo mode (current)
+## Accounts and security
 
-`assets/store.js` keeps all data in the browser's localStorage, so everything can be tried without a server. Demo logins:
-
-| Role | Email | Password |
-|---|---|---|
-| Mentor | zain@researchette.pk | admin1234 |
-| Mentor | sobia@researchette.pk | admin1234 |
-| Mentor | taimoor@researchette.pk | admin1234 |
-| Member | ayesha@demo.pk | demo1234 |
-
-Anyone can change their password from the account menu (tap your initials, top right). Mentors can also reset the demo data there.
-
-**Before real students use it,** replace `store.js` with a real backend such as Supabase. Demo mode stores passwords in plain text and keeps data in one browser only. The functions in `store.js` (`signIn`, `stepStates`, `submit`, `queue`, `review`, `approveApplication` and the rest) are the interface the pages use, so only that file needs to change.
+- Mentor accounts live in the database. Mentors create member logins from the portal (approve an application, or Members → Add member).
+- Passwords are hashed (PBKDF2-SHA256, 100,000 rounds) and never stored in plain text. Logins use a secure, HttpOnly session cookie that lasts 30 days.
+- Anyone can change their own password from the account menu (tap your initials, top right). Mentors can reset or set a member's password from the member page.

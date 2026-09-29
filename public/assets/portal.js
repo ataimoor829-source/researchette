@@ -226,7 +226,12 @@
       else if (r === 'feedback') { view = vFeedback(); tab = r; }
       else { view = vToday(); tab = 'today'; if (r !== 'today') setHash('today'); }
     }
-    var v = await view;
+    var v;
+    try { v = await view; } catch (e) {
+      if (/log in/i.test(e.message)) { app.dataset.shell = ''; setHash('login'); return render(); }
+      v = { html: '<div class="glass empty">' + ic('alert') + '<b>Couldn’t load this page</b><span>' + esc(e.message) + '</span><button class="btn btn-glass btn-sm" type="button" id="retry">Try again</button></div>',
+        mount: function (m) { m.querySelector('#retry').addEventListener('click', render); } };
+    }
     if (token !== busy) return;
     ensureShell();
     currentTab = tab; setTabs(tab, badges);

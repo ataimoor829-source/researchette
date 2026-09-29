@@ -53,9 +53,7 @@ body { font-size: 1.0625rem; line-height: 1.65; }
 .letter.alt .avatar { background: linear-gradient(135deg, #0B9E8C, #5A9BFF); }
 .letter.warm .avatar { background: linear-gradient(135deg, #DD4460, #F2A65A); }
 @media (max-width: 820px) { .letter { grid-template-columns: 1fr; } }
-.profiles { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(20px, 3vw, 28px); }
-.letter.profile { grid-template-columns: 1fr; }
-@media (max-width: 820px) { .profiles { grid-template-columns: 1fr; } }
+
 
 .end { padding-block: clamp(80px, 12vw, 140px) 36px; display: grid; gap: 40px; justify-items: center; text-align: center; }
 .end h2 { font-size: clamp(1.9rem, 1.4rem + 2vw, 2.9rem); letter-spacing: -.03em; }
@@ -113,7 +111,7 @@ body { font-size: 1.0625rem; line-height: 1.65; }
     <p class="lede fade-up" style="--d:.8s">Every task you submit at Researchette is reviewed by one of us. Here’s who we are, and what we’d like you to know before you start.</p>
   </section>
 
-  <!-- Each mentor's message lives in the .msg block below. Replace the text with their own words. -->
+  <!-- Each mentor's message lives in the .msg block below. Replace the text with their own words. Order: Zain, Maha, Sobia, Alina. -->
   <div class="mentor-list">
     <article class="letter glass reveal" id="zain">
       <div class="who">
@@ -129,6 +127,21 @@ body { font-size: 1.0625rem; line-height: 1.65; }
         <p>When I started doing research as a medical student, nobody sat down and showed me how. I learnt by making almost every mistake there is.</p>
         <p>Researchette is the guidance I wish I’d had: one clear step at a time, and someone who actually reads your work and tells you honestly what to fix. You don’t need to be a genius to publish. You need a good question, a little discipline and a mentor who cares. That’s what we’re here for.</p>
         <span class="sign">Zain</span>
+      </div>
+    </article>
+
+    <article class="letter glass warm reveal" id="maha">
+      <div class="who">
+        <div><h2>Maha Arshad</h2><span class="role">Mentor · MD, UCLA · Orthopaedics</span></div>
+        <ul class="facts">
+          <li><b>MD</b> from UCLA</li>
+          <li><b>Resident</b> in orthopaedics at Stanford</li>
+        </ul>
+      </div>
+      <div class="msg">
+        <p>Research can feel like a locked door when you’re starting out. It isn’t. Every paper begins with one simple question asked carefully, and everything after that is a method you can learn.</p>
+        <p>Bring me your curiosity and your questions, however small they seem. I’ll help you turn them into a study you’re proud to put your name on.</p>
+        <span class="sign">Maha</span>
       </div>
     </article>
 
@@ -150,26 +163,21 @@ body { font-size: 1.0625rem; line-height: 1.65; }
       </div>
     </article>
 
-    <div class="profiles">
-      <article class="letter glass profile reveal" id="maha">
-        <div class="who">
-          <div><h2>Maha Arshad</h2><span class="role">Mentor · MD, UCLA · Orthopaedics</span></div>
-          <ul class="facts">
-            <li><b>MD</b> from UCLA</li>
-            <li><b>Resident</b> in orthopaedics at Stanford</li>
-          </ul>
-        </div>
-      </article>
-      <article class="letter glass alt profile reveal" id="alina" style="--d:.1s">
-        <div class="who">
-          <div><h2>Alina</h2><span class="role">Mentor · MBBS · Radiology</span></div>
-          <ul class="facts">
-            <li><b>MBBS</b></li>
-            <li><b>Resident</b> in radiology at Huntsman Cancer Institute, USA</li>
-          </ul>
-        </div>
-      </article>
-    </div>
+    <article class="letter glass reveal" id="alina">
+      <div class="who">
+        <div><h2>Alina</h2><span class="role">Mentor · MBBS · Radiology</span></div>
+        <ul class="facts">
+          <li><b>MBBS</b></li>
+          <li><b>Resident</b> in radiology at Huntsman Cancer Institute, USA</li>
+        </ul>
+      </div>
+      <div class="msg">
+        <p>In radiology, the small details decide everything, and research is no different. Read carefully, write clearly and check your work twice.</p>
+        <p>Don’t wait until it feels perfect. Send it in, learn from the feedback and keep going. That’s how every good paper gets written, and I’m glad to be part of yours.</p>
+        <span class="sign">Alina</span>
+      </div>
+    </article>
+
 
   </div>
 

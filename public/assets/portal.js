@@ -366,10 +366,85 @@
       var email = f.querySelector('#l-email').value, btn = f.querySelector('[type=submit]');
       if (!email.trim() || !pw.value) { err.textContent = 'Enter your email and password.'; err.hidden = false; return; }
       btn.disabled = true; btn.textContent = 'Logging in…';
-      S.signIn(email, pw.value).then(function (u) { rememberMe(u); go(u.role === 'admin' ? 'overview' : 'today'); }, function (x) {
+      S.signIn(email, pw.value).then(function (u) {
+        if (u.twoFactor) return twoStepView(u);
+        rememberMe(u); go(u.role === 'admin' ? 'overview' : 'today');
+      }, function (x) {
         err.textContent = x.message; err.hidden = false; btn.disabled = false; btn.textContent = 'Log in';
       });
     });
+  }
+
+  /* ---------- two-step verification (owners, on a new device) ---------- */
+  function loadQr(cb) {
+    if (window.qrcode) return cb();
+    var sc = document.createElement('script'); sc.src = 'assets/qrcode.js'; sc.onload = cb; document.head.appendChild(sc);
+  }
+  function twoStepView(t) {
+    var setup = t.twoFactor === 'setup', recovery = false;
+    app.dataset.shell = '';
+    app.innerHTML = '<div class="login-wrap"><form class="login glass two-step" id="ts" novalidate>' +
+      '<a class="logo" href="index.html">' + LOGO + '<span>research<i>ette</i></span></a>' +
+      (setup
+        ? '<div class="stack" style="gap:6px"><span class="eyebrow">One-time setup</span><h1>Protect your account</h1><p class="muted">As an owner, you’ll confirm each new device with a code from Passwords on your iPhone. It takes a minute.</p></div>' +
+          '<ol class="ts-steps"><li>On your iPhone, open the <b>Camera</b> and point it at this QR code, then tap <b>Add Verification Code in Passwords</b>.</li>' +
+            '<li>Enter the 6-digit code Passwords now shows for Researchette.</li></ol>' +
+          '<div class="qr" id="qr" role="img" aria-label="QR code for your authenticator"></div>' +
+          '<p class="small muted ts-alt">Using this iPhone? <a href="' + esc(t.otpauth) + '">Add to Passwords</a>. Or add a code manually in Passwords → Codes → + with this setup key:</p>' +
+          '<div class="cred"><span>Setup key</span><b id="ts-key">' + esc(t.secret) + '</b></div>'
+        : '<div class="stack" style="gap:6px"><span class="eyebrow">New device</span><h1>Enter your code</h1><p class="muted">Open <b>Passwords</b> on your iPhone, go to <b>Codes</b>, and enter the 6-digit code for Researchette.</p></div>') +
+      '<div class="field"><label for="ts-code" id="ts-label">6-digit code</label><input id="ts-code" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="123456" autofocus></div>' +
+      '<p class="error" id="ts-err" role="alert" hidden></p>' +
+      '<button class="btn btn-primary btn-block" type="submit">' + (setup ? 'Turn on and continue' : 'Continue') + '</button>' +
+      (setup ? '' : '<button class="btn btn-quiet btn-block btn-sm" type="button" id="ts-rc">Lost your phone? Use a recovery code</button>') +
+      '<button class="btn btn-quiet btn-block btn-sm" type="button" id="ts-back">Back to log in</button>' +
+      '<p class="small muted">This device will be remembered for 30 days.</p>' +
+    '</form></div>';
+    var f = document.getElementById('ts'), inp = document.getElementById('ts-code'), err = document.getElementById('ts-err'), btn = f.querySelector('[type=submit]');
+    if (setup) loadQr(function () {
+      var qr = qrcode(0, 'M'); qr.addData(t.otpauth); qr.make();
+      document.getElementById('qr').innerHTML = qr.createSvgTag({ cellSize: 5, margin: 2, scalable: true });
+    });
+    var rc = document.getElementById('ts-rc');
+    if (rc) rc.addEventListener('click', function () {
+      recovery = true; rc.hidden = true;
+      document.getElementById('ts-label').textContent = 'Recovery code';
+      inp.value = ''; inp.setAttribute('inputmode', 'text'); inp.setAttribute('autocomplete', 'off'); inp.maxLength = 11; inp.placeholder = 'xxxxx-xxxxx'; inp.focus();
+    });
+    document.getElementById('ts-back').addEventListener('click', function () { loginView(); });
+    // codes filled in by Passwords (or typed) are sent as soon as all six digits are there
+    inp.addEventListener('input', function () { if (!recovery && inp.value.replace(/\D/g, '').length === 6) f.requestSubmit(); });
+    f.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var code = inp.value.trim();
+      if (!code) { err.textContent = recovery ? 'Enter one of your recovery codes.' : 'Enter the 6-digit code.'; err.hidden = false; return; }
+      if (btn.disabled) return;
+      btn.disabled = true; err.hidden = true;
+      S.verifyLogin(t.ticket, code).then(function (u) {
+        var codes = u.recoveryCodes, used = u.recoveryUsed, left = u.recoveryLeft;
+        delete u.recoveryCodes; delete u.recoveryUsed; delete u.recoveryLeft;
+        rememberMe(u);
+        if (codes) return recoveryCodesView(codes);
+        if (used) toast('Recovery code used. ' + left + ' left.');
+        go(u.role === 'admin' ? 'overview' : 'today');
+      }, function (x) {
+        btn.disabled = false; err.textContent = x.message; err.hidden = false; inp.select();
+        if (/expired/i.test(x.message)) setTimeout(loginView, 1800);
+      });
+    });
+  }
+  function recoveryCodesView(codes) {
+    var text = 'Researchette recovery codes (each works once)\n' + codes.join('\n');
+    app.innerHTML = '<div class="login-wrap"><div class="login glass two-step">' +
+      '<a class="logo" href="index.html">' + LOGO + '<span>research<i>ette</i></span></a>' +
+      '<div class="stack" style="gap:6px"><span class="stamp">Two-step is on</span><h1>Save your recovery codes</h1><p class="muted">If you lose your iPhone, each of these lets you in once. Save them somewhere safe, like a note in Passwords. You won’t see them again.</p></div>' +
+      '<ol class="rc-list" id="rc-list">' + codes.map(function (c) { return '<li><code>' + esc(c) + '</code></li>'; }).join('') + '</ol>' +
+      '<button class="btn btn-glass btn-block" type="button" id="rc-copy">Copy codes</button>' +
+      '<button class="btn btn-primary btn-block" type="button" id="rc-done">I’ve saved them</button>' +
+      '<p class="small muted">If you lose both, Taimoor or Zain can reset your two-step verification from Team & permissions.</p>' +
+    '</div></div>';
+    document.getElementById('rc-copy').addEventListener('click', function () { copy(text, document.getElementById('rc-list')); });
+    document.getElementById('rc-done').addEventListener('click', function () { go('overview'); });
   }
 
   /* ---------- member: today ---------- */
@@ -829,7 +904,7 @@
     var rows = r.team.map(function (t) {
       var on = MENTOR_PERMS.filter(function (p) { return t.perms[p[0]]; }).length;
       return '<a class="li" href="#admin-' + esc(t.id) + '"><span class="avatar">' + initials(t.name) + '</span><div class="li-main"><span class="li-title">' + esc(t.name) + (t.id === me.id ? ' <span class="muted small">(you)</span>' : '') + '</span>' +
-        '<span class="li-sub">' + esc(t.title || 'Mentor') + ' · ' + t.students + ' student' + (t.students === 1 ? '' : 's') + (t.owner ? '' : ' · ' + on + ' of ' + MENTOR_PERMS.length + ' permissions') + '</span></div>' +
+        '<span class="li-sub">' + esc(t.title || 'Mentor') + ' · ' + t.students + ' student' + (t.students === 1 ? '' : 's') + (t.owner ? ' · ' + (t.twoStep.on ? 'Two-step on' : 'Two-step set up at next login') : ' · ' + on + ' of ' + MENTOR_PERMS.length + ' permissions') + '</span></div>' +
         '<div class="li-end">' + (t.owner ? '<span class="pill approved">Owner</span>' : t.active ? '<span class="pill">Mentor</span>' : '<span class="pill revision">Paused</span>') + ic('chev', 'chev') + '</div></a>';
     }).join('');
     return { html: '<a class="back" href="#overview">' + ic('back', 'chev') + 'Overview</a>' +
@@ -874,6 +949,10 @@
       (t.owner ? '<div class="glass card"><p class="small muted">Owners have every permission.</p></div>' :
         '<div class="glass card stack"><div><h3>What ' + esc(fn) + ' can do</h3><p class="small muted">They only ever see the students assigned to them' + (t.perms.see_all ? ', plus everyone, because “See all students” is on.' : '.') + '</p></div>' +
           toggles(MENTOR_PERMS.map(function (p) { return [p[0], p[1], p[2], t.perms[p[0]]]; }), 'perm') + '</div>') +
+      (t.owner ? '<div class="glass card stack"><div><h3>Two-step verification</h3><p class="small muted">' +
+          (t.twoStep.on ? 'On. ' + t.twoStep.devices + ' remembered device' + (t.twoStep.devices === 1 ? '' : 's') + ', ' + t.twoStep.recoveryLeft + ' recovery code' + (t.twoStep.recoveryLeft === 1 ? '' : 's') + ' left.' : 'Not set up yet. ' + esc(fn) + ' will be asked to set it up at their next login.') + '</p></div>' +
+          (!self && t.twoStep.on ? '<div class="account-actions"><button class="btn btn-glass btn-sm" type="button" id="t-2fa">Reset two-step verification</button></div><p class="small muted">Use this if ' + esc(fn) + ' lost their phone. They’ll be logged out and set it up again with a new QR code.</p>' : '') +
+        '</div>' : '') +
       '<div class="glass card stack"><h3>Account</h3><div class="account-actions">' +
         '<button class="btn btn-glass btn-sm" type="button" id="t-reset">Reset password</button><button class="btn btn-glass btn-sm" type="button" id="t-set">Set a password</button>' +
         (self ? '' : '<button class="btn btn-danger btn-sm" type="button" id="t-remove">Remove from team</button>') + '</div>' +
@@ -896,6 +975,11 @@
                 function (x) { var er = el.querySelector('#tsp-err'); er.textContent = x.message; er.hidden = false; });
             });
           });
+      });
+      var r2 = m.querySelector('#t-2fa');
+      if (r2) r2.addEventListener('click', function () {
+        sheet('<h2>Reset ' + esc(fn) + '’s two-step verification?</h2><p class="muted">They’ll be logged out everywhere. At their next login they scan a new QR code and get new recovery codes.</p><div class="row"><button class="btn btn-glass" type="button" data-close style="flex:1">Cancel</button><button class="btn btn-primary" type="button" id="yes" style="flex:1">Reset</button></div>',
+          function (el, close) { el.querySelector('#yes').addEventListener('click', function () { S.resetTwoStep(id).then(function () { close(); toast('Two-step verification reset'); render(); }, function (e) { toast(e.message); }); }); });
       });
       var rmv = m.querySelector('#t-remove');
       if (rmv) rmv.addEventListener('click', function () {

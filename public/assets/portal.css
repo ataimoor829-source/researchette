@@ -469,3 +469,14 @@ details[open] > summary .chev.down { transform: rotate(-90deg); }
 .toggle input:checked:active + .sw::after, .toggle:active input:checked + .sw::after { transform: translateX(16px); }
 .team-card { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; }
 .team-card .li-main { display: grid; gap: 2px; flex: 1; }
+
+/* ---------- two-step verification ---------- */
+.two-step .ts-steps { margin: 0; padding-left: 1.2em; display: grid; gap: 8px; font-size: .95rem; }
+.two-step .qr { justify-self: center; width: min(220px, 70vw); aspect-ratio: 1; padding: 10px; border-radius: 16px; background: #fff; box-shadow: 0 0 0 1px var(--line); }
+.two-step .qr svg { display: block; width: 100%; height: 100%; }
+.two-step #ts-code { font: 600 1.4rem var(--f-mono); letter-spacing: .25em; text-align: center; }
+.two-step #ts-code[inputmode="text"] { font-size: 1.1rem; letter-spacing: .08em; }
+.two-step .ts-alt a { font-weight: 600; }
+.rc-list { list-style: none; margin: 0; padding: 14px 16px; border-radius: 16px; background: var(--paper); display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px 18px; justify-items: center; }
+.rc-list code { font: 600 .98rem var(--f-mono); letter-spacing: .03em; white-space: nowrap; }
+.two-step .stamp { justify-self: start; max-width: 100%; }

@@ -958,24 +958,22 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
     if (!valid(steps[at])) return;
     if (at < 2) { show(at + 1, 1); return; }
     var el = form.elements, first = el.name.value.trim().split(' ')[0].replace(/[<>&"']/g, '');
-    if (window.Store) Store.addApplication({
+    var btn = document.getElementById('f-next');
+    btn.disabled = true; btn.textContent = 'Sending…';
+    Store.addApplication({
       name: el.name.value.trim(), email: el.email.value.trim(), phone: el.phone.value.trim(),
       college: el.university.value.trim(), level: el.level.value, experience: el.experience.value,
       goals: [].slice.call(form.querySelectorAll('input[name="goal"]:checked')).map(function (c) { return c.value; }),
       why: el.why.value.trim()
+    }).then(function () {
+      form.innerHTML =
+        '<div class="thanks"><span class="hand">Thank you, ' + first + '!</span>' +
+        '<h3>Your application is in.</h3>' +
+        '<p class="lede">We’ve received your application. We’ll contact you with payment details, and your portal login follows once payment is confirmed.</p></div>';
+    }, function (e2) {
+      err.textContent = e2.message; err.hidden = false;
+      btn.disabled = false; btn.textContent = 'Apply';
     });
-    var summary = 'Researchette membership application\n\nName: ' + el.name.value.trim() + '\nEmail: ' + el.email.value.trim() +
-      (el.phone.value.trim() ? '\nWhatsApp: ' + el.phone.value.trim() : '') + '\nCollege: ' + el.university.value.trim() +
-      '\nLevel: ' + el.level.value + '\nExperience: ' + el.experience.value +
-      '\nWants to write: ' + ([].slice.call(form.querySelectorAll('input[name="goal"]:checked')).map(function (c) { return c.value; }).join(', ') || 'Not sure yet') +
-      '\nWhy: ' + el.why.value.trim();
-    var wa = 'https://wa.me/923395888444?text=' + encodeURIComponent(summary);
-    form.innerHTML =
-      '<div class="thanks"><span class="hand">Thank you, ' + first + '!</span>' +
-      '<h3>Your application is in.</h3>' +
-      '<p class="lede">To make sure it reaches us, send it on WhatsApp. We’ll reply with payment details, and your portal login follows once payment is confirmed.</p>' +
-      '<a class="btn btn-primary" id="wa-send" target="_blank" rel="noopener" href="' + wa + '">Send on WhatsApp <span class="btn-arrow" aria-hidden="true">→</span></a>' +
-      '<p class="f-note">Or email us at itszainr1@gmail.com</p></div>';
   });
 })();
 </script>

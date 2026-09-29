@@ -5,7 +5,7 @@ Medical research mentorship: daily tasks, step-by-step lessons and mentor feedba
 ## What's here
 
 - `public/`: the website Cloudflare serves.
-  - `index.html`: the landing page. The membership form sends applications straight to the mentor portal.
+  - `index.html`: the landing page. The membership form (name, email and WhatsApp number required) sends applications straight to the mentor portal.
   - `mentors.html`: each mentor's details and message, opened from “Read message” on the landing page.
   - `privacy.html`, `terms.html`: privacy policy and terms and conditions, linked from every footer and the portal login.
   - `reviews.html`: student reviews. Add real reviews to the `REVIEWS` list at the bottom of the file.
@@ -27,6 +27,8 @@ Cloudflare Workers Builds deploys automatically when `main` changes (`npx wrangl
 If you add steps to a programme in `curriculum.js`, update `TRACK_STEPS` in `worker/index.js` to match.
 
 ## How it works
+
+**Welcome tour:** the first time anyone opens the portal, a short swipe-through tour explains how it works (students and mentors get different tours; it adapts to their permissions). It's remembered on the server, so it shows once per person, and anyone can replay it from the account menu → How Researchette works.
 
 **Member portal**
 - **Today:** the current step, split into Learn (plain-language intro, charts, step-by-step points, common mistakes), Example and Task (what to include, an optional template to start from, drafts save automatically).

@@ -153,7 +153,8 @@ const EXTRA_SCHEMA = [
   "CREATE TABLE IF NOT EXISTS two_factor (user_id TEXT PRIMARY KEY, secret TEXT NOT NULL, enabled INTEGER DEFAULT 0, last_step INTEGER DEFAULT 0, recovery TEXT DEFAULT '[]', created_at TEXT NOT NULL)",
   'CREATE TABLE IF NOT EXISTS trusted_devices (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, created_at TEXT NOT NULL, expires TEXT NOT NULL)',
   'CREATE INDEX IF NOT EXISTS trusted_devices_user ON trusted_devices (user_id)',
-  'CREATE TABLE IF NOT EXISTS login_tickets (ticket_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, purpose TEXT NOT NULL, attempts INTEGER DEFAULT 0, expires TEXT NOT NULL)'
+  'CREATE TABLE IF NOT EXISTS login_tickets (ticket_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, purpose TEXT NOT NULL, attempts INTEGER DEFAULT 0, expires TEXT NOT NULL)',
+  'CREATE TABLE IF NOT EXISTS user_prefs (user_id TEXT PRIMARY KEY, welcomed_at TEXT)'
 ];
 let schemaReady = null;
 function ensureSchema(env) {
@@ -274,8 +275,17 @@ function pub(u) {
     id: u.id, role: u.role, name: u.name, email: u.email, phone: u.phone || '', college: u.college || '', level: u.level || '',
     topic: u.topic || '', title: u.title || '', tracks: JSON.parse(u.tracks || '["original"]'), activeTrack: u.active_track || 'original',
     mentorId: u.mentor_id || null, active: u.active !== 0, joined: u.joined,
-    ...(u.perms ? { owner: !!u.owner, perms: u.perms } : {})
+    ...(u.perms ? { owner: !!u.owner, perms: u.perms } : {}),
+    ...(u.welcome ? { welcome: true } : {})
   };
+}
+// the portal shows a welcome tour the first time someone opens it (on any device)
+async function withWelcome(env, u) {
+  if (!u) return u;
+  await ensureSchema(env);
+  const row = await env.DB.prepare('SELECT welcomed_at FROM user_prefs WHERE user_id = ?').bind(u.id).first();
+  u.welcome = !(row && row.welcomed_at);
+  return u;
 }
 function cookieOf(request, name = COOKIE) {
   const m = (request.headers.get('cookie') || '').match(new RegExp('(?:^|;\\s*)' + name + '=([^;]+)'));
@@ -496,7 +506,7 @@ async function route(request, env, url, ctx) {
       }
       return json(out);
     }
-    return withCookies(json(pub(u)), await startSession(env, ctx, u));
+    return withCookies(json(pub(await withWelcome(env, u))), await startSession(env, ctx, u));
   }
   if (path === '/api/login/verify' && method === 'POST') {
     const b = await body(request);
@@ -513,7 +523,7 @@ async function route(request, env, url, ctx) {
     await DB.prepare('DELETE FROM login_tickets WHERE ticket_hash = ?').bind(th).run();
     const u = await withAccess(env, await openUsers(env, await DB.prepare('SELECT * FROM users WHERE id = ? AND active = 1').bind(t.user_id).first()));
     if (!u) throw new HttpError(403, 'This account is paused.');
-    const out = pub(u);
+    const out = pub(await withWelcome(env, u));
     if (t.purpose === 'setup') {
       // switch it on and hand out recovery codes, shown once
       const codes = Array.from({ length: 8 }, () => base36(10));
@@ -533,11 +543,19 @@ async function route(request, env, url, ctx) {
     if (token) await DB.prepare('DELETE FROM sessions WHERE token_hash = ?').bind(await sha256(token)).run();
     return json({ ok: true }, 200, { 'set-cookie': `${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0` });
   }
-  if (path === '/api/me' && method === 'GET') return json(pub(await currentUser(request, env)));
+  if (path === '/api/me' && method === 'GET') return json(pub(await withWelcome(env, await currentUser(request, env))));
+  if (path === '/api/me/welcomed' && method === 'POST') {
+    const u = await requireUser(request, env);
+    await ensureSchema(env);
+    await DB.prepare('INSERT INTO user_prefs (user_id, welcomed_at) VALUES (?, ?) ON CONFLICT (user_id) DO UPDATE SET welcomed_at = excluded.welcomed_at').bind(u.id, now()).run();
+    return json({ ok: true });
+  }
   if (path === '/api/applications' && method === 'POST') {
     const b = await body(request);
     const name = str(b.name, 120), email = str(b.email, 200);
     if (!name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw bad('Please enter your name and a valid email.');
+    const digits = str(b.phone, 40).replace(/\D/g, '');
+    if (digits.length < 10 || digits.length > 15) throw bad('Please enter your full WhatsApp number, like 0339 5888444.');
     const goals = (Array.isArray(b.goals) ? b.goals : []).map((g) => str(g, 60)).filter((g) => GOALS[g]).slice(0, 8);
     const id = randomId('a');
     await DB.prepare('INSERT INTO applications (id, name, email, phone, college, level, experience, goals, why, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
@@ -862,6 +880,7 @@ async function route(request, env, url, ctx) {
         DB.prepare('DELETE FROM chat_reads WHERE member_id = ? OR reader_id = ?').bind(u.id, u.id),
         DB.prepare('UPDATE applications SET user_id = NULL WHERE user_id = ?').bind(u.id),
         DB.prepare('DELETE FROM user_perms WHERE user_id = ?').bind(u.id),
+        DB.prepare('DELETE FROM user_prefs WHERE user_id = ?').bind(u.id),
         DB.prepare('DELETE FROM users WHERE id = ?').bind(u.id)
       ]);
       record(env, ctx, 'member.removed', admin.name + ' removed ' + u.name, [['Member', u.name], ['Email', u.email]], '', admin.id, u.id);

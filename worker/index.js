@@ -138,7 +138,10 @@ const EXTRA_SCHEMA = [
   'CREATE TABLE IF NOT EXISTS oauth_clients (client_id TEXT PRIMARY KEY, secret_hash TEXT, name TEXT, redirect_uris TEXT NOT NULL, created_at TEXT NOT NULL)',
   'CREATE TABLE IF NOT EXISTS oauth_codes (code_hash TEXT PRIMARY KEY, client_id TEXT NOT NULL, user_id TEXT NOT NULL, redirect_uri TEXT NOT NULL, challenge TEXT NOT NULL, scope TEXT, resource TEXT, expires TEXT NOT NULL)',
   'CREATE TABLE IF NOT EXISTS oauth_tokens (token_hash TEXT PRIMARY KEY, kind TEXT NOT NULL, client_id TEXT NOT NULL, user_id TEXT NOT NULL, scope TEXT, resource TEXT, expires TEXT NOT NULL, created_at TEXT NOT NULL)',
-  'CREATE INDEX IF NOT EXISTS oauth_tokens_user ON oauth_tokens (user_id, client_id)'
+  'CREATE INDEX IF NOT EXISTS oauth_tokens_user ON oauth_tokens (user_id, client_id)',
+  "CREATE TABLE IF NOT EXISTS messages (id TEXT PRIMARY KEY, member_id TEXT NOT NULL, sender_id TEXT NOT NULL, sender_role TEXT NOT NULL, body TEXT NOT NULL, context TEXT DEFAULT '', created_at TEXT NOT NULL)",
+  'CREATE INDEX IF NOT EXISTS messages_member ON messages (member_id, created_at)',
+  'CREATE TABLE IF NOT EXISTS chat_reads (member_id TEXT NOT NULL, reader_id TEXT NOT NULL, last_read TEXT NOT NULL, PRIMARY KEY (member_id, reader_id))'
 ];
 let schemaReady = null;
 function ensureSchema(env) {
@@ -167,6 +170,41 @@ async function revokeApps(env, userId, clientId) {
   else await env.DB.prepare('DELETE FROM oauth_tokens WHERE user_id = ?').bind(userId).run();
 }
 const trackName = (t) => TRACK_NAMES[t] || t;
+
+/* ---------- chat ----------
+   One conversation per member, shared by all mentors. Messages are encrypted like phone numbers;
+   chat_reads remembers when each person last read each conversation, for unread counts. */
+async function chatMessages(env, memberId, after) {
+  await ensureSchema(env);
+  const { results } = await env.DB.prepare('SELECT m.*, u.name AS sender_name FROM messages m LEFT JOIN users u ON u.id = m.sender_id WHERE m.member_id = ? AND m.created_at > ? ORDER BY m.created_at ASC LIMIT 500')
+    .bind(memberId, after || '').all();
+  return Promise.all(results.map(async (r) => ({ id: r.id, senderId: r.sender_id, senderName: r.sender_name || (r.sender_role === 'admin' ? 'Mentor' : 'Member'), role: r.sender_role, body: await unseal(env, r.body), context: r.context || '', at: r.created_at })));
+}
+async function markRead(env, memberId, readerId) {
+  await env.DB.prepare('INSERT INTO chat_reads (member_id, reader_id, last_read) VALUES (?, ?, ?) ON CONFLICT (member_id, reader_id) DO UPDATE SET last_read = excluded.last_read')
+    .bind(memberId, readerId, now()).run();
+}
+async function sendMessage(env, ctx, memberId, sender, text, context) {
+  const bodyText = str(text, 4000);
+  if (!bodyText) throw bad('Write a message first.');
+  await ensureSchema(env);
+  const id = randomId('c'), at = now();
+  await env.DB.prepare('INSERT INTO messages (id, member_id, sender_id, sender_role, body, context, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    .bind(id, memberId, sender.id, sender.role, await seal(env, bodyText), str(context, 160), at).run();
+  await markRead(env, memberId, sender.id);
+  return { id, senderId: sender.id, senderName: sender.name, role: sender.role, body: bodyText, context: str(context, 160), at };
+}
+// messages from the other side that this reader hasn't seen yet, per conversation
+async function unreadFor(env, reader) {
+  await ensureSchema(env);
+  const other = reader.role === 'admin' ? 'member' : 'admin';
+  const scope = reader.role === 'admin' ? '' : ' AND m.member_id = ?';
+  const { results } = await env.DB.prepare('SELECT m.member_id, COUNT(*) AS n FROM messages m LEFT JOIN chat_reads r ON r.member_id = m.member_id AND r.reader_id = ? WHERE m.sender_role = ? AND m.created_at > COALESCE(r.last_read, \'\')' + scope + ' GROUP BY m.member_id')
+    .bind(...(reader.role === 'admin' ? [reader.id, other] : [reader.id, other, reader.id])).all();
+  const by = {}; let total = 0;
+  results.forEach((r) => { by[r.member_id] = r.n; total += r.n; });
+  return { total, by };
+}
 
 /* ---------- users & sessions ---------- */
 function pub(u) {
@@ -385,14 +423,35 @@ async function route(request, env, url, ctx) {
     return json({ id }, 201);
   }
 
+  /* chat: members talk to their mentors */
+  if (path === '/api/chat' && method === 'GET') {
+    const u = await requireUser(request, env);
+    if (u.role !== 'member') throw bad('Mentors open conversations from Messages.');
+    const messages = await chatMessages(env, u.id, str(url.searchParams.get('after'), 40));
+    await markRead(env, u.id, u.id);
+    return json({ messages });
+  }
+  if (path === '/api/chat' && method === 'POST') {
+    const u = await requireUser(request, env), b = await body(request);
+    if (u.role !== 'member') throw bad('Mentors reply from Messages.');
+    const msg = await sendMessage(env, ctx, u.id, u, b.body, b.context);
+    record(env, ctx, 'chat.member', u.name + ' sent a message', [['Member', u.name], ['About', msg.context], ['Message', msg.body.length > 500 ? msg.body.slice(0, 500) + '…' : msg.body]], 'chat-' + u.id, u.id, u.id);
+    return json(msg, 201);
+  }
+  if (path === '/api/chat/unread' && method === 'GET') {
+    const u = await requireUser(request, env);
+    return json({ unread: (await unreadFor(env, u)).total });
+  }
+
   /* admin */
   if (!path.startsWith('/api/admin/')) throw new HttpError(404, 'Not found.');
   const admin = await requireAdmin(request, env);
-  await sealExisting(env);
+  await Promise.all([ensureSchema(env), sealExisting(env)]);
 
   if (path === '/api/admin/stats' && method === 'GET') {
     const one = (sql, ...p) => DB.prepare(sql).bind(...p).first().then((r) => r.n);
-    const [pending, pendingMine, members, myMembers, applications, approvedWeek] = await Promise.all([
+    const [unread, pending, pendingMine, members, myMembers, applications, approvedWeek] = await Promise.all([
+      unreadFor(env, admin),
       one("SELECT COUNT(*) n FROM submissions WHERE status = 'review'"),
       one("SELECT COUNT(*) n FROM submissions s JOIN users u ON u.id = s.user_id WHERE s.status = 'review' AND u.mentor_id = ?", admin.id),
       one("SELECT COUNT(*) n FROM users WHERE role = 'member' AND active = 1"),
@@ -400,7 +459,7 @@ async function route(request, env, url, ctx) {
       one("SELECT COUNT(*) n FROM applications WHERE status = 'new'"),
       one("SELECT COUNT(*) n FROM submissions WHERE status = 'approved' AND reviewed_at > ?", daysAgo(7))
     ]);
-    return json({ pending, pendingMine, members, myMembers, applications, approvedWeek });
+    return json({ pending, pendingMine, members, myMembers, applications, approvedWeek, unreadChats: unread.total });
   }
   if (path === '/api/admin/activity' && method === 'GET') {
     await ensureSchema(env);
@@ -426,6 +485,33 @@ async function route(request, env, url, ctx) {
     await revokeApps(env, admin.id, m[1]);
     record(env, ctx, 'admin.connector', admin.name + ' disconnected an app', [['App', m[1]]], '', admin.id);
     return json({ ok: true });
+  }
+  if (path === '/api/admin/chats' && method === 'GET') {
+    await ensureSchema(env);
+    const [{ results }, unread] = await Promise.all([
+      DB.prepare('SELECT m.*, u.name AS m_name, u.college AS m_college, s.name AS s_name FROM messages m JOIN (SELECT member_id, MAX(created_at) AS mx FROM messages GROUP BY member_id) t ON t.member_id = m.member_id AND t.mx = m.created_at JOIN users u ON u.id = m.member_id LEFT JOIN users s ON s.id = m.sender_id ORDER BY m.created_at DESC').all(),
+      unreadFor(env, admin)
+    ]);
+    return json(await Promise.all(results.map(async (r) => ({
+      member: { id: r.member_id, name: r.m_name, college: r.m_college || '' },
+      last: { body: (await unseal(env, r.body)).slice(0, 160), role: r.sender_role, senderName: r.s_name || '', at: r.created_at },
+      unread: unread.by[r.member_id] || 0
+    }))));
+  }
+  if (path === '/api/admin/chats/unread' && method === 'GET') return json({ unread: (await unreadFor(env, admin)).total });
+  if ((m = path.match(/^\/api\/admin\/chat\/([\w-]+)$/))) {
+    const u = await getMember(env, m[1]);
+    if (method === 'GET') {
+      const messages = await chatMessages(env, u.id, str(url.searchParams.get('after'), 40));
+      await markRead(env, u.id, admin.id);
+      return json({ member: pub(u), messages });
+    }
+    if (method === 'POST') {
+      const b = await body(request);
+      const msg = await sendMessage(env, ctx, u.id, admin, b.body, b.context);
+      record(env, ctx, 'chat.mentor', admin.name + ' messaged ' + u.name, [['Member', u.name], ['Message', msg.body.length > 500 ? msg.body.slice(0, 500) + '…' : msg.body]], 'chat-' + u.id, admin.id, u.id);
+      return json(msg, 201);
+    }
   }
   if (path === '/api/admin/mentors' && method === 'GET') {
     const { results } = await DB.prepare("SELECT * FROM users WHERE role = 'admin' ORDER BY joined").all();
@@ -482,6 +568,8 @@ async function route(request, env, url, ctx) {
       await DB.batch([
         DB.prepare('DELETE FROM sessions WHERE user_id = ?').bind(u.id),
         DB.prepare('DELETE FROM submissions WHERE user_id = ?').bind(u.id),
+        DB.prepare('DELETE FROM messages WHERE member_id = ?').bind(u.id),
+        DB.prepare('DELETE FROM chat_reads WHERE member_id = ? OR reader_id = ?').bind(u.id, u.id),
         DB.prepare('UPDATE applications SET user_id = NULL WHERE user_id = ?').bind(u.id),
         DB.prepare('DELETE FROM users WHERE id = ?').bind(u.id)
       ]);

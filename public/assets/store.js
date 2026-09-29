@@ -46,6 +46,15 @@ window.Store = (function () {
     submissions: function (userId) { return get('/api/submissions?user=' + q(userId || '')); },
     submit: function (_userId, track, step, text) { return post('/api/submit', { track: track, step: step, text: text }); },
 
+    /* chat (never cached, so new messages show up straight away) */
+    chat: function (after) { return call('GET', '/api/chat' + (after ? '?after=' + q(after) : '')); },
+    sendChat: function (body, context) { return post('/api/chat', { body: body, context: context || '' }); },
+    unread: function () { return call('GET', '/api/chat/unread'); },
+    chats: function () { return call('GET', '/api/admin/chats'); },
+    chatWith: function (memberId, after) { return call('GET', '/api/admin/chat/' + q(memberId) + (after ? '?after=' + q(after) : '')); },
+    sendChatTo: function (memberId, body) { return post('/api/admin/chat/' + q(memberId), { body: body }); },
+    adminUnread: function () { return call('GET', '/api/admin/chats/unread'); },
+
     /* website form */
     addApplication: function (data) { return post('/api/applications', data); },
 

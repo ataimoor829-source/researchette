@@ -1,6 +1,6 @@
 /* Researchette portal: login, member portal and admin (mentor) portal in one page.
-   Routes live in the URL hash: #login, #today, #roadmap, #step-3, #feedback,
-   #overview, #reviews, #review-<id>, #members, #member-<id>, #applications. */
+   Routes live in the URL hash: #login, #today, #roadmap, #step-3, #feedback, #chat,
+   #overview, #reviews, #review-<id>, #members, #member-<id>, #applications, #messages, #chat-<member id>. */
 (function () {
   var S = window.Store, C = window.CURRICULUM, app = document.getElementById('app');
   var me = null, reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -22,7 +22,9 @@
     search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
     alert: '<path d="M12 8v5M12 16.5v.5"/><circle cx="12" cy="12" r="9"/>',
     wa: '<path d="M21 12a9 9 0 0 1-13.4 7.8L3 21l1.3-4.4A9 9 0 1 1 21 12z"/><path d="M9 9.5c.3 1.8 1.7 3.7 3.5 4.6l1.2-1 1.8.8-.4 1.6c-3 .1-6.9-3.4-7-6.6l1.5-.5.8 1.7z"/>',
-    done: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/>'
+    done: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/>',
+    msgs: '<path d="M14 9a2 2 0 0 1-2 2H6l-3 3V4a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-3-3h-6a2 2 0 0 1-2-2v-1"/>',
+    send: '<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/>'
   };
   function ic(n, cls) { return '<svg class="' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + P[n] + '</svg>'; }
   var LOGO = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="7" fill="#3448D8"/><path d="M5 13h3l2-5 3 9 2-4h4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -118,7 +120,6 @@
     }
   }
   /* WhatsApp links: Pakistani numbers like 0339 5888444 become 923395888444 */
-  var MENTOR_WA = '923395888444';
   function waNumber(p) {
     var d = String(p || '').replace(/\D/g, '');
     if (/^0\d{10}$/.test(d)) d = '92' + d.slice(1);
@@ -142,8 +143,8 @@
 
   /* ---------- shell ---------- */
   var TABS = {
-    member: [{ id: 'today', label: 'Today', icon: 'today' }, { id: 'roadmap', label: 'Roadmap', icon: 'map' }, { id: 'feedback', label: 'Feedback', icon: 'chat' }],
-    admin: [{ id: 'overview', label: 'Overview', icon: 'home' }, { id: 'reviews', label: 'Reviews', icon: 'inbox', badge: 'pending' }, { id: 'members', label: 'Members', icon: 'users' }, { id: 'applications', label: 'Applications', icon: 'mail', badge: 'applications' }]
+    member: [{ id: 'today', label: 'Today', icon: 'today' }, { id: 'roadmap', label: 'Roadmap', icon: 'map' }, { id: 'feedback', label: 'Feedback', icon: 'chat' }, { id: 'chat', label: 'Chat', icon: 'msgs', badge: 'unread' }],
+    admin: [{ id: 'overview', label: 'Overview', icon: 'home' }, { id: 'reviews', label: 'Reviews', icon: 'inbox', badge: 'pending' }, { id: 'messages', label: 'Messages', icon: 'msgs', badge: 'unreadChats' }, { id: 'members', label: 'Members', icon: 'users' }, { id: 'applications', label: 'Applications', icon: 'mail', badge: 'applications' }]
   };
   function tabsHtml(cls) {
     return '<nav class="tabs ' + cls + '" aria-label="Sections">' + TABS[me.role].map(function (t) {
@@ -186,7 +187,7 @@
     sheet(
       '<div class="row"><span class="avatar lg ' + (me.role === 'admin' ? '' : 'warm') + '">' + initials(me.name) + '</span><div><h3>' + esc(me.name) + '</h3><p class="small muted">' + esc(me.email) + '</p>' + (me.college ? '<p class="small muted">' + esc(me.college) + '</p>' : '') + '</div></div>' +
       '<div class="field"><span class="small muted">Appearance</span><div class="seg" id="theme-seg" style="--n:3;--i:' + idx + '"><button type="button" data-v="system">System</button><button type="button" data-v="light">Light</button><button type="button" data-v="dark">Dark</button></div></div>' +
-      (me.role === 'member' ? waButton(MENTOR_WA, 'Hi, I’m ' + me.name + ', a Researchette member. I have a question.', 'Contact your mentor on WhatsApp', 'btn-block') : '') +
+      (me.role === 'member' ? '<button class="btn btn-primary btn-block" type="button" id="to-chat">' + ic('msgs') + 'Message your mentors</button>' : '') +
       (me.role === 'admin' ? '<button class="btn btn-glass btn-block" type="button" id="apps">Connected apps</button>' : '') +
       '<button class="btn btn-glass btn-block" type="button" id="chpw">Change password</button>' +
       '<button class="btn btn-glass btn-block" type="button" id="logout">Log out</button>' +
@@ -202,6 +203,7 @@
           });
         });
         el.querySelector('#chpw').addEventListener('click', function () { close(); passwordSheet(); });
+        var tc = el.querySelector('#to-chat'); if (tc) tc.addEventListener('click', function () { close(); go('chat'); });
         var ap = el.querySelector('#apps'); if (ap) ap.addEventListener('click', function () { close(); appsSheet(); });
         el.querySelector('#logout').addEventListener('click', function () { S.signOut().then(function () { forgetMe(); close(); app.dataset.shell = ''; go('login'); }); });
         var rs = el.querySelector('#reset');
@@ -261,16 +263,20 @@
   var busy = 0;
   async function render() {
     var token = ++busy;
+    stopChat();
     if (meKnown) me = meCache; else { me = meCache = await S.me(); meKnown = true; }
     var r = (location.hash || '').slice(1);
     if (!me) { app.dataset.shell = ''; if (r !== 'login') setHash('login'); return loginView(); }
     if (r === 'login' || !r) { r = me.role === 'admin' ? 'overview' : 'today'; setHash(r); }
 
     var view, tab, badges = null, statsP = null;
+    if (me.role === 'member') statsP = S.unread().then(function (x) { return { unread: x.unread }; }, function () { return null; });
     if (me.role === 'admin') {
       statsP = S.stats(me.id).catch(function () { return null; });
       if (/^review-/.test(r)) { view = vReview(r.slice(7)); tab = 'reviews'; }
       else if (/^member-/.test(r)) { view = vMember(r.slice(7)); tab = 'members'; }
+      else if (/^chat-/.test(r)) { view = vMentorChat(r.slice(5)); tab = 'messages'; }
+      else if (r === 'messages') { view = vMessages(); tab = r; }
       else if (r === 'reviews') { view = vReviews(); tab = r; }
       else if (r === 'members') { view = vMembers(); tab = r; }
       else if (r === 'applications') { view = vApplications(); tab = r; }
@@ -280,6 +286,7 @@
       if (sm) { view = vStep(sm[1], +sm[2]); tab = 'roadmap'; }
       else if (r === 'roadmap') { view = vRoadmap(); tab = r; }
       else if (r === 'feedback') { view = vFeedback(); tab = r; }
+      else if (r === 'chat') { view = vMemberChat(); tab = r; }
       else { view = vToday(); tab = 'today'; if (r !== 'today') setHash('today'); }
     }
     /* instant feedback: highlight the tab and dim the page while the next one loads */
@@ -303,6 +310,14 @@
     placeInstall();
   }
   addEventListener('hashchange', render);
+  /* keep the unread badges fresh while the portal is open */
+  setInterval(function () {
+    if (!me || document.hidden || app.dataset.shell !== me.id + ':' + me.role) return;
+    (me.role === 'admin' ? S.adminUnread() : S.unread()).then(function (x) {
+      lastBadges = Object.assign({}, lastBadges, me.role === 'admin' ? { unreadChats: x.unread } : { unread: x.unread });
+      setTabs(currentTab, lastBadges);
+    }, function () {});
+  }, 30000);
   var meCache = null, meKnown = false, lastBadges = null;
   function forgetMe() { meCache = null; meKnown = false; }
   function rememberMe(u) { meCache = u; meKnown = true; }
@@ -317,7 +332,7 @@
         '<div class="field"><label for="l-pw">Password</label><div class="pw"><input id="l-pw" type="password" autocomplete="current-password" required placeholder="Your password"><button type="button" id="l-show">Show</button></div></div>' +
         '<p class="error" id="l-err" role="alert" hidden></p>' +
         '<button class="btn btn-primary btn-block" type="submit">Log in</button>' +
-        '<p class="small muted">Forgot your password? Message your mentor and they’ll reset it.</p>' +
+        '<p class="small muted">Forgot your password? Email <a href="mailto:itszainr1@gmail.com">itszainr1@gmail.com</a> and we’ll reset it.</p>' +
         '<p class="small">Not a member yet? <a href="index.html#join">Apply for membership</a></p>' +
         '<p class="small muted legal-links"><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></p>' +
       '</form></div>';
@@ -381,9 +396,12 @@
     var d = stepOf(t, cur.step);
     var summary = '<div class="glass card today-head">' + ring(done, total) + '<div class="txt"><span class="small muted">' + esc(tr.name) + '</span><h3>' + done + ' of ' + total + ' steps approved</h3><span class="small muted">Today: Step ' + cur.step + ' · ' + esc(d.title) + '</span></div></div>';
     var body = stepCard(t, cur.step, st);
-    var help = '<div class="glass card help-card"><div><h3>Stuck on this step?</h3><p class="small muted">Message your mentor and get help on WhatsApp.</p></div>' +
-      waButton(MENTOR_WA, 'Hi, I’m ' + me.name + ', a Researchette member. I need help with ' + tr.name + ', Step ' + cur.step + ': ' + d.title + '.', 'Contact on WhatsApp') + '</div>';
-    return { html: head + summary + body.html + help, mount: function (m) { animateRing(m); bindProg(m); body.mount(m); } };
+    var help = '<div class="glass card help-card"><div><h3>Stuck on this step?</h3><p class="small muted">Ask your mentor in the chat. They’ll see which step you’re on.</p></div>' +
+      '<button class="btn btn-primary" type="button" id="ask">' + ic('msgs') + 'Ask your mentor</button></div>';
+    return { html: head + summary + body.html + help, mount: function (m) {
+      animateRing(m); bindProg(m); body.mount(m);
+      m.querySelector('#ask').addEventListener('click', function () { chatContext = tr.name + ' · Step ' + cur.step + ': ' + d.title; go('chat'); });
+    } };
   }
 
   async function vStep(t, n) {
@@ -623,6 +641,131 @@
     };
   }
 
+  /* ---------- chat ----------
+     Members talk to all their mentors in one conversation; any mentor can reply. While a chat is
+     open it checks for new messages every few seconds. */
+  var chatTimer = 0, chatContext = null;
+  function stopChat() { clearInterval(chatTimer); chatTimer = 0; }
+  function clock(iso) { return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }); }
+  function dayLabel(iso) {
+    var d = new Date(iso), t = new Date(), y = new Date(Date.now() - 864e5);
+    if (d.toDateString() === t.toDateString()) return 'Today';
+    if (d.toDateString() === y.toDateString()) return 'Yesterday';
+    return d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+  }
+  function linkify(html) { return html.replace(/(https?:\/\/[^\s<]+[^\s<.,;:!?)])/g, '<a href="$1" target="_blank" rel="noopener">$1</a>'); }
+  // mentors' messages sit on the right for mentors (it's the team's side), and the member's own on the right for them
+  function isMine(m) { return me.role === 'admin' ? m.role === 'admin' : m.senderId === me.id; }
+  function bubble(m) {
+    var mine = isMine(m), who = mine ? (m.senderId === me.id ? '' : first(m.senderName)) : (m.role === 'admin' ? first(m.senderName) : esc(m.senderName));
+    return '<div class="msg ' + (mine ? 'mine' : 'theirs') + '" data-id="' + esc(m.id) + '">' +
+      (who ? '<span class="msg-who">' + who + '</span>' : '') +
+      (m.context ? '<span class="msg-ctx">' + esc(m.context) + '</span>' : '') +
+      '<div class="msg-body">' + linkify(esc(m.body)) + '</div><time class="msg-time" datetime="' + esc(m.at) + '">' + clock(m.at) + '</time></div>';
+  }
+  function thread(list) {
+    var out = '', day = '';
+    list.forEach(function (m) { var d = dayLabel(m.at); if (d !== day) { day = d; out += '<div class="msg-day"><span>' + d + '</span></div>'; } out += bubble(m); });
+    return out;
+  }
+  /* the conversation screen, shared by members and mentors */
+  function chatScreen(o) {
+    var html = o.head + '<section class="chat" aria-live="polite">' +
+      '<div class="msgs" id="msgs">' + (o.messages.length ? thread(o.messages) : o.empty) + '</div></section>' +
+      '<form class="composer glass" id="composer" novalidate>' +
+        '<div class="ctx-chip" id="ctx"' + (o.context ? '' : ' hidden') + '><span>About: <b id="ctx-t">' + esc(o.context || '') + '</b></span><button type="button" id="ctx-x" aria-label="Remove topic">×</button></div>' +
+        '<div class="composer-row"><textarea id="msg-in" rows="1" maxlength="4000" placeholder="' + esc(o.placeholder) + '" aria-label="Message"></textarea>' +
+        '<button class="btn btn-primary send" type="submit" aria-label="Send">' + ic('send') + '</button></div>' +
+      '</form>';
+    return { html: html, mount: function (m) {
+      var box = m.querySelector('#msgs'), f = m.querySelector('#composer'), inp = m.querySelector('#msg-in'), send = f.querySelector('.send');
+      var ctx = o.context || '', seen = {}, last = '';
+      o.messages.forEach(function (x) { seen[x.id] = 1; last = x.at; });
+      var toEnd = function (smooth) { scrollTo({ top: document.documentElement.scrollHeight, behavior: smooth && !reduce ? 'smooth' : 'instant' }); };
+      var nearEnd = function () { return innerHeight + scrollY > document.documentElement.scrollHeight - 160; };
+      var add = function (list) {
+        list = list.filter(function (x) { return !seen[x.id]; });
+        if (!list.length) return;
+        var stick = nearEnd();
+        if (box.querySelector('.chat-empty')) box.innerHTML = '';
+        list.forEach(function (x) {
+          seen[x.id] = 1;
+          var prev = box.querySelector('.msg:last-of-type time'), d = dayLabel(x.at);
+          if (!prev || dayLabel(prev.getAttribute('datetime')) !== d) box.insertAdjacentHTML('beforeend', '<div class="msg-day"><span>' + d + '</span></div>');
+          box.insertAdjacentHTML('beforeend', bubble(x));
+          last = x.at;
+        });
+        if (stick) toEnd(true);
+      };
+      var grow = function () { inp.style.height = 'auto'; inp.style.height = Math.min(inp.scrollHeight, 180) + 'px'; };
+      inp.addEventListener('input', grow);
+      m.querySelector('#ctx-x').addEventListener('click', function () { ctx = ''; m.querySelector('#ctx').hidden = true; inp.focus(); });
+      m.querySelectorAll('[data-suggest]').forEach(function (b) { b.addEventListener('click', function () { inp.value = b.textContent; grow(); inp.focus(); }); });
+      if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
+        inp.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); f.requestSubmit(); } });
+      }
+      f.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var text = inp.value.trim();
+        if (!text || send.disabled) return;
+        send.disabled = true;
+        o.send(text, ctx).then(function (msg) {
+          inp.value = ''; grow(); ctx = ''; m.querySelector('#ctx').hidden = true;
+          add([msg]); toEnd(true);
+        }, function (err) { toast(err.message); }).then(function () { send.disabled = false; inp.focus(); });
+      });
+      toEnd(false);
+      if (o.context) inp.focus();
+      chatTimer = setInterval(function () {
+        if (document.hidden) return;
+        o.load(last).then(function (r) { add(r.messages); }, function () {});
+      }, 4000);
+      // reading a chat clears its badge
+      lastBadges = Object.assign({}, lastBadges); lastBadges[me.role === 'admin' ? 'unreadChats' : 'unread'] = 0;
+      if (me.role === 'admin') S.adminUnread().then(function (x) { lastBadges.unreadChats = x.unread; setTabs(currentTab, lastBadges); }, function () {});
+      else setTabs(currentTab, lastBadges);
+    } };
+  }
+
+  async function vMemberChat() {
+    var r = await S.chat(), context = chatContext; chatContext = null;
+    var suggest = ['I’m stuck on today’s step.', 'Can you check my research question?', 'Which journal should I choose?'];
+    return chatScreen({
+      messages: r.messages, context: context, placeholder: 'Message your mentors…',
+      head: '<section class="page-head"><span class="eyebrow">Chat</span><h1>Ask your mentors</h1><p class="muted">Stuck on a step or unsure about something? Ask here. Your mentors usually reply within a day.</p></section>',
+      empty: '<div class="chat-empty">' + ic('msgs') + '<b>No messages yet</b><span>Ask anything about your research. Try one of these:</span><div class="chips">' +
+        suggest.map(function (x) { return '<button class="chip" type="button" data-suggest>' + esc(x) + '</button>'; }).join('') + '</div></div>',
+      load: function (after) { return S.chat(after); },
+      send: function (text, ctx) { return S.sendChat(text, ctx); }
+    });
+  }
+
+  async function vMentorChat(id) {
+    var r = await S.chatWith(id), u = r.member, fn = u.name.split(' ')[0];
+    return chatScreen({
+      messages: r.messages, placeholder: 'Reply to ' + fn + '…',
+      head: '<a class="back" href="#messages">' + ic('back', 'chev') + 'Messages</a>' +
+        '<div class="glass card chat-who"><a class="row" href="#member-' + esc(u.id) + '" style="text-decoration:none;color:inherit;flex:1;min-width:0"><span class="avatar warm">' + initials(u.name) + '</span><div class="li-main"><h3>' + esc(u.name) + '</h3><span class="small muted">' + esc([T(u.activeTrack).name, u.college].filter(Boolean).join(' · ')) + '</span></div></a>' +
+        (waNumber(u.phone) ? waButton(waNumber(u.phone), 'Hi ' + fn + ', I’ve replied to you in the Researchette portal chat: ' + location.href.split('#')[0] + '#chat', 'WhatsApp', 'btn-sm') : '') + '</div>',
+      empty: '<div class="chat-empty">' + ic('msgs') + '<b>No messages yet</b><span>Start the conversation. ' + esc(fn) + ' will see it next time they open the portal.</span></div>',
+      load: function (after) { return S.chatWith(id, after); },
+      send: function (text) { return S.sendChatTo(id, text); }
+    });
+  }
+
+  async function vMessages() {
+    var list = await S.chats(), unread = list.filter(function (c) { return c.unread; }).length;
+    var rows = list.map(function (c) {
+      var who = c.last.role === 'admin' ? (c.last.senderName && c.last.senderName !== me.name ? first(c.last.senderName) : 'You') + ': ' : '';
+      return '<a class="li chat-li' + (c.unread ? ' unread' : '') + '" href="#chat-' + esc(c.member.id) + '"><span class="avatar warm">' + initials(c.member.name) + '</span>' +
+        '<div class="li-main"><span class="li-title">' + esc(c.member.name) + '</span><span class="li-sub">' + who + esc(c.last.body) + '</span></div>' +
+        '<div class="li-end"><span class="small muted">' + rel(c.last.at) + '</span>' + (c.unread ? '<span class="badge">' + c.unread + '</span>' : '') + '</div></a>';
+    }).join('');
+    return { html: '<section class="page-head"><span class="eyebrow">Chat</span><h1>Messages</h1><p class="muted">' +
+        (list.length ? (unread ? unread + ' conversation' + (unread === 1 ? '' : 's') + ' waiting for a reply.' : 'You’re all caught up.') : 'When a member sends a message, it shows up here.') + '</p></section>' +
+      (list.length ? '<div class="glass list">' + rows + '</div>' : '<div class="glass empty">' + ic('msgs') + '<b>No conversations yet</b><span>To message a member first, open them in Members and tap Chat.</span></div>') };
+  }
+
   /* ---------- admin: members ---------- */
   function dots(states) { return '<div class="dots" style="grid-template-columns:repeat(' + states.length + ',1fr)" aria-hidden="true">' + states.map(function (x) { return '<i class="' + x.status + '"></i>'; }).join('') + '</div>'; }
   function levelOptions(sel) { return '<option value="">Choose one</option>' + LEVELS.map(function (l) { return '<option' + (l === sel ? ' selected' : '') + '>' + esc(l) + '</option>'; }).join(''); }
@@ -749,8 +892,8 @@
       '<div class="glass card stack">' +
         '<div class="row"><span class="avatar lg warm">' + initials(u.name) + '</span><div class="li-main"><h2>' + esc(u.name) + '</h2><span class="small muted">' + esc(u.email) + (u.phone ? ' · ' + esc(u.phone) : '') + '</span></div></div>' +
         '<div class="row wrap wa-row">' + (waNumber(u.phone)
-          ? waButton(waNumber(u.phone), 'Hi ' + fn + ', this is ' + me.name.split(' ')[0] + ' from Researchette.', 'WhatsApp ' + fn) + '<button class="btn btn-quiet btn-sm" type="button" id="edit-phone">Change number</button>'
-          : '<button class="btn btn-glass btn-sm" type="button" id="edit-phone">' + ic('wa') + 'Add WhatsApp number</button>') + '</div>' +
+          ? waButton(waNumber(u.phone), 'Hi ' + fn + ', this is ' + me.name.split(' ')[0] + ' from Researchette.', 'WhatsApp ' + fn) + '<a class="btn btn-glass" href="#chat-' + esc(u.id) + '">' + ic('msgs') + 'Chat</a><button class="btn btn-quiet btn-sm" type="button" id="edit-phone">Change number</button>'
+          : '<a class="btn btn-glass" href="#chat-' + esc(u.id) + '">' + ic('msgs') + 'Chat</a><button class="btn btn-glass btn-sm" type="button" id="edit-phone">' + ic('wa') + 'Add WhatsApp number</button>') + '</div>' +
         '<form class="row wrap" id="phone-form" hidden><input id="phone-in" type="tel" inputmode="tel" placeholder="03xx xxxxxxx" value="' + esc(u.phone || '') + '" style="flex:1;min-width:180px" aria-label="WhatsApp number"><button class="btn btn-primary btn-sm" type="submit">Save</button></form>' +
         '<div class="chips">' + [u.college, u.level, 'Joined ' + rel(u.joined)].filter(Boolean).map(function (c) { return '<span class="chip">' + esc(c) + '</span>'; }).join('') + '</div>' +
         (u.topic ? '<p><span class="small muted">Study topic</span><br>' + esc(u.topic) + '</p>' : '') +

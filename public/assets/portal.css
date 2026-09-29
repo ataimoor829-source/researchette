@@ -410,3 +410,43 @@ details[open] > summary .chev.down { transform: rotate(-90deg); }
   .viz-table:not(.cards) { min-width: 0; }
   .viz-pyramid .lvl { font-size: .76rem; padding: 8px 10px; }
 }
+
+/* ---------- chat ---------- */
+.chat { display: grid; }
+.msgs { display: flex; flex-direction: column; gap: 6px; padding-bottom: 8px; }
+.msg { max-width: min(80%, 520px); display: grid; gap: 3px; padding: 9px 13px 7px; border-radius: 20px; line-height: 1.45; animation: viewin .3s var(--ease) both; }
+.msg.theirs { align-self: flex-start; background: var(--glass-strong); border: 1px solid var(--glass-edge); border-bottom-left-radius: 6px; box-shadow: inset 0 1px 0 var(--glass-hi); }
+.msg.mine { align-self: flex-end; background: var(--pen); color: var(--on-pen); border-bottom-right-radius: 6px; }
+.msg + .msg.mine, .msg + .msg.theirs { margin-top: -2px; }
+.msg-who { font-size: .72rem; font-weight: 700; color: var(--teal); letter-spacing: .01em; }
+.msg.mine .msg-who { color: inherit; opacity: .8; }
+.msg-ctx { font-size: .74rem; padding: .25em .6em; border-radius: 8px; background: var(--pen-soft); color: var(--pen); justify-self: start; letter-spacing: .01em; }
+.msg.mine .msg-ctx { background: rgba(255,255,255,.18); color: inherit; }
+.msg-body { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .97rem; }
+.msg-body a { color: inherit; text-decoration: underline; }
+.msg-time { font-size: .68rem; opacity: .6; justify-self: end; letter-spacing: .01em; }
+.msg-day { align-self: center; margin: 10px 0 4px; }
+.msg-day span { font-size: .72rem; font-weight: 600; color: var(--muted); padding: .3em .8em; border-radius: 99px; background: var(--pen-soft); letter-spacing: .01em; }
+.chat-empty { display: grid; justify-items: center; gap: 8px; text-align: center; padding: 34px 12px; color: var(--muted); }
+.chat-empty svg { width: 30px; height: 30px; color: var(--pen); }
+.chat-empty b { color: var(--ink); }
+.chat-empty .chips { justify-content: center; margin-top: 6px; }
+.chat-empty .chip { cursor: pointer; font: inherit; font-size: .88rem; }
+.composer { position: sticky; z-index: 20; bottom: calc(12px + var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); display: grid; gap: 8px; padding: 8px; border-radius: 24px; background: var(--glass-strong); }
+.composer-row { display: flex; align-items: flex-end; gap: 8px; }
+.composer textarea { flex: 1; min-height: 44px; max-height: 180px; resize: none; border: 0 !important; background: transparent !important; box-shadow: none !important; border-radius: 16px; padding: 11px 12px; font: inherit; color: inherit; line-height: 1.4; }
+.composer textarea:focus { outline: none; }
+.composer:focus-within { box-shadow: 0 0 0 2px var(--pen), var(--shadow); }
+.composer .send { width: 44px; height: 44px; padding: 0; flex: none; border-radius: 50%; }
+.composer .send svg { width: 19px; height: 19px; }
+.composer .send:disabled { opacity: .5; }
+.ctx-chip { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 6px 6px 12px; border-radius: 14px; background: var(--pen-soft); font-size: .84rem; color: var(--pen); }
+.ctx-chip[hidden] { display: none; }
+.ctx-chip b { font-weight: 600; }
+.ctx-chip button { border: 0; background: none; color: inherit; font-size: 1.1rem; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; }
+.chat-who { display: flex; align-items: center; gap: 12px; }
+.chat-li.unread .li-title { font-weight: 700; }
+.chat-li.unread .li-sub { color: var(--ink); }
+.chat-li .li-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-li .li-end { display: grid; justify-items: end; gap: 4px; }
+.help-card .btn svg, .account-actions .btn svg, .btn-block svg { width: 18px; height: 18px; }

@@ -170,13 +170,6 @@ body { font-size: 1.0625rem; line-height: 1.65; }
   if (!('IntersectionObserver' in window) || matchMedia('(prefers-reduced-motion: reduce)').matches) { items.forEach(function (e) { e.classList.add('in'); }); return; }
   var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }); }, { threshold: .1 });
   items.forEach(function (e) { io.observe(e); });
-  document.addEventListener('pointerdown', function (e) {
-    var b = e.target.closest('.btn'); if (!b) return;
-    var r = b.getBoundingClientRect(), s = Math.max(r.width, r.height), sp = document.createElement('span');
-    sp.className = 'ripple'; sp.style.width = sp.style.height = s + 'px';
-    sp.style.left = (e.clientX - r.left - s / 2) + 'px'; sp.style.top = (e.clientY - r.top - s / 2) + 'px';
-    b.appendChild(sp); setTimeout(function () { sp.remove(); }, 650);
-  });
 })();
 </script>
 <script src="assets/fx.js"></script>

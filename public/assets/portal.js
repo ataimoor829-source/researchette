@@ -63,8 +63,43 @@
     var bg = document.createElement('div'); bg.className = 'sheet-bg';
     bg.innerHTML = '<div class="sheet glass" role="dialog" aria-modal="true"><div class="grab" aria-hidden="true"></div>' + html + '</div>';
     document.body.appendChild(bg);
-    function close() { bg.remove(); document.removeEventListener('keydown', key); }
+    var sh = bg.querySelector('.sheet'), closing = false;
+    /* leave the way it came in: the same path, played in reverse */
+    function close() {
+      if (closing) return; closing = true;
+      document.removeEventListener('keydown', key);
+      bg.classList.add('out');
+      var done = function () { bg.remove(); };
+      if (reduce) done(); else { sh.addEventListener('animationend', done, { once: true }); setTimeout(done, 400); }
+    }
     function key(e) { if (e.key === 'Escape') close(); }
+    /* phones: drag the sheet down to dismiss. It follows the finger 1:1, resists upward pulls,
+       and a quick flick closes it even when it hasn't travelled far. */
+    if (matchMedia('(max-width: 760px)').matches) {
+      var y0 = null, dy = 0, lastY = 0, lastT = 0, v = 0;
+      sh.addEventListener('pointerdown', function (e) {
+        if (!e.target.closest('.grab')) return;
+        sh.setPointerCapture(e.pointerId);
+        y0 = lastY = e.clientY; lastT = e.timeStamp; v = 0; dy = 0;
+      });
+      sh.addEventListener('pointermove', function (e) {
+        if (y0 === null) return;
+        dy = e.clientY - y0;
+        if (e.timeStamp > lastT) { v = (e.clientY - lastY) / (e.timeStamp - lastT); lastY = e.clientY; lastT = e.timeStamp; }
+        var y = dy > 0 ? dy : -Math.sqrt(-dy) * 3;
+        sh.style.transition = 'none'; sh.style.transform = 'translateY(' + y + 'px)';
+        bg.style.setProperty('--drag', Math.max(0, Math.min(1, dy / sh.offsetHeight)));
+      });
+      var end = function (e) {
+        if (y0 === null) return; y0 = null;
+        if (e.timeStamp - lastT > 90) v = 0; /* the finger paused before letting go: no flick */
+        sh.style.transition = ''; bg.style.removeProperty('--drag');
+        /* project where a flick would carry the sheet, not just where the finger let go */
+        if (dy + v * 200 > sh.offsetHeight * .35) { sh.style.transform = 'translateY(100%)'; bg.classList.add('out', 'dragged'); setTimeout(function () { bg.remove(); }, 320); closing = true; document.removeEventListener('keydown', key); }
+        else sh.style.transform = '';
+      };
+      sh.addEventListener('pointerup', end); sh.addEventListener('pointercancel', end);
+    }
     bg.addEventListener('click', function (e) { if (e.target === bg) close(); });
     document.addEventListener('keydown', key);
     bg.querySelectorAll('[data-close]').forEach(function (b) { b.addEventListener('click', close); });
@@ -777,14 +812,6 @@
     }, function (e) { toast(e.message); });
   }
 
-  /* ---------- ripple ---------- */
-  document.addEventListener('pointerdown', function (e) {
-    var b = e.target.closest('.btn'); if (!b || reduce) return;
-    var r = b.getBoundingClientRect(), s = Math.max(r.width, r.height), sp = document.createElement('span');
-    sp.className = 'ripple'; sp.style.width = sp.style.height = s + 'px';
-    sp.style.left = (e.clientX - r.left - s / 2) + 'px'; sp.style.top = (e.clientY - r.top - s / 2) + 'px';
-    b.appendChild(sp); setTimeout(function () { sp.remove(); }, 650);
-  });
 
   /* ---------- install-app bar (phones) ---------- */
   var deferredPrompt = null, bar = null;

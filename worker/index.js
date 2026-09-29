@@ -121,13 +121,24 @@ async function sealExisting(env) {
   } catch (e) { migrated = false; console.error('sealExisting', e); }
 }
 
-/* ---------- email alerts to the founder ----------
-   Sent through Resend (resend.com) when the RESEND_API_KEY secret is set; otherwise skipped.
-   Sending happens after the response, so members never wait for it. */
+/* ---------- alerts to the founder ----------
+   WhatsApp through CallMeBot (callmebot.com) when the CALLMEBOT_KEY secret is set, and email through
+   Resend (resend.com) when RESEND_API_KEY is set. Either, both or neither can be on. Sending happens
+   after the response, so members never wait for it. */
 function escHtml(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 function alertFounder(env, ctx, url, subject, rows, linkHash, linkLabel) {
-  if (!env.RESEND_API_KEY) return;
   const portal = url.origin + '/portal.html' + (linkHash ? '#' + linkHash : '');
+  const later = (p) => { if (ctx && ctx.waitUntil) ctx.waitUntil(p); };
+  if (env.CALLMEBOT_KEY) {
+    // WhatsApp keeps it short: long answers are cut, the full text is one tap away in the portal
+    const lines = rows.filter((r) => r[1]).map(([k, v]) => k + ': ' + (String(v).length > 300 ? String(v).slice(0, 300) + '…' : v));
+    const msg = '*Researchette* · ' + subject + '\n\n' + lines.join('\n') + '\n\n' + portal;
+    const q = new URLSearchParams({ phone: env.ALERT_WHATSAPP || '923395888444', text: msg, apikey: env.CALLMEBOT_KEY.trim() });
+    later(fetch('https://api.callmebot.com/whatsapp.php?' + q)
+      .then((r) => { if (!r.ok) return r.text().then((t) => console.error('alert whatsapp failed', r.status, t.slice(0, 200))); })
+      .catch((e) => console.error('alert whatsapp failed', e)));
+  }
+  if (!env.RESEND_API_KEY) return;
   const table = rows.filter((r) => r[1]).map(([k, v]) =>
     `<tr><td style="padding:6px 14px 6px 0;color:#5F6989;vertical-align:top;white-space:nowrap">${escHtml(k)}</td><td style="padding:6px 0;color:#18203D;white-space:pre-wrap">${escHtml(v)}</td></tr>`).join('');
   const html = `<div style="font-family:-apple-system,Segoe UI,sans-serif;font-size:15px;line-height:1.5;max-width:560px">
@@ -141,7 +152,7 @@ function alertFounder(env, ctx, url, subject, rows, linkHash, linkLabel) {
     headers: { authorization: 'Bearer ' + env.RESEND_API_KEY, 'content-type': 'application/json' },
     body: JSON.stringify({ from: env.ALERT_FROM || 'Researchette <onboarding@resend.dev>', to: [env.ALERT_EMAIL || 'itszainr1@gmail.com'], subject: 'Researchette: ' + subject, html, text })
   }).then((r) => { if (!r.ok) return r.text().then((t) => console.error('alert email failed', r.status, t)); }).catch((e) => console.error('alert email failed', e));
-  if (ctx && ctx.waitUntil) ctx.waitUntil(send);
+  later(send);
 }
 const trackName = (t) => TRACK_NAMES[t] || t;
 

@@ -26,7 +26,7 @@ If you add steps to a programme in `curriculum.js`, update `TRACK_STEPS` in `wor
 ## How it works
 
 **Member portal**
-- **Today:** the current step, split into Learn, Example and Task. The member writes the task (with a minimum word count, and drafts are saved automatically) and submits it.
+- **Today:** the current step, split into Learn (plain-language intro, charts, step-by-step points, common mistakes), Example and Task (what to include, an optional template to start from, drafts save automatically).
 - **Roadmap:** all 10 steps with their status: approved, in review, needs changes, to do or locked. A step unlocks when the one before it is approved.
 - **Feedback:** every submission and the mentor's comments.
 

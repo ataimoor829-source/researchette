@@ -35,6 +35,8 @@ async function body(request) {
 }
 function str(v, max = 2000) { return String(v == null ? '' : v).trim().slice(0, max); }
 function now() { return new Date().toISOString(); }
+// Passwords ignore spaces at the start and end, so a copied password with a stray space still works.
+function pw(v) { return String(v == null ? '' : v).trim(); }
 function daysAgo(d) { return new Date(Date.now() - d * 864e5).toISOString(); }
 
 /* ---------- crypto ---------- */
@@ -117,8 +119,12 @@ function computeStates(subs, track) {
   return out;
 }
 async function userSubs(env, userId, reviewers) {
-  const { results } = await env.DB.prepare('SELECT * FROM submissions WHERE user_id = ? ORDER BY created_at DESC').bind(userId).all();
-  return results.map((r) => toSub(r, reviewers));
+  // reviewers may be a name map, `true` (look the names up in parallel) or empty
+  const [res, names] = await Promise.all([
+    env.DB.prepare('SELECT * FROM submissions WHERE user_id = ? ORDER BY created_at DESC').bind(userId).all(),
+    reviewers === true ? adminNames(env) : reviewers
+  ]);
+  return res.results.map((r) => toSub(r, names));
 }
 function progressOf(u, subs) {
   const p = {};
@@ -142,7 +148,7 @@ async function createMember(env, data, mentorId) {
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw bad('Enter a valid email address.');
   if (await env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(email).first()) throw bad('An account with this email already exists.');
   let tracks = validTracks(data.tracks); if (!tracks.length) tracks = ['original'];
-  const password = data.password ? String(data.password) : tempPassword();
+  const password = data.password ? pw(data.password) : tempPassword();
   if (password.length < 8) throw bad('Use at least 8 characters for the password.');
   if (mentorId && !(await env.DB.prepare("SELECT id FROM users WHERE id = ? AND role = 'admin'").bind(mentorId).first())) mentorId = null;
   const { hash, salt } = await hashPassword(password);
@@ -173,7 +179,7 @@ async function route(request, env, url) {
   if (path === '/api/login' && method === 'POST') {
     const b = await body(request);
     const u = await DB.prepare('SELECT * FROM users WHERE email = ?').bind(str(b.email, 200).toLowerCase()).first();
-    const ok = u && safeEqual((await hashPassword(String(b.password || ''), u.pw_salt)).hash, u.pw_hash);
+    const ok = u && safeEqual((await hashPassword(pw(b.password), u.pw_salt)).hash, u.pw_hash);
     if (!ok) throw new HttpError(401, 'That email and password don’t match. Check them and try again.');
     if (u.active === 0) throw new HttpError(403, 'This account is paused. Contact your mentor.');
     const token = hex(crypto.getRandomValues(new Uint8Array(32)));
@@ -204,10 +210,10 @@ async function route(request, env, url) {
   /* signed in: own account */
   if (path === '/api/me/password' && method === 'POST') {
     const u = await requireUser(request, env), b = await body(request);
-    if (!safeEqual((await hashPassword(String(b.current || ''), u.pw_salt)).hash, u.pw_hash)) throw bad('Your current password isn’t right.');
-    const next = String(b.next || '');
+    if (!safeEqual((await hashPassword(pw(b.current), u.pw_salt)).hash, u.pw_hash)) throw bad('Your current password isn’t right.');
+    const next = pw(b.next);
     if (next.length < 8) throw bad('Use at least 8 characters for the new password.');
-    if (next === b.current) throw bad('Choose a password that’s different from the current one.');
+    if (next === pw(b.current)) throw bad('Choose a password that’s different from the current one.');
     const { hash, salt } = await hashPassword(next);
     await DB.prepare('UPDATE users SET pw_hash = ?, pw_salt = ? WHERE id = ?').bind(hash, salt, u.id).run();
     return json({ ok: true });
@@ -218,7 +224,7 @@ async function route(request, env, url) {
     const u = await requireUser(request, env), track = url.searchParams.get('track');
     if (!TRACK_STEPS[track]) throw bad('Unknown programme.');
     const target = u.role === 'admin' && url.searchParams.get('user') ? await getMember(env, url.searchParams.get('user')) : u;
-    return json(computeStates(await userSubs(env, target.id, await adminNames(env)), track));
+    return json(computeStates(await userSubs(env, target.id, true), track));
   }
   if (path === '/api/progress' && method === 'GET') {
     const u = await requireUser(request, env);
@@ -234,7 +240,7 @@ async function route(request, env, url) {
   if (path === '/api/submissions' && method === 'GET') {
     const u = await requireUser(request, env), who = url.searchParams.get('user');
     const id = u.role === 'admin' && who ? (await getMember(env, who)).id : u.id;
-    return json(await userSubs(env, id, await adminNames(env)));
+    return json(await userSubs(env, id, true));
   }
   if (path === '/api/submit' && method === 'POST') {
     const u = await requireUser(request, env), b = await body(request), track = str(b.track, 20), step = Number(b.step), text = str(b.text, 20000);
@@ -287,9 +293,11 @@ async function route(request, env, url) {
     return json({ ok: true });
   }
   if (path === '/api/admin/members' && method === 'GET') {
-    const names = await adminNames(env);
-    const { results: users } = await DB.prepare("SELECT * FROM users WHERE role = 'member'").all();
-    const { results: subs } = await DB.prepare('SELECT * FROM submissions ORDER BY created_at DESC').all();
+    const [names, { results: users }, { results: subs }] = await Promise.all([
+      adminNames(env),
+      DB.prepare("SELECT * FROM users WHERE role = 'member'").all(),
+      DB.prepare('SELECT * FROM submissions ORDER BY created_at DESC').all()
+    ]);
     const all = subs.map((r) => toSub(r));
     const out = await Promise.all(users.map((u) => memberSummary(env, u, names, all)));
     return json(out.sort((a, b) => (a.lastActive < b.lastActive ? 1 : -1)));
@@ -301,7 +309,7 @@ async function route(request, env, url) {
   if ((m = path.match(/^\/api\/admin\/member\/([\w-]+)$/))) {
     const u = await getMember(env, m[1]);
     if (method === 'GET') {
-      const names = await adminNames(env), subs = await userSubs(env, u.id, names);
+      const names = await adminNames(env), subs = await userSubs(env, u.id, names);  // names reused below
       const states = {}; pub(u).tracks.forEach((t) => { states[t] = computeStates(subs, t); });
       return json({ ...(await memberSummary(env, u, names, subs)), states });
     }
@@ -318,10 +326,10 @@ async function route(request, env, url) {
   if ((m = path.match(/^\/api\/admin\/member\/([\w-]+)\/(reset-password|password|mentor|tracks|phone)$/)) && method === 'POST') {
     const u = await getMember(env, m[1]), b = await body(request);
     if (m[2] === 'reset-password' || m[2] === 'password') {
-      const pw = m[2] === 'password' ? String(b.password || '') : tempPassword();
-      if (pw.length < 8) throw bad('Use at least 8 characters.');
-      await setPassword(env, u.id, pw);
-      return json({ user: pub(u), password: pw });
+      const newPw = m[2] === 'password' ? pw(b.password) : tempPassword();
+      if (newPw.length < 8) throw bad('Use at least 8 characters.');
+      await setPassword(env, u.id, newPw);
+      return json({ user: pub(u), password: newPw });
     }
     if (m[2] === 'mentor') {
       const mid = str(b.mentorId, 40) || null;

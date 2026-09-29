@@ -8,14 +8,26 @@ window.Store = (function () {
       headers: data ? { 'content-type': 'application/json' } : {},
       body: data ? JSON.stringify(data) : undefined
     }).then(function (res) {
+      var isJson = (res.headers.get('content-type') || '').indexOf('application/json') > -1;
+      if (!isJson) throw new Error('The Researchette server isn’t reachable from this page. Open the portal on the live website and try again.');
       return res.json().catch(function () { return null; }).then(function (body) {
         if (!res.ok) throw new Error((body && body.error) || 'Something went wrong. Check your connection and try again.');
         return body;
       });
     }, function () { throw new Error('Can’t reach the server. Check your internet connection and try again.'); });
   }
-  var get = function (p) { return call('GET', p); };
-  var post = function (p, d) { return call('POST', p, d || {}); };
+  /* Re-visiting a screen within a few seconds reuses the last answer instead of waiting
+     on the network; anything that changes data clears it so nothing goes stale. */
+  var cache = {}, TTL = 15000;
+  var get = function (p) {
+    var hit = cache[p];
+    if (hit && Date.now() - hit.t < TTL) return hit.p;
+    var pr = call('GET', p);
+    cache[p] = { t: Date.now(), p: pr };
+    pr.catch(function () { delete cache[p]; });
+    return pr;
+  };
+  var post = function (p, d) { cache = {}; return call('POST', p, d || {}); };
   var q = encodeURIComponent;
 
   return {
@@ -24,7 +36,7 @@ window.Store = (function () {
     /* account */
     signIn: function (email, password) { return post('/api/login', { email: email, password: password }); },
     signOut: function () { return post('/api/logout'); },
-    me: function () { return get('/api/me').catch(function () { return null; }); },
+    me: function () { return call('GET', '/api/me').catch(function () { return null; }); },
     changePassword: function (_userId, current, next) { return post('/api/me/password', { current: current, next: next }); },
 
     /* member */
@@ -46,7 +58,7 @@ window.Store = (function () {
     members: function () { return get('/api/admin/members'); },
     member: function (id) { return get('/api/admin/member/' + q(id)).catch(function () { return null; }); },
     addMember: function (data, mentorId) { return post('/api/admin/members', Object.assign({}, data, { mentorId: mentorId })); },
-    removeMember: function (id) { return call('DELETE', '/api/admin/member/' + q(id)); },
+    removeMember: function (id) { cache = {}; return call('DELETE', '/api/admin/member/' + q(id)); },
     resetPassword: function (id) { return post('/api/admin/member/' + q(id) + '/reset-password'); },
     setPassword: function (id, pw) { return post('/api/admin/member/' + q(id) + '/password', { password: pw }); },
     assignMentor: function (id, mentorId) { return post('/api/admin/member/' + q(id) + '/mentor', { mentorId: mentorId || '' }); },

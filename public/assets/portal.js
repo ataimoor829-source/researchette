@@ -166,7 +166,7 @@
           });
         });
         el.querySelector('#chpw').addEventListener('click', function () { close(); passwordSheet(); });
-        el.querySelector('#logout').addEventListener('click', function () { S.signOut().then(function () { close(); app.dataset.shell = ''; go('login'); }); });
+        el.querySelector('#logout').addEventListener('click', function () { S.signOut().then(function () { forgetMe(); close(); app.dataset.shell = ''; go('login'); }); });
         var rs = el.querySelector('#reset');
         if (rs) rs.addEventListener('click', function () {
           if (rs.dataset.armed) { S.reset().then(function () { close(); app.dataset.shell = ''; toast('Demo data reset'); go('login'); }); return; }
@@ -205,20 +205,20 @@
   var busy = 0;
   async function render() {
     var token = ++busy;
-    me = await S.me();
+    if (meKnown) me = meCache; else { me = meCache = await S.me(); meKnown = true; }
     var r = (location.hash || '').slice(1);
     if (!me) { app.dataset.shell = ''; if (r !== 'login') setHash('login'); return loginView(); }
     if (r === 'login' || !r) { r = me.role === 'admin' ? 'overview' : 'today'; setHash(r); }
 
-    var view, tab, badges = null;
+    var view, tab, badges = null, statsP = null;
     if (me.role === 'admin') {
-      badges = await S.stats(me.id);
+      statsP = S.stats(me.id).catch(function () { return null; });
       if (/^review-/.test(r)) { view = vReview(r.slice(7)); tab = 'reviews'; }
       else if (/^member-/.test(r)) { view = vMember(r.slice(7)); tab = 'members'; }
       else if (r === 'reviews') { view = vReviews(); tab = r; }
       else if (r === 'members') { view = vMembers(); tab = r; }
       else if (r === 'applications') { view = vApplications(); tab = r; }
-      else { view = vOverview(badges); tab = 'overview'; if (r !== 'overview') setHash('overview'); }
+      else { view = statsP.then(function (st) { return vOverview(st || {}); }); tab = 'overview'; if (r !== 'overview') setHash('overview'); }
     } else {
       var sm = /^step-([a-z]+)-(\d+)$/.exec(r);
       if (sm) { view = vStep(sm[1], +sm[2]); tab = 'roadmap'; }
@@ -226,9 +226,12 @@
       else if (r === 'feedback') { view = vFeedback(); tab = r; }
       else { view = vToday(); tab = 'today'; if (r !== 'today') setHash('today'); }
     }
+    /* instant feedback: highlight the tab and dim the page while the next one loads */
+    var mainNow = document.getElementById('view');
+    if (mainNow && app.dataset.shell === me.id + ':' + me.role) { setTabs(tab, lastBadges); mainNow.classList.add('is-loading'); }
     var v;
-    try { v = await view; } catch (e) {
-      if (/log in/i.test(e.message)) { app.dataset.shell = ''; setHash('login'); return render(); }
+    try { v = await view; if (statsP) badges = lastBadges = await statsP; } catch (e) {
+      if (/log in/i.test(e.message)) { forgetMe(); app.dataset.shell = ''; setHash('login'); return render(); }
       v = { html: '<div class="glass empty">' + ic('alert') + '<b>Couldn’t load this page</b><span>' + esc(e.message) + '</span><button class="btn btn-glass btn-sm" type="button" id="retry">Try again</button></div>',
         mount: function (m) { m.querySelector('#retry').addEventListener('click', render); } };
     }
@@ -236,6 +239,7 @@
     ensureShell();
     currentTab = tab; setTabs(tab, badges);
     var main = document.getElementById('view');
+    main.classList.remove('is-loading');
     main.innerHTML = v.html;
     main.classList.remove('view-enter'); void main.offsetWidth; main.classList.add('view-enter');
     scrollTo({ top: 0, behavior: 'instant' });
@@ -243,6 +247,9 @@
     placeInstall();
   }
   addEventListener('hashchange', render);
+  var meCache = null, meKnown = false, lastBadges = null;
+  function forgetMe() { meCache = null; meKnown = false; }
+  function rememberMe(u) { meCache = u; meKnown = true; }
 
   /* ---------- login ---------- */
   function loginView() {
@@ -264,7 +271,7 @@
       var email = f.querySelector('#l-email').value, btn = f.querySelector('[type=submit]');
       if (!email.trim() || !pw.value) { err.textContent = 'Enter your email and password.'; err.hidden = false; return; }
       btn.disabled = true; btn.textContent = 'Logging in…';
-      S.signIn(email, pw.value).then(function (u) { go(u.role === 'admin' ? 'overview' : 'today'); }, function (x) {
+      S.signIn(email, pw.value).then(function (u) { rememberMe(u); go(u.role === 'admin' ? 'overview' : 'today'); }, function (x) {
         err.textContent = x.message; err.hidden = false; btn.disabled = false; btn.textContent = 'Log in';
       });
     });
@@ -298,7 +305,7 @@
           b.addEventListener('click', function () {
             var id = b.dataset.t;
             if (id === me.activeTrack) { close(); return; }
-            S.setActiveTrack(me.id, id).then(function () { close(); toast('Now on: ' + T(id).name); go('today'); });
+            S.setActiveTrack(me.id, id).then(function (u) { rememberMe(u); close(); toast('Now on: ' + T(id).name); go('today'); });
           });
         });
       });
@@ -428,7 +435,7 @@
 
   /* ---------- admin: overview ---------- */
   async function vOverview(stats) {
-    var q = await S.queue(), apps = (await S.applications()).filter(function (a) { return a.status === 'new'; });
+    var both = await Promise.all([S.queue(), S.applications()]), q = both[0], apps = both[1].filter(function (a) { return a.status === 'new'; });
     var html = '<section class="page-head"><span class="eyebrow">' + today() + '</span><h1>' + greet() + ', ' + first(me.name) + '.</h1><p class="muted">' +
       (stats.pending ? stats.pending + ' submission' + (stats.pending > 1 ? 's are' : ' is') + ' waiting for review' + (stats.pendingMine ? ', ' + stats.pendingMine + ' from your students.' : '.') : 'You’re all caught up.') + '</p></section>' +
       '<div class="stats">' +
@@ -546,7 +553,7 @@
 
   var memberFilter = 'all';
   async function vMembers() {
-    var list = await S.members(); mentorCache = await S.mentors();
+    var got = await Promise.all([S.members(), S.mentors()]), list = got[0]; mentorCache = got[1];
     var mine = list.filter(function (u) { return u.mentorId === me.id; });
     var shown = memberFilter === 'mine' ? mine : list, idx = memberFilter === 'mine' ? 1 : 0;
     var rows = function (arr) {
@@ -610,9 +617,9 @@
   }
 
   async function vMember(id) {
-    var u = await S.member(id); mentorCache = await S.mentors();
+    var got = await Promise.all([S.member(id), S.mentors(), S.submissions(id)]), u = got[0]; mentorCache = got[1];
     if (!u) return { html: '<a class="back" href="#members">' + ic('back', 'chev') + 'Members</a><div class="glass empty"><b>Member not found</b><span>They may have been removed.</span></div>' };
-    var subs = await S.submissions(id), fn = u.name.split(' ')[0];
+    var subs = got[2], fn = u.name.split(' ')[0];
     var html = '<a class="back" href="#members">' + ic('back', 'chev') + 'Members</a>' +
       '<div class="glass card stack">' +
         '<div class="row"><span class="avatar lg warm">' + initials(u.name) + '</span><div class="li-main"><h2>' + esc(u.name) + '</h2><span class="small muted">' + esc(u.email) + (u.phone ? ' · ' + esc(u.phone) : '') + '</span></div></div>' +

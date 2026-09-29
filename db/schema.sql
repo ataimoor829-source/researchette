@@ -52,3 +52,11 @@ CREATE TABLE IF NOT EXISTS applications (
   paid INTEGER DEFAULT 0,
   user_id TEXT
 );
+
+-- Created automatically by the worker on first use (listed here for reference).
+CREATE TABLE IF NOT EXISTS activity (id TEXT PRIMARY KEY, type TEXT NOT NULL, summary TEXT NOT NULL, detail TEXT DEFAULT '', member_id TEXT, actor_id TEXT, link TEXT DEFAULT '', created_at TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS activity_time ON activity (created_at);
+CREATE TABLE IF NOT EXISTS oauth_clients (client_id TEXT PRIMARY KEY, secret_hash TEXT, name TEXT, redirect_uris TEXT NOT NULL, created_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS oauth_codes (code_hash TEXT PRIMARY KEY, client_id TEXT NOT NULL, user_id TEXT NOT NULL, redirect_uri TEXT NOT NULL, challenge TEXT NOT NULL, scope TEXT, resource TEXT, expires TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS oauth_tokens (token_hash TEXT PRIMARY KEY, kind TEXT NOT NULL, client_id TEXT NOT NULL, user_id TEXT NOT NULL, scope TEXT, resource TEXT, expires TEXT NOT NULL, created_at TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS oauth_tokens_user ON oauth_tokens (user_id, client_id);

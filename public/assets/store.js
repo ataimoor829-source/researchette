@@ -67,6 +67,8 @@ window.Store = (function () {
     applications: function () { return get('/api/admin/applications'); },
     setPaid: function (id, paid) { return post('/api/admin/application/' + q(id) + '/paid', { paid: !!paid }); },
     decline: function (id) { return post('/api/admin/application/' + q(id) + '/decline'); },
-    approveApplication: function (id) { return post('/api/admin/application/' + q(id) + '/approve'); }
+    approveApplication: function (id) { return post('/api/admin/application/' + q(id) + '/approve'); },
+    connections: function () { return call('GET', '/api/admin/connections'); },
+    disconnect: function (clientId) { cache = {}; return call('DELETE', '/api/admin/connection/' + q(clientId)); }
   };
 })();

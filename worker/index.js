@@ -2,21 +2,32 @@
    Serves /api/* and hands every other request to the static site in ./public.
    Passwords are hashed with PBKDF2-SHA256; sessions are random tokens in an HttpOnly cookie,
    stored only as a SHA-256 hash. Phone numbers and application answers are encrypted in the
-   database with AES-256-GCM, using the DATA_KEY secret set in Cloudflare (never in this code). */
+   database with AES-256-GCM, using the DATA_KEY secret set in Cloudflare (never in this code).
+   /mcp, /oauth/* and /.well-known/oauth-* are the MCP connector (see connector.js). */
+import { connector } from './connector.js';
 
 // Number of steps in each programme. Keep in sync with public/assets/curriculum.js.
 const TRACK_STEPS = { original: 10, case: 6, letter: 4, synopsis: 6, thesis: 6, meta: 7 };
 const GOALS = { 'Original article': 'original', 'Synopsis': 'synopsis', 'Thesis': 'thesis', 'Meta-analysis': 'meta', 'Systematic review / meta-analysis': 'meta', 'Case report': 'case', 'Letter to the editor': 'letter' };
+const TRACK_NAMES = { original: 'Original article', case: 'Case report', letter: 'Letter to the editor', synopsis: 'Synopsis', thesis: 'Thesis', meta: 'Systematic review & meta-analysis' };
 const COOKIE = 'rt_s';
 const SESSION_DAYS = 30;
 const PBKDF2_ITERATIONS = 100000;
 
 export default {
-  async fetch(request, env) {
-    const url = new URL(request.url);
-    if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(request);
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url), p = url.pathname;
+    if (p === '/mcp' || p.startsWith('/oauth/') || p.startsWith('/.well-known/oauth') || p === '/.well-known/openid-configuration') {
+      try {
+        return await connector(request, env, ctx, url, CONNECTOR_API);
+      } catch (e) {
+        console.error(e);
+        return json({ error: 'server_error', error_description: 'Something went wrong. Please try again.' }, 500);
+      }
+    }
+    if (!p.startsWith('/api/')) return env.ASSETS.fetch(request);
     try {
-      return await route(request, env, url);
+      return await route(request, env, url, ctx);
     } catch (e) {
       if (e instanceof HttpError) return json({ error: e.message }, e.status);
       console.error(e);
@@ -120,6 +131,43 @@ async function sealExisting(env) {
   } catch (e) { migrated = false; console.error('sealExisting', e); }
 }
 
+/* ---------- extra tables, created on first use so a deploy needs no manual database step ---------- */
+const EXTRA_SCHEMA = [
+  "CREATE TABLE IF NOT EXISTS activity (id TEXT PRIMARY KEY, type TEXT NOT NULL, summary TEXT NOT NULL, detail TEXT DEFAULT '', member_id TEXT, actor_id TEXT, link TEXT DEFAULT '', created_at TEXT NOT NULL)",
+  'CREATE INDEX IF NOT EXISTS activity_time ON activity (created_at)',
+  'CREATE TABLE IF NOT EXISTS oauth_clients (client_id TEXT PRIMARY KEY, secret_hash TEXT, name TEXT, redirect_uris TEXT NOT NULL, created_at TEXT NOT NULL)',
+  'CREATE TABLE IF NOT EXISTS oauth_codes (code_hash TEXT PRIMARY KEY, client_id TEXT NOT NULL, user_id TEXT NOT NULL, redirect_uri TEXT NOT NULL, challenge TEXT NOT NULL, scope TEXT, resource TEXT, expires TEXT NOT NULL)',
+  'CREATE TABLE IF NOT EXISTS oauth_tokens (token_hash TEXT PRIMARY KEY, kind TEXT NOT NULL, client_id TEXT NOT NULL, user_id TEXT NOT NULL, scope TEXT, resource TEXT, expires TEXT NOT NULL, created_at TEXT NOT NULL)',
+  'CREATE INDEX IF NOT EXISTS oauth_tokens_user ON oauth_tokens (user_id, client_id)'
+];
+let schemaReady = null;
+function ensureSchema(env) {
+  if (!schemaReady) schemaReady = env.DB.batch(EXTRA_SCHEMA.map((q) => env.DB.prepare(q))).catch((e) => { schemaReady = null; throw e; });
+  return schemaReady;
+}
+
+/* ---------- activity log ----------
+   Everything members and mentors do is written here, so the connector can answer "what's new
+   since…". The details are encrypted like phone numbers. */
+function record(env, ctx, type, summary, rows, link, actorId, memberId) {
+  const detail = {};
+  rows.forEach(([k, v]) => { if (v !== '' && v != null) detail[k] = v; });
+  const p = (async () => {
+    await ensureSchema(env);
+    await env.DB.prepare('INSERT INTO activity (id, type, summary, detail, member_id, actor_id, link, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(randomId('e'), type, summary, await seal(env, JSON.stringify(detail)), memberId || null, actorId || null, link || '', now()).run();
+  })().catch((e) => console.error('activity log failed', e));
+  if (ctx && ctx.waitUntil) ctx.waitUntil(p);
+  return p;
+}
+// sign out connected apps for a user (after a password change, or when they disconnect one)
+async function revokeApps(env, userId, clientId) {
+  await ensureSchema(env);
+  if (clientId) await env.DB.prepare('DELETE FROM oauth_tokens WHERE user_id = ? AND client_id = ?').bind(userId, clientId).run();
+  else await env.DB.prepare('DELETE FROM oauth_tokens WHERE user_id = ?').bind(userId).run();
+}
+const trackName = (t) => TRACK_NAMES[t] || t;
+
 /* ---------- users & sessions ---------- */
 function pub(u) {
   if (!u) return null;
@@ -133,7 +181,20 @@ function cookieOf(request) {
   const m = (request.headers.get('cookie') || '').match(new RegExp('(?:^|;\\s*)' + COOKIE + '=([^;]+)'));
   return m ? m[1] : null;
 }
+/* The connector's tool calls run through the same routes as the portal, as the mentor who approved it. */
+const actors = new WeakMap();
+async function asUser(env, ctx, origin, user, method, path, data) {
+  const req = new Request(origin + path, { method, headers: data ? { 'content-type': 'application/json' } : {}, body: data ? JSON.stringify(data) : undefined });
+  actors.set(req, user);
+  let res;
+  try { res = await route(req, env, new URL(req.url), ctx); } catch (e) {
+    if (e instanceof HttpError) return { status: e.status, body: { error: e.message } };
+    throw e;
+  }
+  return { status: res.status, body: await res.json() };
+}
 async function currentUser(request, env) {
+  if (actors.has(request)) return actors.get(request);
   const token = cookieOf(request);
   if (!token) return null;
   const row = await env.DB.prepare('SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ? AND s.expires > ? AND u.active = 1')
@@ -221,6 +282,7 @@ async function setPassword(env, userId, password) {
     env.DB.prepare('UPDATE users SET pw_hash = ?, pw_salt = ? WHERE id = ?').bind(hash, salt, userId),
     env.DB.prepare('DELETE FROM sessions WHERE user_id = ?').bind(userId)
   ]);
+  await revokeApps(env, userId);
 }
 function toApp(r) {
   return { id: r.id, name: r.name, email: r.email, phone: r.phone || '', college: r.college || '', level: r.level || '', experience: r.experience || '',
@@ -228,7 +290,7 @@ function toApp(r) {
 }
 
 /* ---------- routes ---------- */
-async function route(request, env, url) {
+async function route(request, env, url, ctx) {
   const path = url.pathname.replace(/\/+$/, ''), method = request.method, DB = env.DB;
   let m;
 
@@ -246,6 +308,7 @@ async function route(request, env, url) {
       DB.prepare('DELETE FROM sessions WHERE expires < ?').bind(now()),
       DB.prepare('INSERT INTO sessions (token_hash, user_id, expires) VALUES (?, ?, ?)').bind(await sha256(token), u.id, expires.toISOString())
     ]);
+    record(env, ctx, u.role + '.login', u.name + ' logged in', [['Name', u.name], ['Email', u.email]], u.role === 'member' ? 'member-' + u.id : '', u.id, u.role === 'member' ? u.id : null);
     return json(pub(u), 200, { 'set-cookie': `${COOKIE}=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Expires=${expires.toUTCString()}` });
   }
   if (path === '/api/logout' && method === 'POST') {
@@ -262,6 +325,10 @@ async function route(request, env, url) {
     const id = randomId('a');
     await DB.prepare('INSERT INTO applications (id, name, email, phone, college, level, experience, goals, why, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
       .bind(id, name, email, await seal(env, str(b.phone, 40)), str(b.college, 200), str(b.level, 100), str(b.experience, 100), JSON.stringify(goals), await seal(env, str(b.why, 3000)), now()).run();
+    record(env, ctx, 'application.new', 'New application from ' + name, [
+      ['Application', id], ['Name', name], ['Email', email], ['WhatsApp', str(b.phone, 40)], ['College', str(b.college, 200)], ['Level', str(b.level, 100)],
+      ['Experience', str(b.experience, 100)], ['Interested in', goals.join(', ')], ['Why', str(b.why, 3000)]
+    ], 'applications');
     return json({ id }, 201);
   }
 
@@ -274,6 +341,8 @@ async function route(request, env, url) {
     if (next === pw(b.current)) throw bad('Choose a password that’s different from the current one.');
     const { hash, salt } = await hashPassword(next);
     await DB.prepare('UPDATE users SET pw_hash = ?, pw_salt = ? WHERE id = ?').bind(hash, salt, u.id).run();
+    await revokeApps(env, u.id);
+    record(env, ctx, u.role + '.password', u.name + ' changed their password', [['Name', u.name], ['Email', u.email]], u.role === 'member' ? 'member-' + u.id : '', u.id, u.role === 'member' ? u.id : null);
     return json({ ok: true });
   }
 
@@ -293,6 +362,7 @@ async function route(request, env, url) {
     if (!TRACK_STEPS[t]) throw bad('That programme isn’t available.');
     const tracks = pub(u).tracks; if (!tracks.includes(t)) tracks.push(t);
     await DB.prepare('UPDATE users SET tracks = ?, active_track = ? WHERE id = ?').bind(JSON.stringify(tracks), t, u.id).run();
+    if (u.role === 'member' && t !== u.active_track) record(env, ctx, 'member.programme', u.name + ' switched to ' + trackName(t), [['Member', u.name], ['Was on', trackName(u.active_track)], ['Now on', trackName(t)]], 'member-' + u.id, u.id, u.id);
     return json(pub(await openUsers(env, await DB.prepare('SELECT * FROM users WHERE id = ?').bind(u.id).first())));
   }
   if (path === '/api/submissions' && method === 'GET') {
@@ -308,6 +378,10 @@ async function route(request, env, url) {
     if (!st || (st.status !== 'current' && st.status !== 'revision')) throw bad('This step can’t be submitted right now.');
     const id = randomId('s');
     await DB.prepare('INSERT INTO submissions (id, user_id, track, step, text, status, created_at) VALUES (?, ?, ?, ?, ?, \'review\', ?)').bind(id, u.id, track, step, text, now()).run();
+    const again = st.status === 'revision';
+    record(env, ctx, again ? 'submission.resubmitted' : 'submission.new', u.name + (again ? ' resubmitted ' : ' submitted ') + trackName(track) + ', Step ' + step, [
+      ['Submission', id], ['Member', u.name], ['Programme', trackName(track)], ['Step', step], ['Words', text.split(/\s+/).filter(Boolean).length]
+    ], 'review-' + id, u.id, u.id);
     return json({ id }, 201);
   }
 
@@ -327,6 +401,31 @@ async function route(request, env, url) {
       one("SELECT COUNT(*) n FROM submissions WHERE status = 'approved' AND reviewed_at > ?", daysAgo(7))
     ]);
     return json({ pending, pendingMine, members, myMembers, applications, approvedWeek });
+  }
+  if (path === '/api/admin/activity' && method === 'GET') {
+    await ensureSchema(env);
+    const since = str(url.searchParams.get('since'), 40) || daysAgo(7);
+    const limit = Math.min(Math.max(parseInt(url.searchParams.get('limit'), 10) || 50, 1), 200);
+    const type = str(url.searchParams.get('type'), 40);
+    const { results } = await DB.prepare("SELECT a.*, u.name AS actor_name FROM activity a LEFT JOIN users u ON u.id = a.actor_id WHERE a.created_at > ? AND (? = '' OR a.type LIKE ? || '%') ORDER BY a.created_at DESC LIMIT ?")
+      .bind(since, type, type, limit).all();
+    const events = await Promise.all(results.map(async (r) => {
+      let detail = {}; try { detail = JSON.parse((await unseal(env, r.detail)) || '{}'); } catch {}
+      return { id: r.id, type: r.type, summary: r.summary, at: r.created_at, by: r.actor_name || null, memberId: r.member_id || null,
+        detail, link: r.link ? url.origin + '/portal.html#' + r.link : null };
+    }));
+    return json({ events, checkedAt: now() });
+  }
+  if (path === '/api/admin/connections' && method === 'GET') {
+    await ensureSchema(env);
+    const { results } = await DB.prepare("SELECT t.client_id, c.name, MIN(t.created_at) AS since, MAX(t.created_at) AS last FROM oauth_tokens t LEFT JOIN oauth_clients c ON c.client_id = t.client_id WHERE t.user_id = ? AND t.kind = 'refresh' AND t.expires > ? GROUP BY t.client_id, c.name ORDER BY last DESC")
+      .bind(admin.id, now()).all();
+    return json(results.map((r) => ({ clientId: r.client_id, name: r.name || 'Connected app', since: r.since, lastUsed: r.last })));
+  }
+  if ((m = path.match(/^\/api\/admin\/connection\/([\w-]+)$/)) && method === 'DELETE') {
+    await revokeApps(env, admin.id, m[1]);
+    record(env, ctx, 'admin.connector', admin.name + ' disconnected an app', [['App', m[1]]], '', admin.id);
+    return json({ ok: true });
   }
   if (path === '/api/admin/mentors' && method === 'GET') {
     const { results } = await DB.prepare("SELECT * FROM users WHERE role = 'admin' ORDER BY joined").all();
@@ -350,6 +449,9 @@ async function route(request, env, url) {
     const b = await body(request), decision = b.decision === 'approved' ? 'approved' : 'revision', feedback = str(b.feedback, 5000);
     const res = await DB.prepare("UPDATE submissions SET status = ?, feedback = ?, reviewer_id = ?, reviewed_at = ? WHERE id = ? AND status = 'review'").bind(decision, feedback, admin.id, now(), m[1]).run();
     if (!res.meta.changes) throw bad('This submission has already been reviewed.');
+    const r = await DB.prepare('SELECT s.user_id, s.track, s.step, u.name FROM submissions s JOIN users u ON u.id = s.user_id WHERE s.id = ?').bind(m[1]).first();
+    if (r) record(env, ctx, 'review.' + decision, admin.name + (decision === 'approved' ? ' approved ' : ' requested changes on ') + r.name + '’s ' + trackName(r.track) + ', Step ' + r.step,
+      [['Submission', m[1]], ['Member', r.name], ['Feedback', feedback]], 'review-' + m[1], admin.id, r.user_id);
     return json({ ok: true });
   }
   if (path === '/api/admin/members' && method === 'GET') {
@@ -365,7 +467,9 @@ async function route(request, env, url) {
   }
   if (path === '/api/admin/members' && method === 'POST') {
     const b = await body(request);
-    return json(await createMember(env, b, str(b.mentorId, 40) || admin.id), 201);
+    const res = await createMember(env, b, str(b.mentorId, 40) || admin.id);
+    record(env, ctx, 'member.added', admin.name + ' added ' + res.user.name, [['Member', res.user.name], ['Email', res.user.email]], 'member-' + res.user.id, admin.id, res.user.id);
+    return json(res, 201);
   }
   if ((m = path.match(/^\/api\/admin\/member\/([\w-]+)$/))) {
     const u = await getMember(env, m[1]);
@@ -381,6 +485,7 @@ async function route(request, env, url) {
         DB.prepare('UPDATE applications SET user_id = NULL WHERE user_id = ?').bind(u.id),
         DB.prepare('DELETE FROM users WHERE id = ?').bind(u.id)
       ]);
+      record(env, ctx, 'member.removed', admin.name + ' removed ' + u.name, [['Member', u.name], ['Email', u.email]], '', admin.id, u.id);
       return json({ ok: true });
     }
   }
@@ -390,6 +495,7 @@ async function route(request, env, url) {
       const newPw = m[2] === 'password' ? pw(b.password) : tempPassword();
       if (newPw.length < 8) throw bad('Use at least 8 characters.');
       await setPassword(env, u.id, newPw);
+      record(env, ctx, 'member.password', admin.name + (m[2] === 'password' ? ' set a new password for ' : ' reset the password for ') + u.name, [['Member', u.name]], 'member-' + u.id, admin.id, u.id);
       return json({ user: pub(u), password: newPw });
     }
     if (m[2] === 'mentor') {
@@ -403,6 +509,8 @@ async function route(request, env, url) {
       await DB.prepare('UPDATE users SET tracks = ?, active_track = ? WHERE id = ?').bind(JSON.stringify(t), active, u.id).run();
     }
     if (m[2] === 'phone') await DB.prepare('UPDATE users SET phone = ? WHERE id = ?').bind(await seal(env, str(b.phone, 40)), u.id).run();
+    const what = { mentor: 'changed the mentor for ', tracks: 'changed the programmes for ', phone: 'updated the WhatsApp number for ' }[m[2]];
+    record(env, ctx, 'member.' + m[2], admin.name + ' ' + what + u.name, [['Member', u.name], ['Mentor', m[2] === 'mentor' ? str(b.mentorId, 40) || 'none' : ''], ['Programmes', m[2] === 'tracks' ? validTracks(b.tracks).map(trackName).join(', ') : '']], 'member-' + u.id, admin.id, u.id);
     return json(pub(await openUsers(env, await DB.prepare('SELECT * FROM users WHERE id = ?').bind(u.id).first())));
   }
   if (path === '/api/admin/applications' && method === 'GET') {
@@ -412,13 +520,26 @@ async function route(request, env, url) {
   if ((m = path.match(/^\/api\/admin\/application\/([\w-]+)\/(paid|decline|approve)$/)) && method === 'POST') {
     const a = await openRows(env, await DB.prepare('SELECT * FROM applications WHERE id = ?').bind(m[1]).first(), SEALED.applications);
     if (!a) throw new HttpError(404, 'Application not found.');
-    if (m[2] === 'paid') { const b = await body(request); await DB.prepare('UPDATE applications SET paid = ? WHERE id = ?').bind(b.paid ? 1 : 0, a.id).run(); return json({ ok: true }); }
+    if (m[2] === 'paid') {
+      const b = await body(request);
+      await DB.prepare('UPDATE applications SET paid = ? WHERE id = ?').bind(b.paid ? 1 : 0, a.id).run();
+      record(env, ctx, 'application.paid', admin.name + ' marked ' + a.name + (b.paid ? ' as paid' : ' as unpaid'), [['Application', a.id], ['Name', a.name]], 'applications', admin.id);
+      return json({ ok: true });
+    }
     if (a.status !== 'new') throw bad('This application has already been handled.');
-    if (m[2] === 'decline') { await DB.prepare("UPDATE applications SET status = 'declined' WHERE id = ?").bind(a.id).run(); return json({ ok: true }); }
+    if (m[2] === 'decline') {
+      await DB.prepare("UPDATE applications SET status = 'declined' WHERE id = ?").bind(a.id).run();
+      record(env, ctx, 'application.declined', admin.name + ' declined ' + a.name + '’s application', [['Application', a.id], ['Name', a.name]], 'applications', admin.id);
+      return json({ ok: true });
+    }
     const tracks = JSON.parse(a.goals || '[]').map((g) => GOALS[g]).filter(Boolean);
     const res = await createMember(env, { name: a.name, email: a.email, phone: a.phone, college: a.college, level: a.level, tracks }, admin.id);
     await DB.prepare("UPDATE applications SET status = 'approved', user_id = ? WHERE id = ?").bind(res.user.id, a.id).run();
+    record(env, ctx, 'application.approved', admin.name + ' approved ' + a.name + ' and created their login', [['Application', a.id], ['Member', a.name], ['Email', a.email]], 'member-' + res.user.id, admin.id, res.user.id);
     return json(res);
   }
   throw new HttpError(404, 'Not found.');
 }
+
+/* what connector.js needs from this file */
+const CONNECTOR_API = { asUser, ensureSchema, record, hashPassword, safeEqual, sha256, hex, randomId, now, currentUser, openUsers, pub, trackName, TRACK_STEPS, TRACK_NAMES };

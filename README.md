@@ -32,6 +32,7 @@ If you add steps to a programme in `curriculum.js`, update `TRACK_STEPS` in `wor
 - **Today:** the current step, split into Learn (plain-language intro, charts, step-by-step points, common mistakes), Example and Task (what to include, an optional template to start from, drafts save automatically).
 - **Roadmap:** all 10 steps with their status: approved, in review, needs changes, to do or locked. A step unlocks when the one before it is approved.
 - **Feedback:** every submission and the mentor's comments.
+- **Chat:** message the mentors inside the portal. “Ask your mentor” on Today opens the chat with the current step attached. New replies appear within a few seconds, and the tab shows unread messages.
 
 **Programmes:** members pick a programme from Today or Roadmap and can switch any time; progress in each is kept. Mentors can add or remove programmes for any member.
 
@@ -40,6 +41,7 @@ If you add steps to a programme in `curriculum.js`, update `TRACK_STEPS` in `wor
 - **Reviews:** the queue, oldest first. Submissions older than 48 hours are flagged. Open one, write feedback, then approve it (unlocking the next step) or request changes.
 - **Members:** add a member (creates a login), search, filter to your own students, assign a mentor, choose programmes, reset or set a password, WhatsApp them, or remove them.
 - **WhatsApp the student:** after you approve or send back a task, a ready-made message opens so you can tell the student on WhatsApp (you can edit it first). Reviewed tasks also have a “Notify on WhatsApp” button. When you change a member’s mentor or programmes, their page offers to send them an update.
+- **Messages:** every member's chat, newest first, with unread counts. Any mentor can reply. Start a chat from a member's page (Chat). Mentors can still WhatsApp members; members use the chat.
 - **Applications:** applications from the website. Mark payment as received, then approve to create a login. The temporary password and a ready-to-send welcome message are shown once.
 
 ## AI connector (MCP)
@@ -48,7 +50,7 @@ The website is also an MCP server, so a mentor can connect Claude, Gemini, ChatG
 
 - **Connector address:** `https://<your-site>/mcp` (shown in the portal under account menu → Connected apps).
 - **Sign-in:** OAuth 2.1 with automatic app registration and PKCE. When you add the connector, the app opens a Researchette page: log in with a mentor account and tap Allow. Member accounts can't connect.
-- **Tools (act as the mentor who approved):** overview, recent activity, programmes, mentors; applications (list, mark paid, approve, decline); review queue, submission, review; members (list, view, add, remove, reset or set password, assign mentor, set programmes, set WhatsApp number).
+- **Tools (act as the mentor who approved):** overview, recent activity, programmes, mentors; applications (list, mark paid, approve, decline); review queue, submission, review; chats (list, read, reply); members (list, view, add, remove, reset or set password, assign mentor, set programmes, set WhatsApp number).
 - **Notifications:** connectors can't push messages, so ask your AI app to check `get_recent_activity` on a schedule (for example “every hour, tell me about new applications and submissions”). It returns `checkedAt` to pass as `since` next time.
 - **Activity log:** everything members and mentors do, including actions through the connector, is recorded (details encrypted).
 - **Security:** access tokens last 1 hour and refresh for up to 90 days (refresh tokens rotate). Disconnect an app in Connected apps; changing your password disconnects every app. Only connect apps you trust: they can see and change student data.

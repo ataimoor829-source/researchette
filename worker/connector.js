@@ -274,9 +274,9 @@ async function handle(m, env, ctx, url, api, auth) {
         capabilities: { tools: { listChanged: false } },
         serverInfo: { name: 'researchette', title: 'Researchette', version: '1.0.0' },
         instructions: 'Researchette is a medical research mentorship programme. You are acting as the mentor ' + auth.user.name + '. ' +
-          'Use get_recent_activity to see what is new (applications, submissions, logins, reviews); pass the checkedAt value from the last call as "since" next time. ' +
+          'Use get_recent_activity to see what is new (applications, submissions, chat messages, logins, reviews); pass the checkedAt value from the last call as "since" next time. ' +
           'Applications: mark paid, then approve to create the student login (the temporary password is returned once; share it only with the student). ' +
-          'Reviews: read the submission, then review_submission with feedback. Ask the user before destructive actions like removing a member or declining an application.'
+          'Reviews: read the submission, then review_submission with feedback. Chat: list_chats shows unread conversations; reply with send_chat_message. Ask the user before destructive actions like removing a member or declining an application.'
       });
     }
     case 'ping': return ok({});
@@ -348,6 +348,16 @@ const TOOLS = [
       if (a.decision === 'revision' && !fb) throw new Error('Write feedback explaining what needs to change.');
       return need(call('POST', '/api/admin/review/' + q(a.submission_id), { decision: a.decision, feedback: fb || 'Well done. Approved.' }));
     } },
+
+  { name: 'list_chats', title: 'Chats', description: 'Portal chat conversations with members, newest first, with the last message and how many unread messages each has for you.',
+    inputSchema: obj({ unread_only: { type: 'boolean' } }), annotations: READ,
+    run: async (a, call) => { const all = await need(call('GET', '/api/admin/chats')); return a.unread_only ? all.filter((c) => c.unread) : all; } },
+  { name: 'get_chat', title: 'Chat', description: 'The full chat with one member (oldest first). Reading it marks it as read for you.',
+    inputSchema: obj({ member_id: id('Member id') }, ['member_id']), annotations: READ,
+    run: (a, call) => need(call('GET', '/api/admin/chat/' + q(a.member_id))) },
+  { name: 'send_chat_message', title: 'Send chat message', description: 'Reply to a member in the portal chat, as you. The member sees it next time they open the portal. Show the user the message before sending.',
+    inputSchema: obj({ member_id: id('Member id'), message: { type: 'string', maxLength: 4000 } }, ['member_id', 'message']), annotations: WRITE,
+    run: (a, call) => need(call('POST', '/api/admin/chat/' + q(a.member_id), { body: a.message })) },
 
   { name: 'list_members', title: 'Members', description: 'All members with progress, current step, mentor and last activity. Optionally search by name, email or college.',
     inputSchema: obj({ search: { type: 'string' } }), annotations: READ,

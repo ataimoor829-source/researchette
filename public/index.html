@@ -762,7 +762,7 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
         <legend>Apply for membership</legend>
         <div class="field"><label for="f-name">Full name</label><input id="f-name" name="name" autocomplete="name" required placeholder="Ayesha Khan"></div>
         <div class="field"><label for="f-email">Email</label><input id="f-email" name="email" type="email" autocomplete="email" required placeholder="ayesha@example.com"></div>
-        <div class="field"><label for="f-phone">WhatsApp <span class="opt">(optional)</span></label><input id="f-phone" name="phone" type="tel" autocomplete="tel" placeholder="03xx xxxxxxx"></div>
+        <div class="field"><label for="f-phone">WhatsApp number</label><input id="f-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="0339 5888444"></div>
       </fieldset>
 
       <fieldset class="fstep" data-step="2">
@@ -943,9 +943,11 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
     err.hidden = true;
   }
   /* inline validation: each field explains itself right beneath it, and clears as soon as it's fixed */
-  var hints = { email: 'Enter an email like ayesha@example.com' };
+  var hints = { email: 'Enter an email like ayesha@example.com', tel: 'Enter your full WhatsApp number, like 0339 5888444' };
+  // 10–15 digits covers 0339 5888444, 3395888444, +92 339 5888444 and numbers from other countries
+  var phoneOk = function (v) { var d = v.replace(/\D/g, ''); return d.length >= 10 && d.length <= 15; };
   function check(el, loud) {
-    var v = el.value.trim(), ok = v !== '' && (el.type !== 'email' || /.+@.+\..+/.test(v));
+    var v = el.value.trim(), ok = v !== '' && (el.type !== 'email' || /.+@.+\..+/.test(v)) && (el.type !== 'tel' || phoneOk(v));
     var f = el.closest('.field'), note = f.querySelector('.f-err');
     if (!ok && loud) {
       if (!note) { note = document.createElement('p'); note.className = 'f-err'; note.id = el.id + '-note'; f.appendChild(note); el.setAttribute('aria-describedby', note.id); }

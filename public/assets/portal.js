@@ -25,7 +25,10 @@
     wa: '<path d="M21 12a9 9 0 0 1-13.4 7.8L3 21l1.3-4.4A9 9 0 1 1 21 12z"/><path d="M9 9.5c.3 1.8 1.7 3.7 3.5 4.6l1.2-1 1.8.8-.4 1.6c-3 .1-6.9-3.4-7-6.6l1.5-.5.8 1.7z"/>',
     done: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/>',
     msgs: '<path d="M14 9a2 2 0 0 1-2 2H6l-3 3V4a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-3-3h-6a2 2 0 0 1-2-2v-1"/>',
-    send: '<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/>'
+    send: '<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/>',
+    sparkle: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 3v4M21 5h-4M5 17v3M6.5 18.5h-3"/>',
+    phone: '<rect x="7" y="2" width="10" height="20" rx="3"/><path d="M11 18h2"/>',
+    pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'
   };
   function ic(n, cls) { return '<svg class="' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + P[n] + '</svg>'; }
   var LOGO = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="7" fill="#3448D8"/><path d="M5 13h3l2-5 3 9 2-4h4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -205,6 +208,7 @@
       (me.role === 'member' && can('chat') ? '<button class="btn btn-primary btn-block" type="button" id="to-chat">' + ic('msgs') + 'Message your mentor</button>' : '') +
       (isOwner() ? '<button class="btn btn-glass btn-block" type="button" id="team-btn">Team & permissions</button>' : '') +
       (me.role === 'admin' ? '<button class="btn btn-glass btn-block" type="button" id="apps">Connected apps</button>' : '') +
+      '<button class="btn btn-glass btn-block" type="button" id="tour-btn">' + ic('sparkle') + 'How Researchette works</button>' +
       '<button class="btn btn-glass btn-block" type="button" id="chpw">Change password</button>' +
       '<button class="btn btn-glass btn-block" type="button" id="logout">Log out</button>' +
       (S.demo && me.role === 'admin' ? '<button class="btn btn-quiet btn-block btn-sm" type="button" id="reset">Reset demo data</button>' : '') +
@@ -219,6 +223,7 @@
           });
         });
         el.querySelector('#chpw').addEventListener('click', function () { close(); passwordSheet(); });
+        el.querySelector('#tour-btn').addEventListener('click', function () { close(); setTimeout(function () { tour(false); }, 300); });
         var tc = el.querySelector('#to-chat'); if (tc) tc.addEventListener('click', function () { close(); go('chat'); });
         var ap = el.querySelector('#apps'); if (ap) ap.addEventListener('click', function () { close(); appsSheet(); });
         var tb = el.querySelector('#team-btn'); if (tb) tb.addEventListener('click', function () { close(); go('team'); });
@@ -328,6 +333,7 @@
     scrollTo({ top: 0, behavior: 'instant' });
     if (v.mount) v.mount(main);
     placeInstall();
+    if (me.welcome && !tourShown) { tourShown = true; setTimeout(function () { tour(true); }, 450); }
   }
   addEventListener('hashchange', render);
   /* keep the unread badges fresh while the portal is open */
@@ -338,7 +344,7 @@
       setTabs(currentTab, lastBadges);
     }, function () {});
   }, 30000);
-  var meCache = null, meKnown = false, lastBadges = null;
+  var meCache = null, meKnown = false, lastBadges = null, tourShown = false;
   function forgetMe() { meCache = null; meKnown = false; }
   // coming back to the portal re-checks the account on the next screen, so permission changes show up
   // without a reload (and without redrawing the page, which would lose anything half-typed)
@@ -373,6 +379,68 @@
         err.textContent = x.message; err.hidden = false; btn.disabled = false; btn.textContent = 'Log in';
       });
     });
+  }
+
+  /* ---------- welcome tour ----------
+     Shown the first time someone opens the portal (remembered on the server), and any time from
+     the account menu. Friendly, short slides; swipe or tap Next. */
+  function tourSlides() {
+    var fn = first(me.name);
+    if (me.role === 'member') return [
+      { icon: 'sparkle', tone: 'pen', hand: 'so glad you’re here!', title: 'Welcome, ' + fn + '!', text: 'This is your research home. Together we’ll go from an idea in your head to a published paper, one small step at a time. No rush, no stress.' },
+      { icon: 'today', tone: 'teal', hand: 'one cup of chai', title: 'One small task a day', text: 'Open <b>Today</b> and your step is waiting: a short lesson, an example and a task. Most take 20 to 40 minutes.' },
+      { icon: 'pen', tone: 'amber', hand: 'drafts save by themselves', title: 'Learn, peek, write', text: 'Read <b>Learn</b>, peek at the <b>Example</b> to see what good looks like, then write your answer in <b>Task</b>. Stop any time; your draft is kept.' },
+      { icon: 'send', tone: 'pen', hand: 'you’re never on your own', title: 'Your mentor reads it all', text: 'Tap <b>Send to mentor</b>. You’ll hear back within about 48 hours. <b>Approved</b>? The next step unlocks. <b>Needs changes</b>? Totally normal. Every researcher rewrites. Fix it and send again.' },
+      can('chat') ? { icon: 'msgs', tone: 'teal', hand: 'no silly questions', title: 'Stuck? Just ask', text: 'Tap <b>Chat</b>, or <b>Ask your mentor</b> under today’s task. Your mentor sees which step you’re on.' } : null,
+      { icon: 'map', tone: 'amber', hand: 'watch it fill up', title: 'See how far you’ve come', text: '<b>Roadmap</b> shows every step, and <b>Feedback</b> keeps all your mentor’s comments in one place.' },
+      { icon: 'phone', tone: 'pen', hand: 'one tap away', title: 'Keep it on your phone', text: 'Add Researchette to your home screen and it opens like an app. On iPhone: tap <b>Share</b>, then <b>Add to Home Screen</b>.', last: 'Let’s begin' }
+    ].filter(Boolean);
+    return [
+      { icon: 'sparkle', tone: 'pen', hand: 'welcome aboard!', title: 'Hi, ' + fn + '!', text: 'This is your mentor desk. Here’s a 30-second tour of where everything lives.' },
+      can('review') ? { icon: 'inbox', tone: 'teal', hand: 'oldest first', title: 'Reviews', text: 'Your students’ submissions land in <b>Reviews</b>. Read, write kind and clear feedback, then <b>Approve</b> (the next step unlocks) or <b>Request changes</b>. Try to reply within 48 hours.' } : null,
+      can('chat') ? { icon: 'msgs', tone: 'amber', hand: 'the badge shows what’s new', title: 'Messages', text: 'Questions from your students arrive in <b>Messages</b>. After a review you can also let them know on WhatsApp in one tap.' } : null,
+      { icon: 'users', tone: 'pen', hand: 'everything in one place', title: seesAll() ? 'Members' : 'Your students', text: 'Open a student to see every step they’ve done, their feedback history, and buttons to chat or WhatsApp them.' },
+      isOwner() ? { icon: 'lock', tone: 'teal', hand: 'you’re in charge', title: 'Team & permissions', text: 'As an owner, open <b>Team & permissions</b> from Overview to add mentors, choose what each mentor and student can do, and see everyone’s activity.' } : null,
+      { icon: 'phone', tone: 'amber', hand: 'one tap away', title: 'Keep it on your phone', text: 'Add Researchette to your home screen for quick reviews on the go. On iPhone: <b>Share</b>, then <b>Add to Home Screen</b>.', last: 'Let’s go' }
+    ].filter(Boolean);
+  }
+  function tour(isFirst) {
+    var slides = tourSlides(), at = 0;
+    if (isFirst) { me.welcome = false; if (meCache) meCache.welcome = false; S.welcomed().catch(function () {}); }
+    sheet('<div class="tour" id="tour" aria-roledescription="carousel">' +
+        '<div class="tour-stage" id="tour-stage" aria-live="polite"></div>' +
+        '<div class="tour-dots" role="tablist">' + slides.map(function (x, i) { return '<button type="button" role="tab" data-i="' + i + '" aria-label="Slide ' + (i + 1) + ' of ' + slides.length + '"></button>'; }).join('') + '</div>' +
+        '<div class="tour-nav"><button class="btn btn-quiet" type="button" id="tour-prev">Back</button><button class="btn btn-primary" type="button" id="tour-next">Next</button></div>' +
+        '<button class="btn btn-quiet btn-sm tour-skip" type="button" data-close>Skip the tour</button>' +
+      '</div>',
+      function (el, close) {
+        var stage = el.querySelector('#tour-stage'), prev = el.querySelector('#tour-prev'), next = el.querySelector('#tour-next'), skip = el.querySelector('.tour-skip');
+        function show(i, dir) {
+          at = Math.max(0, Math.min(slides.length - 1, i));
+          var x = slides[at], lastOne = at === slides.length - 1;
+          stage.innerHTML = '<div class="tour-slide ' + (dir < 0 ? 'from-left' : 'from-right') + '">' +
+            '<div class="tour-art ' + x.tone + '">' + ic(x.icon) + '<i class="d1"></i><i class="d2"></i><i class="d3"></i></div>' +
+            '<span class="hand">' + x.hand + '</span><h2>' + x.title + '</h2><p>' + x.text + '</p></div>';
+          el.querySelectorAll('.tour-dots button').forEach(function (d, j) { d.classList.toggle('on', j === at); d.setAttribute('aria-selected', j === at); });
+          prev.style.visibility = at ? 'visible' : 'hidden';
+          next.textContent = lastOne ? (x.last || 'Done') : 'Next';
+          skip.hidden = lastOne;
+        }
+        next.addEventListener('click', function () { if (at === slides.length - 1) close(); else show(at + 1, 1); });
+        prev.addEventListener('click', function () { show(at - 1, -1); });
+        el.querySelectorAll('.tour-dots button').forEach(function (d) { d.addEventListener('click', function () { var i = +d.dataset.i; show(i, i < at ? -1 : 1); }); });
+        el.addEventListener('keydown', function (e) { if (e.key === 'ArrowRight') show(at + 1, 1); if (e.key === 'ArrowLeft') show(at - 1, -1); });
+        // swipe left and right between slides
+        var x0 = null, y0 = 0;
+        stage.addEventListener('pointerdown', function (e) { x0 = e.clientX; y0 = e.clientY; });
+        stage.addEventListener('pointerup', function (e) {
+          if (x0 === null) return;
+          var dx = e.clientX - x0, dy = e.clientY - y0; x0 = null;
+          if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) show(at + (dx < 0 ? 1 : -1), dx < 0 ? 1 : -1);
+        });
+        show(0, 1);
+        next.focus({ preventScroll: true });
+      });
   }
 
   /* ---------- two-step verification (owners, on a new device) ---------- */

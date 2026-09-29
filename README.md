@@ -38,7 +38,18 @@ If you add steps to a programme in `curriculum.js`, update `TRACK_STEPS` in `wor
 - **Overview:** waiting reviews, active members, new applications and approvals this week.
 - **Reviews:** the queue, oldest first. Submissions older than 48 hours are flagged. Open one, write feedback, then approve it (unlocking the next step) or request changes.
 - **Members:** add a member (creates a login), search, filter to your own students, assign a mentor, choose programmes, reset or set a password, WhatsApp them, or remove them.
+- **WhatsApp the student:** after you approve or send back a task, a ready-made message opens so you can tell the student on WhatsApp (you can edit it first). Reviewed tasks also have a “Notify on WhatsApp” button. When you change a member’s mentor or programmes, their page offers to send them an update.
 - **Applications:** applications from the website. Mark payment as received, then approve to create a login. The temporary password and a ready-to-send welcome message are shown once.
+
+## Email alerts
+
+The founder gets an email when a member logs in, submits or resubmits a task, changes their password or switches programme, and when a new application arrives. Emails go through [Resend](https://resend.com) (free for up to 3,000 a month):
+
+1. Sign up at resend.com **with itszainr1@gmail.com** (without your own domain, Resend only sends to the email you signed up with).
+2. In Resend, go to API Keys → Create API key (permission: Sending access) and copy it.
+3. In Cloudflare: Workers & Pages → researchette → Settings → Variables and Secrets → Add → type **Secret**, name `RESEND_API_KEY`, paste the key, and deploy.
+
+Optional: set `ALERT_EMAIL` to send alerts somewhere else, or `ALERT_FROM` once you've verified your own domain in Resend. Without `RESEND_API_KEY` the site works normally and sends no emails.
 
 ## Accounts and security
 

@@ -104,7 +104,7 @@
     document.addEventListener('keydown', key);
     bg.querySelectorAll('[data-close]').forEach(function (b) { b.addEventListener('click', close); });
     if (mount) mount(bg.querySelector('.sheet'), close);
-    var f = bg.querySelector('button, input, textarea'); if (f) f.focus({ preventScroll: true });
+    var f = bg.querySelector('[data-autofocus]') || bg.querySelector('button, input, textarea'); if (f) f.focus({ preventScroll: true });
     return close;
   }
   function copy(text, fallbackEl) {
@@ -575,11 +575,16 @@
             ['Clear and well structured.', 'Be more specific about the population.', 'Add a reference for this.', 'Check the formatting.'].map(function (c) { return '<button type="button" class="chip" style="cursor:pointer">' + c + '</button>'; }).join('') +
           '</div><textarea id="fb" placeholder="What’s good, what needs fixing, and how to fix it."></textarea><p class="error" id="fb-err" hidden></p>' +
           '<div class="actions"><button class="btn btn-glass" type="button" id="revise">Request changes</button><button class="btn btn-teal" type="button" id="approve">Approve</button></div></div>'
-          : '<div class="note ' + (s.status === 'approved' ? 'teal' : 'red') + '"><b class="small">' + LABEL[s.status] + '</b>' + (s.feedback ? '<p class="fb">' + esc(s.feedback) + '</p>' : '') + '</div>') +
+          : '<div class="note ' + (s.status === 'approved' ? 'teal' : 'red') + '"><b class="small">' + LABEL[s.status] + '</b>' + (s.feedback ? '<p class="fb">' + esc(s.feedback) + '</p>' : '') + '</div>' +
+            '<button class="btn btn-wa btn-sm" type="button" id="notify">' + ic('wa') + 'Notify ' + esc(s.member.name.split(' ')[0]) + ' on WhatsApp</button>') +
       '</article>';
     return {
       html: html, mount: function (m) {
-        if (!open) return;
+        if (!open) {
+          var nb = m.querySelector('#notify');
+          if (nb) nb.addEventListener('click', function () { notifySheet(s.member, 'Notify ' + s.member.name.split(' ')[0], reviewMessage(s, s.status)); });
+          return;
+        }
         var fb = m.querySelector('#fb'), err = m.querySelector('#fb-err');
         m.querySelectorAll('#quick .chip').forEach(function (c) { c.addEventListener('click', function () { fb.value = (fb.value.trim() ? fb.value.trim() + ' ' : '') + c.textContent; fb.focus(); }); });
         function act(decision) {
@@ -587,8 +592,8 @@
           if (decision === 'revision' && !text) { err.textContent = 'Write what needs to change so the member knows how to fix it.'; err.hidden = false; fb.focus(); return; }
           if (!text) text = 'Well done. Approved.';
           S.review(id, decision, text, me.id).then(function () {
-            toast(decision === 'approved' ? (s.step < total ? 'Approved. Step ' + (s.step + 1) + ' unlocked for ' + who : T(s.track).name + ' complete for ' + who) : 'Sent back to ' + who);
             go('reviews');
+            notifySheet(s.member, decision === 'approved' ? (s.step < total ? 'Approved. Step ' + (s.step + 1) + ' unlocked for ' + who : T(s.track).name + ' complete for ' + who) : 'Sent back to ' + who, reviewMessage(s, decision));
           }, function (e) { toast(e.message); });
         }
         m.querySelector('#approve').addEventListener('click', function () { act('approved'); });
@@ -621,6 +626,32 @@
         el.querySelector('[data-close]').addEventListener('click', render);
       });
   }
+
+  /* After a review or a change to a member's account: a ready-made WhatsApp message the mentor can
+     edit and send, so the student knows to open the portal. */
+  var portalUrl = function () { return location.href.split('#')[0]; };
+  function reviewMessage(s, decision) {
+    var fn = s.member.name.split(' ')[0], tr = T(s.track), d = stepOf(s.track, s.step), last = s.step >= tr.steps.length;
+    var what = 'your ' + tr.name + ' Step ' + s.step + ' (' + d.title + ')';
+    if (decision === 'approved') return 'Hi ' + fn + ', ' + what + ' has been approved on Researchette. ' +
+      (last ? 'That completes the whole ' + tr.name + ' programme. Well done!' : 'Step ' + (s.step + 1) + ' is now unlocked.') + '\n\nLog in to read the feedback: ' + portalUrl();
+    return 'Hi ' + fn + ', I’ve reviewed ' + what + ' on Researchette and asked for a few changes. Log in to read the feedback and resubmit: ' + portalUrl();
+  }
+  function notifySheet(member, title, msg) {
+    var num = waNumber(member.phone), fn = member.name.split(' ')[0];
+    sheet('<h2>' + esc(title) + '</h2><p class="muted">Let ' + esc(fn) + ' know on WhatsApp so they check the portal. You can edit the message first.</p>' +
+      '<textarea id="n-msg" rows="6" aria-label="Message">' + esc(msg) + '</textarea>' +
+      (num ? '<a class="btn btn-wa btn-block" id="n-wa" data-autofocus href="' + esc(waLink(num, msg)) + '" target="_blank" rel="noopener">' + ic('wa') + 'Send to ' + esc(fn) + ' on WhatsApp</a>'
+        : '<p class="note small">No WhatsApp number saved for ' + esc(fn) + '. <a href="#member-' + esc(member.id) + '" data-close>Add one on their page</a>, or copy the message.</p>') +
+      '<button class="btn btn-glass btn-block" type="button" id="n-cp"' + (num ? '' : ' data-autofocus') + '>Copy message</button><button class="btn btn-quiet btn-block btn-sm" type="button" data-close>Done</button>',
+      function (el, close) {
+        var ta = el.querySelector('#n-msg'), wa = el.querySelector('#n-wa');
+        ta.addEventListener('input', function () { if (wa) wa.href = waLink(num, ta.value); });
+        if (wa) wa.addEventListener('click', function () { setTimeout(close, 300); });
+        el.querySelector('#n-cp').addEventListener('click', function () { copy(ta.value, ta); });
+      });
+  }
+  var changes = {}; /* member id -> what was changed on their page, waiting to be sent */
 
   var memberFilter = 'all';
   async function vMembers() {
@@ -690,8 +721,10 @@
   async function vMember(id) {
     var got = await Promise.all([S.member(id), S.mentors(), S.submissions(id)]), u = got[0]; mentorCache = got[1];
     if (!u) return { html: '<a class="back" href="#members">' + ic('back', 'chev') + 'Members</a><div class="glass empty"><b>Member not found</b><span>They may have been removed.</span></div>' };
-    var subs = got[2], fn = u.name.split(' ')[0];
+    var subs = got[2], fn = u.name.split(' ')[0], pend = changes[id] || [];
     var html = '<a class="back" href="#members">' + ic('back', 'chev') + 'Members</a>' +
+      (pend.length ? '<div class="glass card change-bar"><div class="li-main"><b>Let ' + esc(fn) + ' know?</b><span class="small muted">' + esc(pend.join(' · ')) + '</span></div>' +
+        '<div class="row"><button class="btn btn-quiet btn-sm" type="button" id="ch-skip">Not now</button><button class="btn btn-wa btn-sm" type="button" id="ch-send">' + ic('wa') + 'Notify</button></div></div>' : '') +
       '<div class="glass card stack">' +
         '<div class="row"><span class="avatar lg warm">' + initials(u.name) + '</span><div class="li-main"><h2>' + esc(u.name) + '</h2><span class="small muted">' + esc(u.email) + (u.phone ? ' · ' + esc(u.phone) : '') + '</span></div></div>' +
         '<div class="row wrap wa-row">' + (waNumber(u.phone)
@@ -717,6 +750,14 @@
       '</div>';
     return {
       html: html, mount: function (m) {
+        if (pend.length) {
+          m.querySelector('#ch-skip').addEventListener('click', function () { delete changes[id]; render(); });
+          m.querySelector('#ch-send').addEventListener('click', function () {
+            var msg = 'Hi ' + fn + ', a quick update on your Researchette account:\n' + pend.map(function (c) { return '• ' + c; }).join('\n') + '\n\nLog in to see it: ' + portalUrl();
+            delete changes[id]; render(); notifySheet(u, 'Notify ' + fn, msg);
+          });
+        }
+        var note = function (c) { (changes[id] = changes[id] || []).push(c); };
         var f = m.querySelector('#phone-form');
         m.querySelector('#edit-phone').addEventListener('click', function () { f.hidden = false; f.querySelector('input').focus(); });
         f.addEventListener('submit', function (e) {
@@ -727,13 +768,13 @@
         });
         m.querySelector('#mentor-sel').addEventListener('change', function () {
           var v = this.value;
-          S.assignMentor(id, v).then(function () { toast(v ? 'Assigned to ' + mentorName(v) : 'Mentor removed'); render(); });
+          S.assignMentor(id, v).then(function () { toast(v ? 'Assigned to ' + mentorName(v) : 'Mentor removed'); note(v ? 'Your mentor is now ' + mentorName(v) : 'Your mentor assignment was removed'); render(); });
         });
         m.querySelectorAll('input[name="m-track"]').forEach(function (c) {
           c.addEventListener('change', function () {
             var t = [].slice.call(m.querySelectorAll('input[name="m-track"]:checked')).map(function (x) { return x.value; });
             if (!t.length) { c.checked = true; toast('Keep at least one programme'); return; }
-            S.setTracks(id, t).then(function () { toast(c.checked ? T(c.value).name + ' added' : T(c.value).name + ' removed'); render(); });
+            S.setTracks(id, t).then(function () { toast(c.checked ? T(c.value).name + ' added' : T(c.value).name + ' removed'); note(c.checked ? T(c.value).name + ' programme added' : T(c.value).name + ' programme removed'); render(); });
           });
         });
         m.querySelector('#reset-pw').addEventListener('click', function () {

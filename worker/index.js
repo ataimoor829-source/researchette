@@ -7,16 +7,17 @@
 // Number of steps in each programme. Keep in sync with public/assets/curriculum.js.
 const TRACK_STEPS = { original: 10, case: 6, letter: 4, synopsis: 6, thesis: 6, meta: 7 };
 const GOALS = { 'Original article': 'original', 'Synopsis': 'synopsis', 'Thesis': 'thesis', 'Meta-analysis': 'meta', 'Systematic review / meta-analysis': 'meta', 'Case report': 'case', 'Letter to the editor': 'letter' };
+const TRACK_NAMES = { original: 'Original article', case: 'Case report', letter: 'Letter to the editor', synopsis: 'Synopsis', thesis: 'Thesis', meta: 'Systematic review & meta-analysis' };
 const COOKIE = 'rt_s';
 const SESSION_DAYS = 30;
 const PBKDF2_ITERATIONS = 100000;
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(request);
     try {
-      return await route(request, env, url);
+      return await route(request, env, url, ctx);
     } catch (e) {
       if (e instanceof HttpError) return json({ error: e.message }, e.status);
       console.error(e);
@@ -119,6 +120,30 @@ async function sealExisting(env) {
     if (updates.length) await env.DB.batch(updates);
   } catch (e) { migrated = false; console.error('sealExisting', e); }
 }
+
+/* ---------- email alerts to the founder ----------
+   Sent through Resend (resend.com) when the RESEND_API_KEY secret is set; otherwise skipped.
+   Sending happens after the response, so members never wait for it. */
+function escHtml(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function alertFounder(env, ctx, url, subject, rows, linkHash, linkLabel) {
+  if (!env.RESEND_API_KEY) return;
+  const portal = url.origin + '/portal.html' + (linkHash ? '#' + linkHash : '');
+  const table = rows.filter((r) => r[1]).map(([k, v]) =>
+    `<tr><td style="padding:6px 14px 6px 0;color:#5F6989;vertical-align:top;white-space:nowrap">${escHtml(k)}</td><td style="padding:6px 0;color:#18203D;white-space:pre-wrap">${escHtml(v)}</td></tr>`).join('');
+  const html = `<div style="font-family:-apple-system,Segoe UI,sans-serif;font-size:15px;line-height:1.5;max-width:560px">
+<p style="margin:0 0 4px;color:#0B9E8C;font-size:12px;letter-spacing:.12em;text-transform:uppercase">Researchette</p>
+<h2 style="margin:0 0 16px;color:#18203D;font-size:20px">${escHtml(subject)}</h2>
+<table style="border-collapse:collapse">${table}</table>
+<p style="margin:22px 0 0"><a href="${escHtml(portal)}" style="background:#3448D8;color:#fff;padding:10px 18px;border-radius:999px;text-decoration:none;font-weight:600">${escHtml(linkLabel || 'Open the portal')}</a></p></div>`;
+  const text = subject + '\n\n' + rows.filter((r) => r[1]).map(([k, v]) => k + ': ' + v).join('\n') + '\n\n' + portal;
+  const send = fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { authorization: 'Bearer ' + env.RESEND_API_KEY, 'content-type': 'application/json' },
+    body: JSON.stringify({ from: env.ALERT_FROM || 'Researchette <onboarding@resend.dev>', to: [env.ALERT_EMAIL || 'itszainr1@gmail.com'], subject: 'Researchette: ' + subject, html, text })
+  }).then((r) => { if (!r.ok) return r.text().then((t) => console.error('alert email failed', r.status, t)); }).catch((e) => console.error('alert email failed', e));
+  if (ctx && ctx.waitUntil) ctx.waitUntil(send);
+}
+const trackName = (t) => TRACK_NAMES[t] || t;
 
 /* ---------- users & sessions ---------- */
 function pub(u) {
@@ -228,7 +253,7 @@ function toApp(r) {
 }
 
 /* ---------- routes ---------- */
-async function route(request, env, url) {
+async function route(request, env, url, ctx) {
   const path = url.pathname.replace(/\/+$/, ''), method = request.method, DB = env.DB;
   let m;
 
@@ -246,6 +271,7 @@ async function route(request, env, url) {
       DB.prepare('DELETE FROM sessions WHERE expires < ?').bind(now()),
       DB.prepare('INSERT INTO sessions (token_hash, user_id, expires) VALUES (?, ?, ?)').bind(await sha256(token), u.id, expires.toISOString())
     ]);
+    if (u.role === 'member') alertFounder(env, ctx, url, u.name + ' logged in', [['Member', u.name], ['Email', u.email]], 'member-' + u.id, 'View ' + u.name.split(' ')[0]);
     return json(pub(u), 200, { 'set-cookie': `${COOKIE}=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Expires=${expires.toUTCString()}` });
   }
   if (path === '/api/logout' && method === 'POST') {
@@ -262,6 +288,10 @@ async function route(request, env, url) {
     const id = randomId('a');
     await DB.prepare('INSERT INTO applications (id, name, email, phone, college, level, experience, goals, why, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
       .bind(id, name, email, await seal(env, str(b.phone, 40)), str(b.college, 200), str(b.level, 100), str(b.experience, 100), JSON.stringify(goals), await seal(env, str(b.why, 3000)), now()).run();
+    alertFounder(env, ctx, url, 'New application from ' + name, [
+      ['Name', name], ['Email', email], ['WhatsApp', str(b.phone, 40)], ['College', str(b.college, 200)], ['Level', str(b.level, 100)],
+      ['Experience', str(b.experience, 100)], ['Interested in', goals.join(', ')], ['Why', str(b.why, 3000)]
+    ], 'applications', 'Review applications');
     return json({ id }, 201);
   }
 
@@ -274,6 +304,7 @@ async function route(request, env, url) {
     if (next === pw(b.current)) throw bad('Choose a password that’s different from the current one.');
     const { hash, salt } = await hashPassword(next);
     await DB.prepare('UPDATE users SET pw_hash = ?, pw_salt = ? WHERE id = ?').bind(hash, salt, u.id).run();
+    if (u.role === 'member') alertFounder(env, ctx, url, u.name + ' changed their password', [['Member', u.name], ['Email', u.email]], 'member-' + u.id, 'View ' + u.name.split(' ')[0]);
     return json({ ok: true });
   }
 
@@ -293,6 +324,7 @@ async function route(request, env, url) {
     if (!TRACK_STEPS[t]) throw bad('That programme isn’t available.');
     const tracks = pub(u).tracks; if (!tracks.includes(t)) tracks.push(t);
     await DB.prepare('UPDATE users SET tracks = ?, active_track = ? WHERE id = ?').bind(JSON.stringify(tracks), t, u.id).run();
+    if (u.role === 'member' && t !== u.active_track) alertFounder(env, ctx, url, u.name + ' switched to ' + trackName(t), [['Member', u.name], ['Was on', trackName(u.active_track)], ['Now on', trackName(t)]], 'member-' + u.id, 'View ' + u.name.split(' ')[0]);
     return json(pub(await openUsers(env, await DB.prepare('SELECT * FROM users WHERE id = ?').bind(u.id).first())));
   }
   if (path === '/api/submissions' && method === 'GET') {
@@ -308,6 +340,11 @@ async function route(request, env, url) {
     if (!st || (st.status !== 'current' && st.status !== 'revision')) throw bad('This step can’t be submitted right now.');
     const id = randomId('s');
     await DB.prepare('INSERT INTO submissions (id, user_id, track, step, text, status, created_at) VALUES (?, ?, ?, ?, ?, \'review\', ?)').bind(id, u.id, track, step, text, now()).run();
+    const again = st.status === 'revision';
+    alertFounder(env, ctx, url, u.name + (again ? ' resubmitted ' : ' submitted ') + trackName(track) + ', Step ' + step, [
+      ['Member', u.name], ['Programme', trackName(track)], ['Step', String(step)], ['Words', String(text.split(/\s+/).filter(Boolean).length)],
+      ['Answer', text.length > 1500 ? text.slice(0, 1500) + '…' : text]
+    ], 'review-' + id, 'Review it');
     return json({ id }, 201);
   }
 

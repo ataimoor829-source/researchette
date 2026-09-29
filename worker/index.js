@@ -1,7 +1,8 @@
 /* Researchette API (Cloudflare Worker + D1).
    Serves /api/* and hands every other request to the static site in ./public.
    Passwords are hashed with PBKDF2-SHA256; sessions are random tokens in an HttpOnly cookie,
-   stored only as a SHA-256 hash. */
+   stored only as a SHA-256 hash. Phone numbers and application answers are encrypted in the
+   database with AES-256-GCM, using the DATA_KEY secret set in Cloudflare (never in this code). */
 
 // Number of steps in each programme. Keep in sync with public/assets/curriculum.js.
 const TRACK_STEPS = { original: 10, case: 6, letter: 4, synopsis: 6, thesis: 6, meta: 7 };
@@ -27,8 +28,12 @@ export default {
 class HttpError extends Error { constructor(status, message) { super(message); this.status = status; } }
 const bad = (m) => new HttpError(400, m);
 
+const SECURITY = {
+  'x-content-type-options': 'nosniff', 'x-frame-options': 'DENY', 'referrer-policy': 'strict-origin-when-cross-origin',
+  'strict-transport-security': 'max-age=31536000; includeSubDomains', 'content-security-policy': "default-src 'none'; frame-ancestors 'none'"
+};
 function json(data, status = 200, headers = {}) {
-  return new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...headers } });
+  return new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...SECURITY, ...headers } });
 }
 async function body(request) {
   try { return await request.json(); } catch { throw bad('Invalid request.'); }
@@ -63,6 +68,58 @@ function tempPassword() {
   return 'rt-' + out + '-' + (1000 + (r[4] % 9000));
 }
 
+/* ---------- encryption of personal data ----------
+   Encrypted values look like "enc1:<iv>:<ciphertext>". Without DATA_KEY the site still works and
+   stores plain text; once the key is added, older plain values are encrypted on the next mentor visit. */
+const SEALED = { users: ['phone'], applications: ['phone', 'why'] };
+let keyFor = null, keyPromise = null;
+function dataKey(env) {
+  if (!env.DATA_KEY) return null;
+  if (keyFor !== env.DATA_KEY) {
+    keyFor = env.DATA_KEY;
+    keyPromise = crypto.subtle.importKey('raw', fromB64(env.DATA_KEY.trim()), 'AES-GCM', false, ['encrypt', 'decrypt']);
+  }
+  return keyPromise;
+}
+async function seal(env, value) {
+  const v = value == null ? '' : String(value);
+  const key = v && await dataKey(env);
+  if (!key) return v;
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  return 'enc1:' + b64(iv) + ':' + b64(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(v)));
+}
+async function unseal(env, value) {
+  if (!value || !String(value).startsWith('enc1:')) return value || '';
+  const key = await dataKey(env);
+  if (!key) return '';
+  try {
+    const [, iv, data] = value.split(':');
+    return new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(iv) }, key, fromB64(data)));
+  } catch { return ''; }
+}
+// decrypt the given fields of one row or a list of rows, in place
+async function openRows(env, rows, fields) {
+  const list = Array.isArray(rows) ? rows : rows ? [rows] : [];
+  await Promise.all(list.flatMap((r) => fields.map(async (f) => { if (r[f]) r[f] = await unseal(env, r[f]); })));
+  return rows;
+}
+const openUsers = (env, rows) => openRows(env, rows, SEALED.users);
+let migrated = false;
+async function sealExisting(env) {
+  if (migrated || !env.DATA_KEY) return;
+  migrated = true;
+  try {
+    const updates = [];
+    for (const [table, fields] of Object.entries(SEALED)) {
+      for (const f of fields) {
+        const { results } = await env.DB.prepare(`SELECT id, ${f} AS v FROM ${table} WHERE ${f} != '' AND ${f} NOT LIKE 'enc1:%'`).all();
+        for (const r of results) updates.push(env.DB.prepare(`UPDATE ${table} SET ${f} = ? WHERE id = ?`).bind(await seal(env, r.v), r.id));
+      }
+    }
+    if (updates.length) await env.DB.batch(updates);
+  } catch (e) { migrated = false; console.error('sealExisting', e); }
+}
+
 /* ---------- users & sessions ---------- */
 function pub(u) {
   if (!u) return null;
@@ -81,14 +138,14 @@ async function currentUser(request, env) {
   if (!token) return null;
   const row = await env.DB.prepare('SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ? AND s.expires > ? AND u.active = 1')
     .bind(await sha256(token), now()).first();
-  return row || null;
+  return row ? openUsers(env, row) : null;
 }
 async function requireUser(request, env) { const u = await currentUser(request, env); if (!u) throw new HttpError(401, 'Please log in again.'); return u; }
 async function requireAdmin(request, env) { const u = await requireUser(request, env); if (u.role !== 'admin') throw new HttpError(403, 'Mentors only.'); return u; }
 async function getMember(env, id) {
   const u = await env.DB.prepare("SELECT * FROM users WHERE id = ? AND role = 'member'").bind(id).first();
   if (!u) throw new HttpError(404, 'Member not found.');
-  return u;
+  return openUsers(env, u);
 }
 function validTracks(list) {
   const out = [];
@@ -154,8 +211,8 @@ async function createMember(env, data, mentorId) {
   const { hash, salt } = await hashPassword(password);
   const id = randomId('u');
   await env.DB.prepare('INSERT INTO users (id, role, name, email, phone, pw_hash, pw_salt, college, level, tracks, active_track, mentor_id, joined) VALUES (?, \'member\', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-    .bind(id, name, email, str(data.phone, 40), hash, salt, str(data.college, 200), str(data.level, 100), JSON.stringify(tracks), tracks[0], mentorId || null, now()).run();
-  const u = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(id).first();
+    .bind(id, name, email, await seal(env, str(data.phone, 40)), hash, salt, str(data.college, 200), str(data.level, 100), JSON.stringify(tracks), tracks[0], mentorId || null, now()).run();
+  const u = await openUsers(env, await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(id).first());
   return { user: pub(u), password };
 }
 async function setPassword(env, userId, password) {
@@ -182,6 +239,7 @@ async function route(request, env, url) {
     const ok = u && safeEqual((await hashPassword(pw(b.password), u.pw_salt)).hash, u.pw_hash);
     if (!ok) throw new HttpError(401, 'That email and password don’t match. Check them and try again.');
     if (u.active === 0) throw new HttpError(403, 'This account is paused. Contact your mentor.');
+    await openUsers(env, u);
     const token = hex(crypto.getRandomValues(new Uint8Array(32)));
     const expires = new Date(Date.now() + SESSION_DAYS * 864e5);
     await DB.batch([
@@ -203,7 +261,7 @@ async function route(request, env, url) {
     const goals = (Array.isArray(b.goals) ? b.goals : []).map((g) => str(g, 60)).filter((g) => GOALS[g]).slice(0, 8);
     const id = randomId('a');
     await DB.prepare('INSERT INTO applications (id, name, email, phone, college, level, experience, goals, why, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(id, name, email, str(b.phone, 40), str(b.college, 200), str(b.level, 100), str(b.experience, 100), JSON.stringify(goals), str(b.why, 3000), now()).run();
+      .bind(id, name, email, await seal(env, str(b.phone, 40)), str(b.college, 200), str(b.level, 100), str(b.experience, 100), JSON.stringify(goals), await seal(env, str(b.why, 3000)), now()).run();
     return json({ id }, 201);
   }
 
@@ -235,7 +293,7 @@ async function route(request, env, url) {
     if (!TRACK_STEPS[t]) throw bad('That programme isn’t available.');
     const tracks = pub(u).tracks; if (!tracks.includes(t)) tracks.push(t);
     await DB.prepare('UPDATE users SET tracks = ?, active_track = ? WHERE id = ?').bind(JSON.stringify(tracks), t, u.id).run();
-    return json(pub(await DB.prepare('SELECT * FROM users WHERE id = ?').bind(u.id).first()));
+    return json(pub(await openUsers(env, await DB.prepare('SELECT * FROM users WHERE id = ?').bind(u.id).first())));
   }
   if (path === '/api/submissions' && method === 'GET') {
     const u = await requireUser(request, env), who = url.searchParams.get('user');
@@ -256,6 +314,7 @@ async function route(request, env, url) {
   /* admin */
   if (!path.startsWith('/api/admin/')) throw new HttpError(404, 'Not found.');
   const admin = await requireAdmin(request, env);
+  await sealExisting(env);
 
   if (path === '/api/admin/stats' && method === 'GET') {
     const one = (sql, ...p) => DB.prepare(sql).bind(...p).first().then((r) => r.n);
@@ -271,16 +330,17 @@ async function route(request, env, url) {
   }
   if (path === '/api/admin/mentors' && method === 'GET') {
     const { results } = await DB.prepare("SELECT * FROM users WHERE role = 'admin' ORDER BY joined").all();
-    return json(results.map(pub));
+    return json((await openUsers(env, results)).map(pub));
   }
   if (path === '/api/admin/queue' && method === 'GET') {
     const { results } = await DB.prepare("SELECT s.*, u.name AS m_name, u.email AS m_email, u.phone AS m_phone, u.college AS m_college, u.mentor_id AS m_mentor FROM submissions s JOIN users u ON u.id = s.user_id WHERE s.status = 'review' ORDER BY s.created_at ASC").all();
+    await openRows(env, results, ['m_phone']);
     return json(results.map((r) => ({ ...toSub(r), member: { id: r.user_id, name: r.m_name, email: r.m_email, phone: r.m_phone || '', college: r.m_college || '', mentorId: r.m_mentor || null } })));
   }
   if ((m = path.match(/^\/api\/admin\/submission\/([\w-]+)$/)) && method === 'GET') {
     const r = await DB.prepare('SELECT * FROM submissions WHERE id = ?').bind(m[1]).first();
     if (!r) return json(null);
-    const u = await DB.prepare('SELECT * FROM users WHERE id = ?').bind(r.user_id).first();
+    const u = await openUsers(env, await DB.prepare('SELECT * FROM users WHERE id = ?').bind(r.user_id).first());
     if (!u) return json(null);
     const names = await adminNames(env);
     const { results } = await DB.prepare('SELECT * FROM submissions WHERE user_id = ? AND track = ? AND step = ? AND id != ? ORDER BY created_at DESC').bind(r.user_id, r.track, r.step, r.id).all();
@@ -298,6 +358,7 @@ async function route(request, env, url) {
       DB.prepare("SELECT * FROM users WHERE role = 'member'").all(),
       DB.prepare('SELECT * FROM submissions ORDER BY created_at DESC').all()
     ]);
+    await openUsers(env, users);
     const all = subs.map((r) => toSub(r));
     const out = await Promise.all(users.map((u) => memberSummary(env, u, names, all)));
     return json(out.sort((a, b) => (a.lastActive < b.lastActive ? 1 : -1)));
@@ -341,15 +402,15 @@ async function route(request, env, url) {
       const active = t.includes(u.active_track) ? u.active_track : t[0];
       await DB.prepare('UPDATE users SET tracks = ?, active_track = ? WHERE id = ?').bind(JSON.stringify(t), active, u.id).run();
     }
-    if (m[2] === 'phone') await DB.prepare('UPDATE users SET phone = ? WHERE id = ?').bind(str(b.phone, 40), u.id).run();
-    return json(pub(await DB.prepare('SELECT * FROM users WHERE id = ?').bind(u.id).first()));
+    if (m[2] === 'phone') await DB.prepare('UPDATE users SET phone = ? WHERE id = ?').bind(await seal(env, str(b.phone, 40)), u.id).run();
+    return json(pub(await openUsers(env, await DB.prepare('SELECT * FROM users WHERE id = ?').bind(u.id).first())));
   }
   if (path === '/api/admin/applications' && method === 'GET') {
     const { results } = await DB.prepare('SELECT * FROM applications ORDER BY created_at DESC').all();
-    return json(results.map(toApp));
+    return json((await openRows(env, results, SEALED.applications)).map(toApp));
   }
   if ((m = path.match(/^\/api\/admin\/application\/([\w-]+)\/(paid|decline|approve)$/)) && method === 'POST') {
-    const a = await DB.prepare('SELECT * FROM applications WHERE id = ?').bind(m[1]).first();
+    const a = await openRows(env, await DB.prepare('SELECT * FROM applications WHERE id = ?').bind(m[1]).first(), SEALED.applications);
     if (!a) throw new HttpError(404, 'Application not found.');
     if (m[2] === 'paid') { const b = await body(request); await DB.prepare('UPDATE applications SET paid = ? WHERE id = ?').bind(b.paid ? 1 : 0, a.id).run(); return json({ ok: true }); }
     if (a.status !== 'new') throw bad('This application has already been handled.');

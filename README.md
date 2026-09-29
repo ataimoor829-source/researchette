@@ -7,12 +7,14 @@ Medical research mentorship: daily tasks, step-by-step lessons and mentor feedba
 - `public/`: the website Cloudflare serves.
   - `index.html`: the landing page. The membership form sends applications straight to the mentor portal.
   - `mentors.html`: each mentor's details and message, opened from “Read message” on the landing page.
+  - `privacy.html`, `terms.html`: privacy policy and terms and conditions, linked from every footer and the portal login.
   - `reviews.html`: student reviews. Add real reviews to the `REVIEWS` list at the bottom of the file.
   - `portal.html`: login, member portal and mentor portal.
   - `assets/curriculum.js`: the programmes and all lesson content. Edit this to change the course.
   - `assets/store.js`: talks to the API. `assets/portal.js`, `portal.css`: portal screens.
   - `assets/liquid.css`, `assets/fx.js`: shared glass look and pointer effects.
   - `manifest.webmanifest`, `sw.js`, `assets/icons/`: make the portal installable as a phone app.
+  - `_headers`: security headers for every page. `robots.txt` keeps the portal out of search results.
 - `worker/index.js`: the API (Cloudflare Worker). Handles logins, applications, members, submissions and reviews.
 - `db/schema.sql`: the database tables (Cloudflare D1, database `researchette-db`).
 - `wrangler.jsonc`: Cloudflare config. `/api/*` goes to the Worker; everything else is served from `public/`.
@@ -43,3 +45,6 @@ If you add steps to a programme in `curriculum.js`, update `TRACK_STEPS` in `wor
 - Mentor accounts live in the database. Mentors create member logins from the portal (approve an application, or Members → Add member).
 - Passwords are hashed (PBKDF2-SHA256, 100,000 rounds) and never stored in plain text. Logins use a secure, HttpOnly session cookie that lasts 30 days.
 - Anyone can change their own password from the account menu (tap your initials, top right). Mentors can reset or set a member's password from the member page.
+- Phone numbers and application answers are encrypted in the database with AES-256-GCM. The key is the `DATA_KEY` secret (Cloudflare → Workers & Pages → researchette → Settings → Variables and Secrets → add a **Secret** named `DATA_KEY`). It is a random 32-byte value in base64; make one with `openssl rand -base64 32`. Without it the site still works but stores those fields as plain text; once it's added, existing plain values are encrypted on the next mentor visit. Keep a safe copy of the key: if it's lost or changed, encrypted phone numbers and answers can't be read.
+- No API keys or secrets are kept in this repository. Secrets belong in Cloudflare (or in a local `.dev.vars` file, which git ignores).
+- Every page is sent with security headers (`public/_headers`): a content security policy, HTTPS only, and no embedding in other sites.

@@ -10,26 +10,45 @@
   --spot: rgba(255, 255, 255, .45);
   --lg-blur: 22px;
   --ease-out: cubic-bezier(.16, 1, .3, 1);
+  /* critically damped spring: settles quickly with no bounce, and can be retargeted mid-flight */
+  --spring: cubic-bezier(.2, .9, .25, 1);
+  --edge-fade: rgba(24, 32, 61, .07);
+}
+@supports (transition-timing-function: linear(0, 1)) {
+  :root { --spring: linear(0, .079, .236, .403, .551, .671, .764, .833, .883, .919, .944, .962, .974, .983, .988, .992, .995, .997, .998, .999, 1); }
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --lg-a: rgba(46, 55, 104, .6); --lg-b: rgba(20, 26, 58, .4);
     --ring-a: rgba(255, 255, 255, .32); --ring-b: rgba(255, 255, 255, .03);
     --lg-inner: rgba(150, 165, 255, .10); --spot: rgba(150, 168, 255, .16);
+    --edge-fade: rgba(0, 0, 0, .35);
   }
 }
 :root[data-theme="dark"] {
   --lg-a: rgba(46, 55, 104, .6); --lg-b: rgba(20, 26, 58, .4);
   --ring-a: rgba(255, 255, 255, .32); --ring-b: rgba(255, 255, 255, .03);
   --lg-inner: rgba(150, 165, 255, .10); --spot: rgba(150, 168, 255, .16);
+  --edge-fade: rgba(0, 0, 0, .35);
 }
 @media (max-width: 760px) { :root { --lg-blur: 14px; } }
 
 html { scroll-behavior: smooth; scroll-padding-top: 80px; }
-body { animation: lg-pagein .7s var(--ease-out) both; }
+body { animation: lg-pagein .4s var(--ease-out) both; letter-spacing: 0; transition: background-color .45s ease, color .45s ease; }
 @keyframes lg-pagein { from { opacity: 0; } }
+
+/* Motion is kept for things that respond to you. The background colour stays still, and nothing
+   loops slowly in the corner of your eye (slow drifting and pulsing can cause motion sickness). */
 .aura { transform: none !important; bottom: -20vh; }
-.aura i { will-change: transform; }
+.aura i, .manuscript, .chip, .eyebrow::before, .price::before, .sicon.current, .btn-primary::after { animation: none !important; }
+.btn-primary::after { display: none; }
+
+/* headline words rise into place with opacity and movement only (no blur, which is costly to draw) */
+@keyframes wordin { from { opacity: 0; transform: translateY(.35em); } }
+
+/* type: tracking tightens as text gets larger, opens slightly as it gets smaller */
+small, .small, .muted small { letter-spacing: .01em; }
+.lede { line-height: 1.55; }
 
 /* glass surface */
 .glass {
@@ -60,45 +79,53 @@ body { animation: lg-pagein .7s var(--ease-out) both; }
 }
 .glass:hover::after { opacity: 1; }
 
-/* floating layers keep real frosted glass */
+/* floating layers keep real frosted glass. Bigger surfaces use a thicker material so what's
+   behind them never competes with the text on top. */
+.sheet.glass { background: linear-gradient(180deg, color-mix(in srgb, var(--paper) 95%, transparent), color-mix(in srgb, var(--paper) 90%, transparent)); -webkit-backdrop-filter: blur(30px) saturate(180%) !important; backdrop-filter: blur(30px) saturate(180%) !important; }
 .sheet.glass, .install-bar.glass, .chip.glass {
   -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(180%);
   backdrop-filter: blur(var(--lg-blur)) saturate(180%);
 }
 
-/* pause decorative loops while the page is scrolling (class set by fx.js), and keep phones calm */
-html.is-scrolling .aura i, html.is-scrolling .manuscript, html.is-scrolling .chip,
-html.is-scrolling .btn-primary::after, html.is-scrolling .eyebrow::before, html.is-scrolling .sicon.current,
-html.is-scrolling .price::before { animation-play-state: paused; }
-@media (max-width: 760px), (pointer: coarse) {
-  .aura i, .manuscript, .chip, .eyebrow::before, .price::before { animation: none; }
-}
+/* pause what still moves (the ticker and the heart trace) while the page scrolls (class set by fx.js) */
+html.is-scrolling .ticker-track, html.is-scrolling .ecg-path { animation-play-state: paused; }
 
 /* top bars and the phone tab bar */
 .nav, .topbar {
   background: linear-gradient(180deg, var(--lg-a), var(--lg-b));
   -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(180%);
   backdrop-filter: blur(var(--lg-blur)) saturate(180%);
-  box-shadow: inset 0 -1px 0 var(--ring-b), inset 0 1px 0 var(--glass-hi), 0 12px 34px -26px rgba(24, 32, 61, .5);
+  box-shadow: inset 0 1px 0 var(--glass-hi);
+  border-bottom: 0 !important;
 }
+/* instead of a hard line, a soft shadow fades in under the bar once content scrolls beneath it */
+.nav::after, .topbar::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 14px; pointer-events: none;
+  background: linear-gradient(var(--edge-fade), transparent); opacity: 0; transition: opacity .3s ease;
+}
+html.scrolled .nav::after, html.scrolled .topbar::after { opacity: 1; }
 @media (max-width: 760px) {
   .tabs.bottom { background: linear-gradient(155deg, var(--lg-a), var(--lg-b)); border-color: var(--ring-a); }
 }
 
-/* buttons */
-.btn { transition: transform .5s var(--ease-out), translate .6s var(--ease-out), box-shadow .5s var(--ease-out), background-color .3s, opacity .2s; }
+/* buttons: they answer the moment a finger lands (no waiting for release), then spring back */
+.btn { transition: transform .45s var(--spring), box-shadow .45s var(--spring), background-color .2s, opacity .2s; -webkit-tap-highlight-color: transparent; }
 .btn-primary { background-image: linear-gradient(180deg, rgba(255, 255, 255, .22), rgba(255, 255, 255, 0) 55%); }
 .btn-glass { background: linear-gradient(155deg, var(--lg-a), var(--lg-b)); border-color: var(--ring-a); -webkit-backdrop-filter: none; backdrop-filter: none; }
-.btn:active { transform: scale(.95); transition-duration: .15s; }
+.btn:active { transform: scale(.97); transition: transform .1s ease-out, box-shadow .1s ease-out, background-color .1s; }
+a, button, [role="button"], .track, .tab, summary { -webkit-tap-highlight-color: transparent; }
+.tab, .chips label, summary { transition: transform .45s var(--spring), background-color .2s, color .2s; }
+.tab:active, .chips label:active { transform: scale(.96); transition-duration: .1s; transition-timing-function: ease-out; }
+.track:active, summary:active { transform: scale(.985); transition: transform .1s ease-out; }
 
 /* cards that tilt under the pointer (fx.js) */
-[data-tilt] { transition: transform .8s var(--ease-out), box-shadow .8s var(--ease-out); }
+[data-tilt] { transition: transform .5s var(--spring), box-shadow .5s var(--spring); }
 
 /* scroll reveal: opacity and transform only, so it stays smooth */
 .js .reveal {
-  transform: translateY(34px) scale(.985);
+  transform: translateY(16px);
   filter: none;
-  transition: opacity 1s var(--ease-out), transform 1.1s var(--ease-out);
+  transition: opacity .6s ease-out, transform .7s var(--spring);
   transition-delay: var(--d, 0s);
 }
 .js .reveal.in { transform: none; }
@@ -120,8 +147,36 @@ html.is-scrolling .price::before { animation-play-state: paused; }
 @keyframes lg-barin { from { opacity: 0; transform: translate(-50%, 24px); } }
 @keyframes lg-barout { to { opacity: 0; transform: translate(-50%, 24px); } }
 
+/* Reduce motion: movement becomes a simple cross-fade */
 @media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
   body { animation: none; }
-  .js .reveal { transform: none; }
+  .js .reveal { transform: none; transition: opacity .3s ease; }
   [data-tilt] { transition: none; }
+  .ticker-track, .ecg-path { animation: none !important; }
+  .word, .fade-up, .hero-visual { animation-name: lg-fade !important; }
+  .sheet, .sheet-bg.out .sheet { animation-name: lg-fade !important; }
+  .sheet-bg.out .sheet { animation-direction: reverse !important; }
+  .btn:active, .tab:active, .track:active { transform: none; opacity: .7; }
+}
+@keyframes lg-fade { from { opacity: 0; } }
+
+/* Reduce transparency: solid surfaces, no blur */
+@media (prefers-reduced-transparency: reduce) {
+  .glass, .nav, .topbar, .tabs.bottom, .sheet, .install-bar, .btn-glass, .chip {
+    background: var(--paper) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  }
+  .glass::after { display: none; }
+  .aura { display: none; }
+}
+
+/* Increase contrast: solid surfaces and clearly drawn edges */
+@media (prefers-contrast: more) {
+  .glass, .nav, .topbar, .tabs.bottom, .sheet, .install-bar, .btn-glass {
+    background: var(--paper) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+    border: 1px solid var(--ink) !important;
+  }
+  .glass::before, .glass::after, .aura { display: none; }
+  .nav, .topbar { border-width: 0 0 1px !important; }
+  :root { --muted: var(--ink); }
 }

@@ -124,8 +124,6 @@ section { padding-block: var(--gap-section) 0; }
 .btn[hidden] { display: none; }
 .btn-arrow { transition: transform .4s var(--ease); }
 .btn:hover .btn-arrow { transform: translateX(3px); }
-.ripple { position: absolute; border-radius: 50%; transform: scale(0); background: currentColor; opacity: .22; animation: ripple .65s var(--ease) forwards; pointer-events: none; }
-@keyframes ripple { to { transform: scale(2.6); opacity: 0; } }
 
 /* ---------- nav ---------- */
 .nav { position: sticky; top: 0; z-index: 40; padding-top: env(safe-area-inset-top, 0px); background: var(--glass); -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%); border-bottom: 1px solid var(--line); box-shadow: 0 10px 30px -26px rgba(24,32,61,.45); }
@@ -368,6 +366,7 @@ textarea { min-height: 120px; resize: vertical; }
 input::placeholder, textarea::placeholder { color: var(--muted); opacity: .7; }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--pen); box-shadow: 0 0 0 4px var(--pen-soft); }
 [aria-invalid="true"] { border-color: var(--redpen) !important; animation: shake .4s; }
+.f-err { color: var(--redpen); font-size: .82rem; letter-spacing: .01em; line-height: 1.4; animation: fadeup .3s var(--ease) both; }
 @keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chips label { position: relative; font-weight: 500; font-size: .9rem; border: 1px solid var(--glass-edge); border-radius: 99px; padding: .5em 1em; cursor: pointer; background: var(--glass-strong); transition: background-color .25s, border-color .25s, color .25s, transform .3s var(--ease); }
@@ -904,14 +903,6 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
     items.forEach(function (el) { el.classList.add('in'); });
   }
 
-  /* ripple on press */
-  document.addEventListener('pointerdown', function (e) {
-    var b = e.target.closest('.btn'); if (!b || reduce) return;
-    var r = b.getBoundingClientRect(), s = Math.max(r.width, r.height), sp = document.createElement('span');
-    sp.className = 'ripple'; sp.style.width = sp.style.height = s + 'px';
-    sp.style.left = (e.clientX - r.left - s / 2) + 'px'; sp.style.top = (e.clientY - r.top - s / 2) + 'px';
-    b.appendChild(sp); setTimeout(function () { sp.remove(); }, 700);
-  });
 
   /* hero card tilt (mouse only) */
   var hv = document.getElementById('hero-visual'), ms = document.getElementById('manuscript');
@@ -942,15 +933,30 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
     next.innerHTML = at === 2 ? 'Apply' : 'Continue <span class="btn-arrow" aria-hidden="true">→</span>';
     err.hidden = true;
   }
+  /* inline validation: each field explains itself right beneath it, and clears as soon as it's fixed */
+  var hints = { email: 'Enter an email like ayesha@example.com' };
+  function check(el, loud) {
+    var v = el.value.trim(), ok = v !== '' && (el.type !== 'email' || /.+@.+\..+/.test(v));
+    var f = el.closest('.field'), note = f.querySelector('.f-err');
+    if (!ok && loud) {
+      if (!note) { note = document.createElement('p'); note.className = 'f-err'; note.id = el.id + '-note'; f.appendChild(note); el.setAttribute('aria-describedby', note.id); }
+      var name = form.querySelector('label[for="' + el.id + '"]').firstChild.textContent.trim();
+      note.textContent = v && hints[el.type] ? hints[el.type] : name + ' is needed';
+      el.setAttribute('aria-invalid', 'true');
+    } else if (ok) {
+      if (note) note.remove();
+      el.setAttribute('aria-invalid', 'false');
+    }
+    return ok;
+  }
+  form.addEventListener('input', function (e) { if (e.target.getAttribute('aria-invalid') === 'true') check(e.target, false); });
+  form.addEventListener('focusout', function (e) { if (e.target.required && e.target.value.trim()) check(e.target, true); });
   function valid(step) {
-    var missing = [];
-    step.querySelectorAll('[required]').forEach(function (el) {
-      var ok = el.value.trim() !== '' && (el.type !== 'email' || /.+@.+\..+/.test(el.value));
-      el.setAttribute('aria-invalid', ok ? 'false' : 'true');
-      if (!ok) missing.push(form.querySelector('label[for="' + el.id + '"]').textContent.trim());
-    });
-    if (missing.length) { err.textContent = 'Please fill in: ' + missing.join(', ') + '.'; err.hidden = false; }
-    return !missing.length;
+    var bad = [];
+    step.querySelectorAll('[required]').forEach(function (el) { if (!check(el, true)) bad.push(el); });
+    if (bad.length) bad[0].focus();
+    err.hidden = true;
+    return !bad.length;
   }
   back.addEventListener('click', function () { if (at > 0) show(at - 1, -1); });
   form.addEventListener('submit', function (e) {

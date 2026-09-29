@@ -298,6 +298,7 @@
         '<button class="btn btn-primary btn-block" type="submit">Log in</button>' +
         '<p class="small muted">Forgot your password? Message your mentor and they’ll reset it.</p>' +
         '<p class="small">Not a member yet? <a href="index.html#join">Apply for membership</a></p>' +
+        '<p class="small muted legal-links"><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></p>' +
       '</form></div>';
     var f = document.getElementById('login'), err = document.getElementById('l-err'), pw = document.getElementById('l-pw');
     document.getElementById('l-show').addEventListener('click', function () { var s = pw.type === 'password'; pw.type = s ? 'text' : 'password'; this.textContent = s ? 'Hide' : 'Show'; });

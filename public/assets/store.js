@@ -8,6 +8,8 @@ window.Store = (function () {
       headers: data ? { 'content-type': 'application/json' } : {},
       body: data ? JSON.stringify(data) : undefined
     }).then(function (res) {
+      var isJson = (res.headers.get('content-type') || '').indexOf('application/json') > -1;
+      if (!isJson) throw new Error('The Researchette server isn’t reachable from this page. Open the portal on the live website and try again.');
       return res.json().catch(function () { return null; }).then(function (body) {
         if (!res.ok) throw new Error((body && body.error) || 'Something went wrong. Check your connection and try again.');
         return body;

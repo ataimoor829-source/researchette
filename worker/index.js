@@ -35,6 +35,8 @@ async function body(request) {
 }
 function str(v, max = 2000) { return String(v == null ? '' : v).trim().slice(0, max); }
 function now() { return new Date().toISOString(); }
+// Passwords ignore spaces at the start and end, so a copied password with a stray space still works.
+function pw(v) { return String(v == null ? '' : v).trim(); }
 function daysAgo(d) { return new Date(Date.now() - d * 864e5).toISOString(); }
 
 /* ---------- crypto ---------- */
@@ -142,7 +144,7 @@ async function createMember(env, data, mentorId) {
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw bad('Enter a valid email address.');
   if (await env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(email).first()) throw bad('An account with this email already exists.');
   let tracks = validTracks(data.tracks); if (!tracks.length) tracks = ['original'];
-  const password = data.password ? String(data.password) : tempPassword();
+  const password = data.password ? pw(data.password) : tempPassword();
   if (password.length < 8) throw bad('Use at least 8 characters for the password.');
   if (mentorId && !(await env.DB.prepare("SELECT id FROM users WHERE id = ? AND role = 'admin'").bind(mentorId).first())) mentorId = null;
   const { hash, salt } = await hashPassword(password);
@@ -173,7 +175,7 @@ async function route(request, env, url) {
   if (path === '/api/login' && method === 'POST') {
     const b = await body(request);
     const u = await DB.prepare('SELECT * FROM users WHERE email = ?').bind(str(b.email, 200).toLowerCase()).first();
-    const ok = u && safeEqual((await hashPassword(String(b.password || ''), u.pw_salt)).hash, u.pw_hash);
+    const ok = u && safeEqual((await hashPassword(pw(b.password), u.pw_salt)).hash, u.pw_hash);
     if (!ok) throw new HttpError(401, 'That email and password don’t match. Check them and try again.');
     if (u.active === 0) throw new HttpError(403, 'This account is paused. Contact your mentor.');
     const token = hex(crypto.getRandomValues(new Uint8Array(32)));
@@ -204,10 +206,10 @@ async function route(request, env, url) {
   /* signed in: own account */
   if (path === '/api/me/password' && method === 'POST') {
     const u = await requireUser(request, env), b = await body(request);
-    if (!safeEqual((await hashPassword(String(b.current || ''), u.pw_salt)).hash, u.pw_hash)) throw bad('Your current password isn’t right.');
-    const next = String(b.next || '');
+    if (!safeEqual((await hashPassword(pw(b.current), u.pw_salt)).hash, u.pw_hash)) throw bad('Your current password isn’t right.');
+    const next = pw(b.next);
     if (next.length < 8) throw bad('Use at least 8 characters for the new password.');
-    if (next === b.current) throw bad('Choose a password that’s different from the current one.');
+    if (next === pw(b.current)) throw bad('Choose a password that’s different from the current one.');
     const { hash, salt } = await hashPassword(next);
     await DB.prepare('UPDATE users SET pw_hash = ?, pw_salt = ? WHERE id = ?').bind(hash, salt, u.id).run();
     return json({ ok: true });
@@ -318,10 +320,10 @@ async function route(request, env, url) {
   if ((m = path.match(/^\/api\/admin\/member\/([\w-]+)\/(reset-password|password|mentor|tracks|phone)$/)) && method === 'POST') {
     const u = await getMember(env, m[1]), b = await body(request);
     if (m[2] === 'reset-password' || m[2] === 'password') {
-      const pw = m[2] === 'password' ? String(b.password || '') : tempPassword();
-      if (pw.length < 8) throw bad('Use at least 8 characters.');
-      await setPassword(env, u.id, pw);
-      return json({ user: pub(u), password: pw });
+      const newPw = m[2] === 'password' ? pw(b.password) : tempPassword();
+      if (newPw.length < 8) throw bad('Use at least 8 characters.');
+      await setPassword(env, u.id, newPw);
+      return json({ user: pub(u), password: newPw });
     }
     if (m[2] === 'mentor') {
       const mid = str(b.mentorId, 40) || null;

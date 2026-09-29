@@ -44,8 +44,10 @@
   function greet() { var h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; }
   function today() { return new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }); }
   function pill(st) { return '<span class="pill ' + st + '">' + LABEL[st] + '</span>'; }
-  function step(n) { return C.steps[n - 1]; }
-  function phaseOf(n) { return C.phases[step(n).phase - 1]; }
+  function T(id) { return C.track(id); }
+  function stepOf(t, n) { return T(t).steps[n - 1]; }
+  function phaseOf(t, n) { var tr = T(t), st = stepOf(t, n); return tr.phases.filter(function (p) { return p.id === st.phase; })[0] || tr.phases[0]; }
+  var LEVELS = ['MBBS (1st–2nd year)', 'MBBS (3rd–5th year)', 'BDS', 'Pharm-D / DPT / Nursing / Allied health', 'House officer / graduate doctor', 'Postgraduate trainee (FCPS / MS / MD)', 'MPhil / PhD', 'Other'];
   function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
   function sicon(st, n) {
     var inner = st === 'approved' ? ic('check') : st === 'review' ? ic('clock') : st === 'revision' ? '!' : st === 'locked' ? ic('lock') : n;
@@ -210,7 +212,7 @@
 
     var view, tab, badges = null;
     if (me.role === 'admin') {
-      badges = await S.stats();
+      badges = await S.stats(me.id);
       if (/^review-/.test(r)) { view = vReview(r.slice(7)); tab = 'reviews'; }
       else if (/^member-/.test(r)) { view = vMember(r.slice(7)); tab = 'members'; }
       else if (r === 'reviews') { view = vReviews(); tab = r; }
@@ -218,7 +220,8 @@
       else if (r === 'applications') { view = vApplications(); tab = r; }
       else { view = vOverview(badges); tab = 'overview'; if (r !== 'overview') setHash('overview'); }
     } else {
-      if (/^step-\d+$/.test(r)) { view = vStep(+r.slice(5)); tab = 'roadmap'; }
+      var sm = /^step-([a-z]+)-(\d+)$/.exec(r);
+      if (sm) { view = vStep(sm[1], +sm[2]); tab = 'roadmap'; }
       else if (r === 'roadmap') { view = vRoadmap(); tab = r; }
       else if (r === 'feedback') { view = vFeedback(); tab = r; }
       else { view = vToday(); tab = 'today'; if (r !== 'today') setHash('today'); }
@@ -263,53 +266,81 @@
   }
 
   /* ---------- member: today ---------- */
-  function ring(done) {
-    var c = 2 * Math.PI * 32, off = c * (1 - done / 10);
+  function ring(done, total) {
+    var c = 2 * Math.PI * 32, off = c * (1 - done / total);
     return '<div class="ring"><svg viewBox="0 0 76 76" aria-hidden="true"><defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0B9E8C"/><stop offset="1" stop-color="#3448D8"/></linearGradient></defs>' +
-      '<circle class="track" cx="38" cy="38" r="32"/><circle class="fill" cx="38" cy="38" r="32" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + (reduce ? off : c).toFixed(1) + '" data-off="' + off.toFixed(1) + '"/></svg><b>' + done + '/10</b></div>';
+      '<circle class="track" cx="38" cy="38" r="32"/><circle class="fill" cx="38" cy="38" r="32" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + (reduce ? off : c).toFixed(1) + '" data-off="' + off.toFixed(1) + '"/></svg><b>' + done + '/' + total + '</b></div>';
   }
   function animateRing(root) { var f = root.querySelector('.ring .fill'); if (f) requestAnimationFrame(function () { requestAnimationFrame(function () { f.style.strokeDashoffset = f.dataset.off; }); }); }
+  function progSwitch(t) {
+    return '<button class="prog-switch glass" type="button" data-prog><span class="small muted">Programme</span><b>' + esc(T(t).name) + '</b>' + ic('chev', 'chev down') + '</button>';
+  }
+  function bindProg(root) { root.querySelectorAll('[data-prog]').forEach(function (b) { b.addEventListener('click', programmeSheet); }); }
 
-  async function vToday() {
-    var st = await S.stepStates(me.id);
-    var done = st.filter(function (x) { return x.status === 'approved'; }).length;
-    var cur = st.filter(function (x) { return x.status !== 'approved'; })[0];
-    var head = '<section class="page-head"><span class="eyebrow">' + today() + '</span><h1>' + greet() + ', ' + first(me.name) + '.</h1></section>';
-    if (!cur) {
-      return { html: head + '<div class="glass card locked-box">' + ring(10) + '<span class="stamp">Roadmap complete!</span><h2>You’ve finished all 10 steps.</h2><p class="muted">Your mentor will help you with the final submission. Congratulations.</p></div>', mount: animateRing };
-    }
-    var d = step(cur.step);
-    var summary = '<div class="glass card today-head">' + ring(done) + '<div class="txt"><span class="small muted">Your roadmap</span><h3>' + done + ' of 10 steps approved</h3><span class="small muted">Today: Step ' + cur.step + ' · ' + esc(d.title) + '</span></div></div>';
-    var body = stepCard(cur.step, st);
-    var help = '<div class="glass card help-card"><div><h3>Stuck on this step?</h3><p class="small muted">Message your mentor and get help on WhatsApp.</p></div>' +
-      waButton(MENTOR_WA, 'Hi, I’m ' + me.name + ', a Researchette member. I need help with Step ' + cur.step + ': ' + d.title + '.', 'Contact on WhatsApp') + '</div>';
-    return { html: head + summary + body.html + help, mount: function (m) { animateRing(m); body.mount(m); } };
+  /* members choose (or start) a programme; mentors can also assign them */
+  async function programmeSheet() {
+    var prog = await S.progress(me.id);
+    sheet('<h2>Choose a programme</h2><p class="muted small">Each programme has its own step-by-step roadmap. Your progress in each one is saved.</p>' +
+      '<div class="glass list">' + C.tracks.map(function (t) {
+        var p = prog[t.id], on = t.id === me.activeTrack;
+        var sub = p ? p.done + ' of ' + p.total + ' steps approved' : t.steps.length + ' steps · not started';
+        return '<button class="li li-btn" type="button" data-t="' + t.id + '"><span class="sicon ' + (on ? 'current' : p ? 'approved' : 'locked') + '">' + (on ? ic('check') : t.steps.length) + '</span>' +
+          '<div class="li-main"><span class="li-title">' + esc(t.name) + '</span><span class="li-sub">' + esc(sub) + '</span></div>' +
+          '<div class="li-end">' + (on ? '<span class="pill approved">Current</span>' : '<span class="pill">' + (p ? 'Switch' : 'Start') + '</span>') + '</div></button>';
+      }).join('') + '</div><button class="btn btn-quiet btn-block btn-sm" type="button" data-close>Close</button>',
+      function (el, close) {
+        el.querySelectorAll('[data-t]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            var id = b.dataset.t;
+            if (id === me.activeTrack) { close(); return; }
+            S.setActiveTrack(me.id, id).then(function () { close(); toast('Now on: ' + T(id).name); go('today'); });
+          });
+        });
+      });
   }
 
-  async function vStep(n) {
-    if (!(n >= 1 && n <= 10)) { setHash('roadmap'); return vRoadmap(); }
-    var st = await S.stepStates(me.id), body = stepCard(n, st);
+  async function vToday() {
+    var t = me.activeTrack || 'original', tr = T(t);
+    var st = await S.stepStates(me.id, t), total = st.length;
+    var done = st.filter(function (x) { return x.status === 'approved'; }).length;
+    var cur = st.filter(function (x) { return x.status !== 'approved'; })[0];
+    var head = '<section class="page-head"><span class="eyebrow">' + today() + '</span><h1>' + greet() + ', ' + first(me.name) + '.</h1></section>' + progSwitch(t);
+    if (!cur) {
+      return { html: head + '<div class="glass card locked-box">' + ring(total, total) + '<span class="stamp">Programme complete!</span><h2>You’ve finished all ' + total + ' steps of ' + esc(tr.name) + '.</h2><p class="muted">Your mentor will help you with the final submission. Ready for the next one?</p><button class="btn btn-primary" type="button" data-prog>Choose another programme</button></div>',
+        mount: function (m) { animateRing(m); bindProg(m); } };
+    }
+    var d = stepOf(t, cur.step);
+    var summary = '<div class="glass card today-head">' + ring(done, total) + '<div class="txt"><span class="small muted">' + esc(tr.name) + '</span><h3>' + done + ' of ' + total + ' steps approved</h3><span class="small muted">Today: Step ' + cur.step + ' · ' + esc(d.title) + '</span></div></div>';
+    var body = stepCard(t, cur.step, st);
+    var help = '<div class="glass card help-card"><div><h3>Stuck on this step?</h3><p class="small muted">Message your mentor and get help on WhatsApp.</p></div>' +
+      waButton(MENTOR_WA, 'Hi, I’m ' + me.name + ', a Researchette member. I need help with ' + tr.name + ', Step ' + cur.step + ': ' + d.title + '.', 'Contact on WhatsApp') + '</div>';
+    return { html: head + summary + body.html + help, mount: function (m) { animateRing(m); bindProg(m); body.mount(m); } };
+  }
+
+  async function vStep(t, n) {
+    if (!C.tracks.some(function (x) { return x.id === t; }) || !(n >= 1 && n <= T(t).steps.length)) { setHash('roadmap'); return vRoadmap(); }
+    var st = await S.stepStates(me.id, t), body = stepCard(t, n, st);
     return { html: '<a class="back" href="#roadmap">' + ic('back', 'chev') + 'Roadmap</a>' + body.html, mount: body.mount };
   }
 
-  function stepCard(n, st) {
-    var x = st[n - 1], d = step(n), ph = phaseOf(n), sub = x.submission;
+  function stepCard(t, n, st) {
+    var x = st[n - 1], d = stepOf(t, n), ph = phaseOf(t, n), sub = x.submission, total = st.length;
     if (x.status === 'locked') {
       var open = st.filter(function (s) { return s.status !== 'approved'; })[0];
-      return { html: '<div class="glass card locked-box">' + ic('lock') + '<h2>Step ' + n + ' · ' + esc(d.title) + '</h2><p class="muted">This step unlocks when step ' + (n - 1) + ' is approved.</p><a class="btn btn-glass" href="#step-' + open.step + '">Go to step ' + open.step + '</a></div>', mount: function () {} };
+      return { html: '<div class="glass card locked-box">' + ic('lock') + '<h2>Step ' + n + ' · ' + esc(d.title) + '</h2><p class="muted">This step unlocks when step ' + (n - 1) + ' is approved.</p><a class="btn btn-glass" href="#step-' + t + '-' + open.step + '">Go to step ' + open.step + '</a></div>', mount: function () {} };
     }
     var tab = x.status === 'current' ? 0 : 2;
     var html = '<article class="glass card stack-lg" id="stepcard">' +
-      '<div class="step-head"><div class="row spread wrap"><span class="eyebrow">Phase 0' + ph.id + ' · ' + esc(ph.name) + '</span>' + pill(x.status) + '</div>' +
+      '<div class="step-head"><div class="row spread wrap"><span class="eyebrow">' + esc(T(t).short) + ' · ' + esc(ph.name) + '</span>' + pill(x.status) + '</div>' +
       '<h2>Step ' + n + ' · ' + esc(d.title) + '</h2><div class="step-meta">' + ic('clock', 'chev') + d.minutes + ' min · ' + esc(d.summary) + '</div></div>' +
       '<div class="seg" role="tablist" style="--n:3;--i:' + tab + '"><button type="button" role="tab" data-t="0">Learn</button><button type="button" role="tab" data-t="1">Example</button><button type="button" role="tab" data-t="2">Task</button></div>' +
       '<div id="panel"></div></article>';
 
-    function panel(t) {
-      if (t === 0) return '<div class="panel stack"><ol class="lesson">' + d.lesson.map(function (l, i) {
+    function panel(k) {
+      if (k === 0) return '<div class="panel stack"><ol class="lesson">' + d.lesson.map(function (l, i) {
         return '<li><span class="n">' + (i + 1) + '</span><div><b>' + esc(l.h) + '</b><p>' + esc(l.p) + '</p></div></li>';
       }).join('') + '</ol><button class="btn btn-glass" type="button" data-goto="1">See an example →</button></div>';
-      if (t === 1) return '<div class="panel ex">' +
+      if (k === 1) return '<div class="panel ex">' +
         '<div class="ex-box ex-weak"><span class="lbl">Weak</span><p>' + esc(d.example.weak) + '</p></div>' +
         '<div class="ex-box ex-strong"><span class="lbl">Strong</span><p>' + esc(d.example.strong) + '</p></div>' +
         '<p class="why"><b>Why it works:</b> ' + esc(d.example.why) + '</p>' +
@@ -324,21 +355,21 @@
       if (x.status === 'review') out += '<div class="note amber"><b class="small">Submitted ' + rel(sub.createdAt) + '</b><span class="small muted">Your mentor will review it within 48 hours. You’ll see their feedback here.</span></div><div class="paper">' + esc(sub.text) + '</div>';
       if (x.status === 'approved') out += '<div><span class="stamp">Approved</span></div>' + (sub.feedback ? '<div class="note teal"><p class="fb">' + esc(sub.feedback) + '</p>' + by(sub) + '</div>' : '') +
         '<details><summary class="small muted" style="cursor:pointer">Your approved answer</summary><div class="paper" style="margin-top:10px">' + esc(sub.text) + '</div></details>' +
-        (n < 10 ? '<a class="btn btn-primary" href="#step-' + (n + 1) + '">Go to step ' + (n + 1) + ' →</a>' : '');
+        (n < total ? '<a class="btn btn-primary" href="#step-' + t + '-' + (n + 1) + '">Go to step ' + (n + 1) + ' →</a>' : '');
       return out + '</div>';
     }
 
     function mount(root) {
       var card = root.querySelector('#stepcard'), seg = card.querySelector('.seg'), box = card.querySelector('#panel');
-      function show(t) {
-        seg.style.setProperty('--i', t);
-        seg.querySelectorAll('button').forEach(function (b) { var on = +b.dataset.t === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
-        box.innerHTML = panel(t);
+      function show(k) {
+        seg.style.setProperty('--i', k);
+        seg.querySelectorAll('button').forEach(function (b) { var on = +b.dataset.t === k; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+        box.innerHTML = panel(k);
         box.querySelectorAll('[data-goto]').forEach(function (b) { b.addEventListener('click', function () { show(+b.dataset.goto); }); });
         var ta = box.querySelector('#answer');
         if (ta) {
-          var key = 'rt-draft-' + me.id + '-' + n, cnt = box.querySelector('#counter'), send = box.querySelector('#send');
-          ta.value = store(key) || (x.status === 'revision' ? sub.text : '');
+          var key = 'rt-draft-' + me.id + '-' + t + '-' + n, cnt = box.querySelector('#counter'), send = box.querySelector('#send');
+          ta.value = store(key) || (t === 'original' && store('rt-draft-' + me.id + '-' + n)) || (x.status === 'revision' ? sub.text : '');
           var upd = function () {
             var w = words(ta.value), ok = w >= d.task.minWords;
             cnt.textContent = w + ' words · minimum ' + d.task.minWords; cnt.classList.toggle('ok', ok); send.disabled = !ok;
@@ -346,7 +377,7 @@
           ta.addEventListener('input', function () { store(key, ta.value); upd(); }); upd();
           send.addEventListener('click', function () {
             send.disabled = true; send.textContent = 'Sending…';
-            S.submit(me.id, n, ta.value.trim()).then(function () { store(key, null); toast('Sent to your mentor'); render(); }, function (e) { toast(e.message); send.disabled = false; });
+            S.submit(me.id, t, n, ta.value.trim()).then(function () { store(key, null); toast('Sent to your mentor'); render(); }, function (e) { toast(e.message); send.disabled = false; });
           });
         }
       }
@@ -357,19 +388,24 @@
   }
 
   /* ---------- member: roadmap ---------- */
-  async function vRoadmap() {
-    var st = await S.stepStates(me.id), done = st.filter(function (x) { return x.status === 'approved'; }).length;
-    var html = '<section class="page-head"><span class="eyebrow">Original article</span><h1>Your roadmap</h1><div class="row"><div class="bar" style="flex:1"><i style="width:' + done * 10 + '%"></i></div><span class="small muted">' + done + ' of 10</span></div></section>';
-    C.phases.forEach(function (ph) {
-      var items = st.filter(function (x) { return step(x.step).phase === ph.id; });
+  function roadmapList(t, st, linkFn) {
+    return T(t).phases.map(function (ph, pi) {
+      var items = st.filter(function (x) { return stepOf(t, x.step).phase === ph.id; });
       var pd = items.filter(function (x) { return x.status === 'approved'; }).length;
-      html += '<section><div class="phase-title"><h3>Phase 0' + ph.id + ' · ' + esc(ph.name) + '</h3><span class="small muted">' + pd + '/' + items.length + '</span></div><div class="glass list">' +
+      return '<section class="stack" style="gap:0"><div class="phase-title"><h3>Phase 0' + (pi + 1) + ' · ' + esc(ph.name) + '</h3><span class="small muted">' + pd + '/' + items.length + '</span></div><div class="glass list">' +
         items.map(function (x) {
-          var d = step(x.step), inner = sicon(x.status, x.step) + '<div class="li-main"><span class="li-title">' + x.step + '. ' + esc(d.title) + '</span><span class="li-sub">' + esc(d.summary) + ' · ' + d.minutes + ' min</span></div><div class="li-end">' + (x.status === 'locked' ? '' : pill(x.status) + ic('chev', 'chev')) + '</div>';
-          return x.status === 'locked' ? '<div class="li" aria-disabled="true">' + inner + '</div>' : '<a class="li" href="#step-' + x.step + '">' + inner + '</a>';
+          var d = stepOf(t, x.step), href = linkFn(x);
+          var inner = sicon(x.status, x.step) + '<div class="li-main"><span class="li-title">' + x.step + '. ' + esc(d.title) + '</span><span class="li-sub">' + esc(d.summary) + ' · ' + d.minutes + ' min</span></div><div class="li-end">' + (x.status === 'locked' ? '' : pill(x.status) + (href ? ic('chev', 'chev') : '')) + '</div>';
+          return href ? '<a class="li" href="' + href + '">' + inner + '</a>' : '<div class="li"' + (x.status === 'locked' ? ' aria-disabled="true"' : '') + '>' + inner + '</div>';
         }).join('') + '</div></section>';
-    });
-    return { html: html };
+    }).join('');
+  }
+  async function vRoadmap() {
+    var t = me.activeTrack || 'original', st = await S.stepStates(me.id, t), total = st.length;
+    var done = st.filter(function (x) { return x.status === 'approved'; }).length;
+    var html = '<section class="page-head"><span class="eyebrow">Roadmap</span><h1>' + esc(T(t).name) + '</h1><div class="row"><div class="bar" style="flex:1"><i style="width:' + Math.round(done / total * 100) + '%"></i></div><span class="small muted">' + done + ' of ' + total + '</span></div></section>' +
+      progSwitch(t) + roadmapList(t, st, function (x) { return x.status === 'locked' ? '' : '#step-' + t + '-' + x.step; });
+    return { html: html, mount: bindProg };
   }
 
   /* ---------- member: feedback ---------- */
@@ -378,9 +414,9 @@
     var html = '<section class="page-head"><span class="eyebrow">History</span><h1>Feedback</h1><p class="muted">Everything you’ve submitted and what your mentors said.</p></section>';
     if (!subs.length) return { html: html + '<div class="glass empty">' + ic('chat') + '<b>No submissions yet</b><span>Your first task is waiting on the Today tab.</span></div>' };
     html += '<div class="glass list">' + subs.map(function (s) {
-      var d = step(s.step);
+      var d = stepOf(s.track, s.step);
       var sub = s.feedback ? '“' + esc(s.feedback) + '”' : 'Waiting for your mentor';
-      return '<a class="li" href="#step-' + s.step + '">' + sicon(s.status, s.step) + '<div class="li-main"><span class="li-title">Step ' + s.step + ' · ' + esc(d.title) + '</span><span class="li-sub">' + sub + '</span></div><div class="li-end"><span class="small muted">' + rel(s.reviewedAt || s.createdAt) + '</span></div></a>';
+      return '<a class="li" href="#step-' + s.track + '-' + s.step + '">' + sicon(s.status, s.step) + '<div class="li-main"><span class="li-title">' + esc(T(s.track).short) + ' · Step ' + s.step + ' · ' + esc(d.title) + '</span><span class="li-sub">' + sub + '</span></div><div class="li-end"><span class="small muted">' + rel(s.reviewedAt || s.createdAt) + '</span></div></a>';
     }).join('') + '</div>';
     return { html: html };
   }
@@ -388,10 +424,11 @@
   /* ---------- admin: overview ---------- */
   async function vOverview(stats) {
     var q = await S.queue(), apps = (await S.applications()).filter(function (a) { return a.status === 'new'; });
-    var html = '<section class="page-head"><span class="eyebrow">' + today() + '</span><h1>' + greet() + ', ' + first(me.name) + '.</h1><p class="muted">' + (stats.pending ? stats.pending + ' submission' + (stats.pending > 1 ? 's are' : ' is') + ' waiting for your review.' : 'You’re all caught up.') + '</p></section>' +
+    var html = '<section class="page-head"><span class="eyebrow">' + today() + '</span><h1>' + greet() + ', ' + first(me.name) + '.</h1><p class="muted">' +
+      (stats.pending ? stats.pending + ' submission' + (stats.pending > 1 ? 's are' : ' is') + ' waiting for review' + (stats.pendingMine ? ', ' + stats.pendingMine + ' from your students.' : '.') : 'You’re all caught up.') + '</p></section>' +
       '<div class="stats">' +
         '<a class="stat glass' + (stats.pending ? ' hot' : '') + '" href="#reviews"><b>' + stats.pending + '</b><span>Waiting for review</span></a>' +
-        '<a class="stat glass" href="#members"><b>' + stats.members + '</b><span>Active members</span></a>' +
+        '<a class="stat glass" href="#members"><b>' + stats.myMembers + '</b><span>Your students</span></a>' +
         '<a class="stat glass" href="#applications"><b>' + stats.applications + '</b><span>New applications</span></a>' +
         '<div class="stat glass"><b>' + stats.approvedWeek + '</b><span>Approved this week</span></div>' +
       '</div>' +
@@ -405,29 +442,46 @@
       '</div>';
     return { html: html };
   }
+  var mentorCache = [];
+  function mentorName(id) { var m = mentorCache.filter(function (x) { return x.id === id; })[0]; return m ? m.name.split(' ')[0] : ''; }
   function queueList(q) {
     if (!q.length) return '<div class="glass empty">' + ic('done') + '<b>All caught up</b><span>New submissions will appear here.</span></div>';
     return '<div class="glass list">' + q.map(function (s) {
-      var late = Date.now() - new Date(s.createdAt) > 48 * 3600e3;
-      return '<a class="li" href="#review-' + esc(s.id) + '"><span class="avatar warm">' + initials(s.member.name) + '</span><div class="li-main"><span class="li-title">' + esc(s.member.name) + '</span><span class="li-sub">Step ' + s.step + ' · ' + esc(step(s.step).title) + ' · ' + rel(s.createdAt) + '</span></div><div class="li-end">' + (late ? '<span class="pill revision">Over 48h</span>' : pill('review')) + ic('chev', 'chev') + '</div></a>';
+      var late = Date.now() - new Date(s.createdAt) > 48 * 3600e3, mine = s.member.mentorId === me.id;
+      var who = s.member.mentorId ? (mine ? 'Your student' : mentorName(s.member.mentorId) + '’s student') : 'No mentor yet';
+      return '<a class="li" href="#review-' + esc(s.id) + '"><span class="avatar warm">' + initials(s.member.name) + '</span><div class="li-main"><span class="li-title">' + esc(s.member.name) + '</span><span class="li-sub">' + esc(T(s.track).short) + ' · Step ' + s.step + ' · ' + esc(stepOf(s.track, s.step).title) + ' · ' + rel(s.createdAt) + '</span><span class="li-sub">' + esc(who) + '</span></div><div class="li-end">' + (late ? '<span class="pill revision">Over 48h</span>' : pill('review')) + ic('chev', 'chev') + '</div></a>';
     }).join('') + '</div>';
   }
 
   /* ---------- admin: reviews ---------- */
+  var reviewFilter = null;
   async function vReviews() {
     var q = await S.queue();
-    return { html: '<section class="page-head"><span class="eyebrow">Oldest first</span><h1>Reviews</h1><p class="muted">' + (q.length ? q.length + ' waiting. Aim to reply within 48 hours.' : 'Nothing waiting right now.') + '</p></section>' + queueList(q) };
+    var mine = q.filter(function (s) { return s.member.mentorId === me.id; });
+    if (!reviewFilter) reviewFilter = mine.length ? 'mine' : 'all';
+    var list = reviewFilter === 'mine' ? mine : q, idx = reviewFilter === 'mine' ? 0 : 1;
+    return {
+      html: '<section class="page-head"><span class="eyebrow">Oldest first</span><h1>Reviews</h1><p class="muted">' + (q.length ? q.length + ' waiting. Aim to reply within 48 hours.' : 'Nothing waiting right now.') + '</p></section>' +
+        '<div class="seg" id="rfilter" style="--n:2;--i:' + idx + '"><button type="button" data-f="mine">Your students · ' + mine.length + '</button><button type="button" data-f="all">Everyone · ' + q.length + '</button></div>' +
+        queueList(list),
+      mount: function (m) {
+        m.querySelectorAll('#rfilter button').forEach(function (b, i) {
+          b.classList.toggle('on', i === idx);
+          b.addEventListener('click', function () { reviewFilter = b.dataset.f; m.querySelector('#rfilter').style.setProperty('--i', i); setTimeout(render, 180); });
+        });
+      }
+    };
   }
 
   async function vReview(id) {
     var s = await S.submission(id);
     if (!s) return { html: '<a class="back" href="#reviews">' + ic('back', 'chev') + 'Reviews</a><div class="glass empty"><b>Submission not found</b></div>' };
-    var d = step(s.step), ph = phaseOf(s.step), open = s.status === 'review';
+    var d = stepOf(s.track, s.step), ph = phaseOf(s.track, s.step), open = s.status === 'review', total = T(s.track).steps.length;
     var html = '<a class="back" href="#reviews">' + ic('back', 'chev') + 'Reviews</a>' +
       '<a class="glass card row" href="#member-' + esc(s.userId) + '" style="text-decoration:none;color:inherit"><span class="avatar lg warm">' + initials(s.member.name) + '</span><div class="li-main"><h3>' + esc(s.member.name) + '</h3><span class="small muted">' + esc(s.member.college || '') + '</span></div>' + ic('chev', 'chev') + '</a>' +
-      (waNumber(s.member.phone) ? '<div class="row">' + waButton(waNumber(s.member.phone), 'Hi ' + s.member.name.split(' ')[0] + ', about your Step ' + s.step + ' submission on Researchette: ', 'WhatsApp ' + s.member.name.split(' ')[0], 'btn-sm') + '</div>' : '') +
+      (waNumber(s.member.phone) ? '<div class="row">' + waButton(waNumber(s.member.phone), 'Hi ' + s.member.name.split(' ')[0] + ', about your ' + T(s.track).name + ' Step ' + s.step + ' submission on Researchette: ', 'WhatsApp ' + s.member.name.split(' ')[0], 'btn-sm') + '</div>' : '') +
       '<article class="glass card stack-lg">' +
-        '<div class="step-head"><div class="row spread wrap"><span class="eyebrow">Phase 0' + ph.id + ' · ' + esc(ph.name) + '</span>' + pill(s.status) + '</div><h2>Step ' + s.step + ' · ' + esc(d.title) + '</h2></div>' +
+        '<div class="step-head"><div class="row spread wrap"><span class="eyebrow">' + esc(T(s.track).short) + ' · ' + esc(ph.name) + '</span>' + pill(s.status) + '</div><h2>Step ' + s.step + ' · ' + esc(d.title) + '</h2></div>' +
         '<div class="stack"><span class="small muted"><b>Task:</b> ' + esc(d.task.prompt) + '</span></div>' +
         '<div class="stack"><div class="row spread"><span class="eyebrow">Submission</span><span class="small muted">' + rel(s.createdAt) + ' · ' + words(s.text) + ' words</span></div><div class="paper">' + esc(s.text) + '</div></div>' +
         (s.history.length ? '<details><summary class="small muted" style="cursor:pointer">Earlier attempts (' + s.history.length + ')</summary><div class="stack" style="margin-top:12px">' + s.history.map(function (h) {
@@ -446,11 +500,11 @@
         var fb = m.querySelector('#fb'), err = m.querySelector('#fb-err');
         m.querySelectorAll('#quick .chip').forEach(function (c) { c.addEventListener('click', function () { fb.value = (fb.value.trim() ? fb.value.trim() + ' ' : '') + c.textContent; fb.focus(); }); });
         function act(decision) {
-          var text = fb.value.trim();
+          var text = fb.value.trim(), who = s.member.name.split(' ')[0];
           if (decision === 'revision' && !text) { err.textContent = 'Write what needs to change so the member knows how to fix it.'; err.hidden = false; fb.focus(); return; }
           if (!text) text = 'Well done. Approved.';
           S.review(id, decision, text, me.id).then(function () {
-            toast(decision === 'approved' ? 'Approved. Step ' + (s.step + 1 <= 10 ? s.step + 1 + ' unlocked for ' : 'Roadmap complete for ') + s.member.name.split(' ')[0] : 'Sent back to ' + s.member.name.split(' ')[0]);
+            toast(decision === 'approved' ? (s.step < total ? 'Approved. Step ' + (s.step + 1) + ' unlocked for ' + who : T(s.track).name + ' complete for ' + who) : 'Sent back to ' + who);
             go('reviews');
           }, function (e) { toast(e.message); });
         }
@@ -461,51 +515,123 @@
   }
 
   /* ---------- admin: members ---------- */
-  function dots(states) { return '<div class="dots" aria-hidden="true">' + states.map(function (x) { return '<i class="' + x.status + '"></i>'; }).join('') + '</div>'; }
+  function dots(states) { return '<div class="dots" style="grid-template-columns:repeat(' + states.length + ',1fr)" aria-hidden="true">' + states.map(function (x) { return '<i class="' + x.status + '"></i>'; }).join('') + '</div>'; }
+  function levelOptions(sel) { return '<option value="">Choose one</option>' + LEVELS.map(function (l) { return '<option' + (l === sel ? ' selected' : '') + '>' + esc(l) + '</option>'; }).join(''); }
+  function mentorOptions(sel) { return '<option value="">No mentor yet</option>' + mentorCache.map(function (m) { return '<option value="' + esc(m.id) + '"' + (m.id === sel ? ' selected' : '') + '>' + esc(m.name) + '</option>'; }).join(''); }
+  function trackChips(selected, name) {
+    return '<div class="chips pick">' + C.tracks.map(function (t) {
+      return '<label><input type="checkbox" name="' + name + '" value="' + t.id + '"' + (selected.indexOf(t.id) > -1 ? ' checked' : '') + '><span>' + esc(t.name) + '</span></label>';
+    }).join('') + '</div>';
+  }
+  function welcomeMessage(u, pw) {
+    return 'Welcome to Researchette, ' + u.name.split(' ')[0] + '!\n\nYour member portal login:\nEmail: ' + u.email + '\nPassword: ' + pw + '\n\nLog in here: ' + location.href.split('#')[0] + '\nYour first task is waiting.';
+  }
+  function credentialsSheet(u, pw, title, note) {
+    var msg = welcomeMessage(u, pw), num = waNumber(u.phone);
+    sheet('<span class="stamp">' + esc(title) + '</span><h2>Login details for ' + esc(u.name) + '</h2><p class="muted">' + esc(note) + ' For security, the password is only shown once.</p>' +
+      '<div class="cred"><span>Email</span><b>' + esc(u.email) + '</b></div><div class="cred"><span>Password</span><b>' + esc(pw) + '</b></div>' +
+      '<pre class="paper small" id="msg" style="margin:0;font-family:var(--f-body)">' + esc(msg) + '</pre>' +
+      (num ? waButton(num, msg, 'Send on WhatsApp', 'btn-block') : '') +
+      '<button class="btn btn-primary btn-block" type="button" id="cp">Copy message</button><button class="btn btn-quiet btn-block btn-sm" type="button" data-close>Done</button>',
+      function (el) {
+        el.querySelector('#cp').addEventListener('click', function () { copy(msg, el.querySelector('#msg')); });
+        el.querySelector('[data-close]').addEventListener('click', render);
+      });
+  }
+
+  var memberFilter = 'all';
   async function vMembers() {
-    var list = await S.members();
+    var list = await S.members(); mentorCache = await S.mentors();
+    var mine = list.filter(function (u) { return u.mentorId === me.id; });
+    var shown = memberFilter === 'mine' ? mine : list, idx = memberFilter === 'mine' ? 1 : 0;
     var rows = function (arr) {
-      if (!arr.length) return '<div class="empty"><span>No members match that search.</span></div>';
+      if (!arr.length) return '<div class="empty"><span>' + (memberFilter === 'mine' ? 'No students are assigned to you yet.' : 'No members yet. Add one to get started.') + '</span></div>';
       return arr.map(function (u) {
         var st = u.current ? u.current.status : 'approved';
-        return '<a class="li" href="#member-' + esc(u.id) + '" data-q="' + esc((u.name + ' ' + u.email + ' ' + (u.college || '')).toLowerCase()) + '"><span class="avatar warm">' + initials(u.name) + '</span><div class="li-main"><span class="li-title">' + esc(u.name) + '</span><span class="li-sub">' + esc(u.college || '') + '</span></div><div class="li-end"><span class="small muted">' + u.done + '/10</span>' + pill(st === 'current' ? 'current' : st) + '</div></a>';
+        var sub = [T(u.activeTrack).short + (u.tracks.length > 1 ? ' +' + (u.tracks.length - 1) : ''), u.mentor ? u.mentor.name.split(' ')[0] : 'No mentor'].join(' · ');
+        return '<a class="li" href="#member-' + esc(u.id) + '" data-q="' + esc((u.name + ' ' + u.email + ' ' + (u.college || '')).toLowerCase()) + '"><span class="avatar warm">' + initials(u.name) + '</span><div class="li-main"><span class="li-title">' + esc(u.name) + '</span><span class="li-sub">' + esc(sub) + '</span></div><div class="li-end"><span class="small muted">' + u.done + '/' + u.total + '</span>' + pill(st) + '</div></a>';
       }).join('');
     };
     return {
-      html: '<section class="page-head"><span class="eyebrow">' + list.length + ' members</span><h1>Members</h1></section>' +
+      html: '<section class="page-head"><div class="row spread wrap"><div class="stack" style="gap:6px"><span class="eyebrow">' + list.length + ' members</span><h1>Members</h1></div><button class="btn btn-primary" type="button" id="add-member">+ Add member</button></div></section>' +
+        '<div class="seg" id="mfilter" style="--n:2;--i:' + idx + '"><button type="button" data-f="all">Everyone · ' + list.length + '</button><button type="button" data-f="mine">Your students · ' + mine.length + '</button></div>' +
         '<div class="search">' + ic('search') + '<input id="q" type="search" placeholder="Search by name, email or college" aria-label="Search members"></div>' +
-        '<div class="glass list" id="mlist">' + rows(list) + '</div>',
+        '<div class="glass list" id="mlist">' + rows(shown) + '</div>',
       mount: function (m) {
+        m.querySelector('#add-member').addEventListener('click', addMemberSheet);
+        m.querySelectorAll('#mfilter button').forEach(function (b, i) {
+          b.classList.toggle('on', i === idx);
+          b.addEventListener('click', function () { memberFilter = b.dataset.f; m.querySelector('#mfilter').style.setProperty('--i', i); setTimeout(render, 180); });
+        });
         var q = m.querySelector('#q');
         q.addEventListener('input', function () {
           var v = q.value.trim().toLowerCase(), any = false;
           m.querySelectorAll('#mlist .li').forEach(function (r) { var hit = r.dataset.q.indexOf(v) > -1; r.hidden = !hit; any = any || hit; });
-          var e = m.querySelector('#mlist .empty'); if (!any && !e) m.querySelector('#mlist').insertAdjacentHTML('beforeend', '<div class="empty"><span>No members match that search.</span></div>'); else if (any && e) e.remove();
+          var e = m.querySelector('#mlist .empty.search-empty'); if (!any && !e) m.querySelector('#mlist').insertAdjacentHTML('beforeend', '<div class="empty search-empty"><span>No members match that search.</span></div>'); else if (any && e) e.remove();
         });
       }
     };
   }
+
+  function addMemberSheet() {
+    sheet('<h2>Add a member</h2><p class="muted small">Creates a login with a temporary password you can send them.</p>' +
+      '<form id="am" class="stack" novalidate>' +
+        '<div class="field"><label for="am-name">Full name</label><input id="am-name" autocomplete="off" required placeholder="Ayesha Khan"></div>' +
+        '<div class="field"><label for="am-email">Email</label><input id="am-email" type="email" autocomplete="off" required placeholder="ayesha@example.com"></div>' +
+        '<div class="field"><label for="am-phone">WhatsApp number <span class="muted">(optional)</span></label><input id="am-phone" type="tel" inputmode="tel" placeholder="03xx xxxxxxx"></div>' +
+        '<div class="field"><label for="am-college">Medical college / university</label><input id="am-college" placeholder="King Edward Medical University"></div>' +
+        '<div class="field"><label for="am-level">Current level</label><select id="am-level">' + levelOptions('') + '</select></div>' +
+        '<div class="field"><span class="small" style="font-weight:600">Programmes</span>' + trackChips(['original'], 'am-track') + '</div>' +
+        '<div class="field"><label for="am-mentor">Mentor</label><select id="am-mentor">' + mentorOptions(me.id) + '</select></div>' +
+        '<p class="error" id="am-err" role="alert" hidden></p>' +
+        '<button class="btn btn-primary btn-block" type="submit">Create member</button>' +
+        '<button class="btn btn-quiet btn-block btn-sm" type="button" data-close>Cancel</button>' +
+      '</form>',
+      function (el, close) {
+        var f = el.querySelector('#am'), err = el.querySelector('#am-err');
+        f.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var v = function (id) { return el.querySelector('#' + id).value.trim(); };
+          var tracks = [].slice.call(el.querySelectorAll('input[name="am-track"]:checked')).map(function (c) { return c.value; });
+          var show = function (msg) { err.textContent = msg; err.hidden = false; };
+          if (!v('am-name')) return show('Enter the member’s name.');
+          if (!/.+@.+\..+/.test(v('am-email'))) return show('Enter a valid email address.');
+          if (v('am-phone') && !waNumber(v('am-phone'))) return show('Enter a full WhatsApp number, like 0339 5888444, or leave it empty.');
+          if (!tracks.length) return show('Choose at least one programme.');
+          S.addMember({ name: v('am-name'), email: v('am-email'), phone: v('am-phone'), college: v('am-college'), level: v('am-level'), tracks: tracks }, v('am-mentor'))
+            .then(function (res) { close(); credentialsSheet(res.user, res.password, 'Member added', 'Send these details to the student by WhatsApp or email.'); }, function (x) { show(x.message); });
+        });
+      });
+  }
+
   async function vMember(id) {
-    var u = await S.member(id);
-    if (!u) return { html: '<a class="back" href="#members">' + ic('back', 'chev') + 'Members</a><div class="glass empty"><b>Member not found</b></div>' };
-    var subs = await S.submissions(id);
+    var u = await S.member(id); mentorCache = await S.mentors();
+    if (!u) return { html: '<a class="back" href="#members">' + ic('back', 'chev') + 'Members</a><div class="glass empty"><b>Member not found</b><span>They may have been removed.</span></div>' };
+    var subs = await S.submissions(id), fn = u.name.split(' ')[0];
     var html = '<a class="back" href="#members">' + ic('back', 'chev') + 'Members</a>' +
       '<div class="glass card stack">' +
         '<div class="row"><span class="avatar lg warm">' + initials(u.name) + '</span><div class="li-main"><h2>' + esc(u.name) + '</h2><span class="small muted">' + esc(u.email) + (u.phone ? ' · ' + esc(u.phone) : '') + '</span></div></div>' +
         '<div class="row wrap wa-row">' + (waNumber(u.phone)
-          ? waButton(waNumber(u.phone), 'Hi ' + u.name.split(' ')[0] + ', this is ' + me.name.split(' ')[0] + ' from Researchette.', 'WhatsApp ' + u.name.split(' ')[0]) + '<button class="btn btn-quiet btn-sm" type="button" id="edit-phone">Change number</button>'
+          ? waButton(waNumber(u.phone), 'Hi ' + fn + ', this is ' + me.name.split(' ')[0] + ' from Researchette.', 'WhatsApp ' + fn) + '<button class="btn btn-quiet btn-sm" type="button" id="edit-phone">Change number</button>'
           : '<button class="btn btn-glass btn-sm" type="button" id="edit-phone">' + ic('wa') + 'Add WhatsApp number</button>') + '</div>' +
         '<form class="row wrap" id="phone-form" hidden><input id="phone-in" type="tel" inputmode="tel" placeholder="03xx xxxxxxx" value="' + esc(u.phone || '') + '" style="flex:1;min-width:180px" aria-label="WhatsApp number"><button class="btn btn-primary btn-sm" type="submit">Save</button></form>' +
         '<div class="chips">' + [u.college, u.level, 'Joined ' + rel(u.joined)].filter(Boolean).map(function (c) { return '<span class="chip">' + esc(c) + '</span>'; }).join('') + '</div>' +
         (u.topic ? '<p><span class="small muted">Study topic</span><br>' + esc(u.topic) + '</p>' : '') +
-        '<div class="stack" style="gap:8px"><div class="row spread"><span class="small muted">Progress</span><span class="small"><b>' + u.done + '</b> of 10 approved</span></div>' + dots(u.states) + '</div>' +
       '</div>' +
-      '<section class="stack"><div class="phase-title"><h3>Steps</h3></div><div class="glass list">' + u.states.map(function (x) {
-        var s = x.submission, d = step(x.step);
-        var inner = sicon(x.status, x.step) + '<div class="li-main"><span class="li-title">' + x.step + '. ' + esc(d.title) + '</span><span class="li-sub">' + (s ? 'Last submitted ' + rel(s.createdAt) : x.status === 'locked' ? 'Not unlocked yet' : 'Not started') + '</span></div><div class="li-end">' + pill(x.status) + (s ? ic('chev', 'chev') : '') + '</div>';
-        return s ? '<a class="li" href="#review-' + esc(s.id) + '">' + inner + '</a>' : '<div class="li">' + inner + '</div>';
-      }).join('') + '</div></section>' +
-      (subs.length ? '<p class="small muted">' + subs.length + ' submissions in total.</p>' : '');
+      '<div class="glass card stack">' +
+        '<div class="field"><label for="mentor-sel">Mentor</label><select id="mentor-sel">' + mentorOptions(u.mentorId) + '</select></div>' +
+        '<div class="field"><span class="small" style="font-weight:600">Programmes</span><span class="small muted">Tick the programmes this member can follow. Progress is kept if you untick one.</span>' + trackChips(u.tracks, 'm-track') + '</div>' +
+      '</div>' +
+      u.tracks.map(function (t, i) {
+        var st = u.states[t], done = st.filter(function (x) { return x.status === 'approved'; }).length;
+        return '<details class="glass card track-sec"' + (i === 0 ? ' open' : '') + '><summary><div class="li-main"><h3>' + esc(T(t).name) + (t === u.activeTrack ? ' <span class="pill approved">Current</span>' : '') + '</h3><span class="small muted">' + done + ' of ' + st.length + ' steps approved</span></div>' + ic('chev', 'chev down') + '</summary>' +
+          '<div class="stack" style="margin-top:14px">' + dots(st) + roadmapList(t, st, function (x) { return x.submission ? '#review-' + x.submission.id : ''; }) + '</div></details>';
+      }).join('') +
+      '<div class="glass card stack">' +
+        '<h3>Account</h3>' +
+        '<div class="account-actions"><button class="btn btn-glass btn-sm" type="button" id="reset-pw">Reset password</button><button class="btn btn-glass btn-sm" type="button" id="set-pw">Set a password</button><button class="btn btn-danger btn-sm" type="button" id="remove">Remove member</button></div>' +
+        '<p class="small muted">' + subs.length + ' submission' + (subs.length === 1 ? '' : 's') + ' in total.</p>' +
+      '</div>';
     return {
       html: html, mount: function (m) {
         var f = m.querySelector('#phone-form');
@@ -515,6 +641,35 @@
           var v = f.querySelector('input').value;
           if (v.trim() && !waNumber(v)) { toast('Enter a full number, like 0339 5888444'); return; }
           S.setPhone(id, v).then(function () { toast(v.trim() ? 'Number saved' : 'Number removed'); render(); });
+        });
+        m.querySelector('#mentor-sel').addEventListener('change', function () {
+          var v = this.value;
+          S.assignMentor(id, v).then(function () { toast(v ? 'Assigned to ' + mentorName(v) : 'Mentor removed'); render(); });
+        });
+        m.querySelectorAll('input[name="m-track"]').forEach(function (c) {
+          c.addEventListener('change', function () {
+            var t = [].slice.call(m.querySelectorAll('input[name="m-track"]:checked')).map(function (x) { return x.value; });
+            if (!t.length) { c.checked = true; toast('Keep at least one programme'); return; }
+            S.setTracks(id, t).then(function () { toast(c.checked ? T(c.value).name + ' added' : T(c.value).name + ' removed'); render(); });
+          });
+        });
+        m.querySelector('#reset-pw').addEventListener('click', function () {
+          sheet('<h2>Reset ' + esc(fn) + '’s password?</h2><p class="muted">A new temporary password is created and the old one stops working.</p><div class="row"><button class="btn btn-glass" type="button" data-close style="flex:1">Cancel</button><button class="btn btn-primary" type="button" id="yes" style="flex:1">Reset</button></div>',
+            function (el, close) { el.querySelector('#yes').addEventListener('click', function () { S.resetPassword(id).then(function (res) { close(); credentialsSheet(res.user, res.password, 'Password reset', 'Send the new password to the student.'); }); }); });
+        });
+        m.querySelector('#set-pw').addEventListener('click', function () {
+          sheet('<h2>Set a password for ' + esc(fn) + '</h2><form id="sp" class="stack" novalidate><div class="field"><label for="sp-in">New password</label><div class="pw"><input id="sp-in" type="text" autocomplete="off" placeholder="At least 8 characters"></div></div><p class="error" id="sp-err" role="alert" hidden></p><button class="btn btn-primary btn-block" type="submit">Save password</button><button class="btn btn-quiet btn-block btn-sm" type="button" data-close>Cancel</button></form>',
+            function (el, close) {
+              el.querySelector('#sp').addEventListener('submit', function (e) {
+                e.preventDefault();
+                S.setPassword(id, el.querySelector('#sp-in').value).then(function (res) { close(); credentialsSheet(res.user, res.password, 'Password changed', 'Send the new password to the student.'); },
+                  function (x) { var er = el.querySelector('#sp-err'); er.textContent = x.message; er.hidden = false; });
+              });
+            });
+        });
+        m.querySelector('#remove').addEventListener('click', function () {
+          sheet('<h2>Remove ' + esc(u.name) + '?</h2><p class="muted">Their login stops working and all their submissions and feedback are deleted. This can’t be undone.</p><div class="row"><button class="btn btn-glass" type="button" data-close style="flex:1">Cancel</button><button class="btn btn-danger" type="button" id="yes" style="flex:1">Remove</button></div>',
+            function (el, close) { el.querySelector('#yes').addEventListener('click', function () { S.removeMember(id).then(function () { close(); toast(u.name + ' removed'); go('members'); }); }); });
         });
       }
     };
@@ -538,6 +693,7 @@
         (a.why ? '<p class="quote">' + esc(a.why) + '</p>' : '') +
         '<p class="small"><span class="muted">Contact:</span> ' + esc(a.email) + (a.phone ? ' · ' + esc(a.phone) : '') + '</p>' +
         (waNumber(a.phone) ? '<div class="row">' + waButton(waNumber(a.phone), 'Hi ' + a.name.split(' ')[0] + ', thank you for applying to Researchette!', 'WhatsApp ' + a.name.split(' ')[0], 'btn-sm') + '</div>' : '') +
+        (a.status === 'approved' && a.userId ? '<a class="small" href="#member-' + esc(a.userId) + '">Open member page →</a>' : '') +
         (a.status === 'new' ?
           '<div class="row spread wrap" style="padding-top:12px;border-top:1px solid var(--line)"><label class="switch"><input type="checkbox" data-paid ' + (a.paid ? 'checked' : '') + '><span class="t"></span>Payment received</label>' +
           '<div class="row"><button class="btn btn-quiet btn-sm" type="button" data-decline>Decline</button><button class="btn btn-primary btn-sm" type="button" data-approve>Approve &amp; create login</button></div></div>' : '') +
@@ -569,17 +725,8 @@
     };
   }
   function approve(a) {
-    S.approveApplication(a.id).then(function (res) {
-      var portal = location.href.split('#')[0];
-      var msg = 'Welcome to Researchette, ' + a.name.split(' ')[0] + '!\n\nYour member portal login:\nEmail: ' + res.user.email + '\nPassword: ' + res.password + '\n\nLog in here: ' + portal + '\nYour first task is waiting.';
-      sheet('<span class="stamp">Welcome aboard</span><h2>Login created for ' + esc(a.name) + '</h2><p class="muted">Send these details to the student by email or WhatsApp. For security, the password is only shown once.</p>' +
-        '<div class="cred"><span>Email</span><b>' + esc(res.user.email) + '</b></div><div class="cred"><span>Temporary password</span><b id="pw">' + esc(res.password) + '</b></div>' +
-        '<pre class="paper small" id="msg" style="margin:0;font-family:var(--f-body)">' + esc(msg) + '</pre>' +
-        '<button class="btn btn-primary btn-block" type="button" id="cp">Copy welcome message</button><button class="btn btn-quiet btn-block btn-sm" type="button" data-close>Done</button>',
-        function (el, close) {
-          el.querySelector('#cp').addEventListener('click', function () { copy(msg, el.querySelector('#msg')); });
-          el.querySelector('[data-close]').addEventListener('click', render);
-        });
+    S.approveApplication(a.id, me.id).then(function (res) {
+      credentialsSheet(res.user, res.password, 'Welcome aboard', 'They’re assigned to you, with programmes matching their application. You can change both on their member page. Send these details by WhatsApp or email.');
     }, function (e) { toast(e.message); });
   }
 

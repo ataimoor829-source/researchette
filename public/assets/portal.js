@@ -1145,7 +1145,7 @@
   function addMemberSheet() {
     sheet('<h2>Add a member</h2><p class="muted small">Creates a login with a temporary password you can send them.</p>' +
       '<form id="am" class="stack" novalidate>' +
-        '<div class="field"><label for="am-name">Full name</label><input id="am-name" autocomplete="off" required placeholder="Eeman Khan"></div>' +
+        '<div class="field"><label for="am-name">Full name</label><input id="am-name" autocomplete="off" required placeholder="Eeman Dar"></div>' +
         '<div class="field"><label for="am-email">Email</label><input id="am-email" type="email" autocomplete="off" required placeholder="eeman@example.com"></div>' +
         '<div class="field"><label for="am-phone">WhatsApp number <span class="muted">(optional)</span></label><input id="am-phone" type="tel" inputmode="tel" placeholder="03xx xxxxxxx"></div>' +
         '<div class="field"><label for="am-college">Medical college / university</label><input id="am-college" placeholder="King Edward Medical University"></div>' +

@@ -1,6 +1,7 @@
 /* Researchette portal: login, member portal and admin (mentor) portal in one page.
    Routes live in the URL hash: #login, #today, #roadmap, #step-3, #feedback, #chat,
-   #overview, #reviews, #review-<id>, #members, #member-<id>, #applications, #messages, #chat-<member id>. */
+   #overview, #reviews, #review-<id>, #members, #member-<id>, #applications, #messages, #chat-<member id>,
+   #team, #admin-<id> (owners). */
 (function () {
   var S = window.Store, C = window.CURRICULUM, app = document.getElementById('app');
   var me = null, reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -32,7 +33,9 @@
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function initials(n) { return esc(String(n || '?').split(/\s+/).map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase()); }
-  function first(n) { return esc(String(n || '').split(' ')[0]); }
+  // first name, keeping a title with it ("Dr Sobia" rather than "Dr")
+  function short(n) { var w = String(n || '').trim().split(/\s+/); return /^(dr|prof|mr|mrs|ms|miss)\.?$/i.test(w[0]) && w[1] ? w[0] + ' ' + w[1] : w[0]; }
+  function first(n) { return esc(short(n)); }
   function words(t) { return (String(t).trim().match(/\S+/g) || []).length; }
   function rel(iso) {
     var s = (Date.now() - new Date(iso)) / 1000;
@@ -130,6 +133,10 @@
   function waButton(num, text, label, cls) {
     return '<a class="btn btn-wa ' + (cls || '') + '" href="' + esc(waLink(num, text)) + '" target="_blank" rel="noopener">' + ic('wa') + esc(label) + '</a>';
   }
+  /* what the signed-in person may do: owners everything, everyone else what the owners allow */
+  function can(p) { return !!me && ((me.role === 'admin' && me.owner) || !!(me.perms && me.perms[p])); }
+  function isOwner() { return !!me && me.role === 'admin' && !!me.owner; }
+  function seesAll() { return isOwner() || can('see_all'); }
   function go(h) { if (location.hash === '#' + h) render(); else location.hash = h; }
   function setHash(h) { try { history.replaceState(null, '', '#' + h); } catch (e) {} }
 
@@ -146,25 +153,33 @@
     member: [{ id: 'today', label: 'Today', icon: 'today' }, { id: 'roadmap', label: 'Roadmap', icon: 'map' }, { id: 'feedback', label: 'Feedback', icon: 'chat' }, { id: 'chat', label: 'Chat', icon: 'msgs', badge: 'unread' }],
     admin: [{ id: 'overview', label: 'Overview', icon: 'home' }, { id: 'reviews', label: 'Reviews', icon: 'inbox', badge: 'pending' }, { id: 'messages', label: 'Messages', icon: 'msgs', badge: 'unreadChats' }, { id: 'members', label: 'Members', icon: 'users' }, { id: 'applications', label: 'Applications', icon: 'mail', badge: 'applications' }]
   };
+  function myTabs() {
+    return TABS[me.role].filter(function (t) {
+      if (t.id === 'applications') return can('applications');
+      if (t.id === 'messages' || t.id === 'chat') return can('chat');
+      return true;
+    });
+  }
   function tabsHtml(cls) {
-    return '<nav class="tabs ' + cls + '" aria-label="Sections">' + TABS[me.role].map(function (t) {
+    return '<nav class="tabs ' + cls + '" aria-label="Sections">' + myTabs().map(function (t) {
       return '<a href="#' + t.id + '" data-tab="' + t.id + '">' + ic(t.icon) + '<span>' + t.label + '</span>' + (t.badge ? '<span class="badge" data-badge="' + t.badge + '" hidden></span>' : '') + '</a>';
     }).join('') + '<span class="ind" aria-hidden="true"></span></nav>';
   }
   function ensureShell() {
-    var key = me.id + ':' + me.role;
+    var key = shellKey();
     if (app.dataset.shell === key) return;
     app.dataset.shell = key;
     var home = me.role === 'admin' ? 'overview' : 'today';
     app.innerHTML =
       '<header class="topbar"><div class="shell"><div class="topbar-inner">' +
-        '<a class="logo" href="#' + home + '">' + LOGO + '<span>research<i>ette</i></span>' + (me.role === 'admin' ? '<span class="role">Mentor</span>' : '') + '</a>' +
+        '<a class="logo" href="#' + home + '">' + LOGO + '<span>research<i>ette</i></span>' + (me.role === 'admin' ? '<span class="role">' + (me.owner ? 'Owner' : 'Mentor') + '</span>' : '') + '</a>' +
         tabsHtml('top') +
         '<div class="top-actions"><button class="avatar-btn" id="acct" type="button" aria-label="Account and settings"><span class="avatar ' + (me.role === 'admin' ? '' : 'warm') + '">' + initials(me.name) + '</span></button></div>' +
       '</div></div></header>' +
       '<main class="view shell" id="view"></main>' + tabsHtml('bottom');
     document.getElementById('acct').addEventListener('click', accountSheet);
   }
+  function shellKey() { return me.id + ':' + me.role + ':' + (me.owner ? 1 : 0) + ':' + JSON.stringify(me.perms || {}); }
   function setTabs(active, badges) {
     app.querySelectorAll('.tabs').forEach(function (nav) {
       var on = null;
@@ -187,7 +202,8 @@
     sheet(
       '<div class="row"><span class="avatar lg ' + (me.role === 'admin' ? '' : 'warm') + '">' + initials(me.name) + '</span><div><h3>' + esc(me.name) + '</h3><p class="small muted">' + esc(me.email) + '</p>' + (me.college ? '<p class="small muted">' + esc(me.college) + '</p>' : '') + '</div></div>' +
       '<div class="field"><span class="small muted">Appearance</span><div class="seg" id="theme-seg" style="--n:3;--i:' + idx + '"><button type="button" data-v="system">System</button><button type="button" data-v="light">Light</button><button type="button" data-v="dark">Dark</button></div></div>' +
-      (me.role === 'member' ? '<button class="btn btn-primary btn-block" type="button" id="to-chat">' + ic('msgs') + 'Message your mentors</button>' : '') +
+      (me.role === 'member' && can('chat') ? '<button class="btn btn-primary btn-block" type="button" id="to-chat">' + ic('msgs') + 'Message your mentor</button>' : '') +
+      (isOwner() ? '<button class="btn btn-glass btn-block" type="button" id="team-btn">Team & permissions</button>' : '') +
       (me.role === 'admin' ? '<button class="btn btn-glass btn-block" type="button" id="apps">Connected apps</button>' : '') +
       '<button class="btn btn-glass btn-block" type="button" id="chpw">Change password</button>' +
       '<button class="btn btn-glass btn-block" type="button" id="logout">Log out</button>' +
@@ -205,6 +221,7 @@
         el.querySelector('#chpw').addEventListener('click', function () { close(); passwordSheet(); });
         var tc = el.querySelector('#to-chat'); if (tc) tc.addEventListener('click', function () { close(); go('chat'); });
         var ap = el.querySelector('#apps'); if (ap) ap.addEventListener('click', function () { close(); appsSheet(); });
+        var tb = el.querySelector('#team-btn'); if (tb) tb.addEventListener('click', function () { close(); go('team'); });
         el.querySelector('#logout').addEventListener('click', function () { S.signOut().then(function () { forgetMe(); close(); app.dataset.shell = ''; go('login'); }); });
         var rs = el.querySelector('#reset');
         if (rs) rs.addEventListener('click', function () {
@@ -273,7 +290,10 @@
     if (me.role === 'member') statsP = S.unread().then(function (x) { return { unread: x.unread }; }, function () { return null; });
     if (me.role === 'admin') {
       statsP = S.stats(me.id).catch(function () { return null; });
+      if ((r === 'applications' && !can('applications')) || ((r === 'messages' || /^chat-/.test(r)) && !can('chat')) || ((r === 'team' || /^admin-/.test(r)) && !isOwner())) { r = 'overview'; setHash(r); }
       if (/^review-/.test(r)) { view = vReview(r.slice(7)); tab = 'reviews'; }
+      else if (r === 'team') { view = vTeam(); tab = 'overview'; }
+      else if (/^admin-/.test(r)) { view = vTeamMember(r.slice(6)); tab = 'overview'; }
       else if (/^member-/.test(r)) { view = vMember(r.slice(7)); tab = 'members'; }
       else if (/^chat-/.test(r)) { view = vMentorChat(r.slice(5)); tab = 'messages'; }
       else if (r === 'messages') { view = vMessages(); tab = r; }
@@ -286,12 +306,12 @@
       if (sm) { view = vStep(sm[1], +sm[2]); tab = 'roadmap'; }
       else if (r === 'roadmap') { view = vRoadmap(); tab = r; }
       else if (r === 'feedback') { view = vFeedback(); tab = r; }
-      else if (r === 'chat') { view = vMemberChat(); tab = r; }
+      else if (r === 'chat' && can('chat')) { view = vMemberChat(); tab = r; }
       else { view = vToday(); tab = 'today'; if (r !== 'today') setHash('today'); }
     }
     /* instant feedback: highlight the tab and dim the page while the next one loads */
     var mainNow = document.getElementById('view');
-    if (mainNow && app.dataset.shell === me.id + ':' + me.role) { setTabs(tab, lastBadges); mainNow.classList.add('is-loading'); }
+    if (mainNow && app.dataset.shell === shellKey()) { setTabs(tab, lastBadges); mainNow.classList.add('is-loading'); }
     var v;
     try { v = await view; if (statsP) badges = lastBadges = await statsP; } catch (e) {
       if (/log in/i.test(e.message)) { forgetMe(); app.dataset.shell = ''; setHash('login'); return render(); }
@@ -312,7 +332,7 @@
   addEventListener('hashchange', render);
   /* keep the unread badges fresh while the portal is open */
   setInterval(function () {
-    if (!me || document.hidden || app.dataset.shell !== me.id + ':' + me.role) return;
+    if (!me || document.hidden || app.dataset.shell !== shellKey()) return;
     (me.role === 'admin' ? S.adminUnread() : S.unread()).then(function (x) {
       lastBadges = Object.assign({}, lastBadges, me.role === 'admin' ? { unreadChats: x.unread } : { unread: x.unread });
       setTabs(currentTab, lastBadges);
@@ -320,6 +340,9 @@
   }, 30000);
   var meCache = null, meKnown = false, lastBadges = null;
   function forgetMe() { meCache = null; meKnown = false; }
+  // coming back to the portal re-checks the account on the next screen, so permission changes show up
+  // without a reload (and without redrawing the page, which would lose anything half-typed)
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && me) meKnown = false; });
   function rememberMe(u) { meCache = u; meKnown = true; }
 
   /* ---------- login ---------- */
@@ -365,7 +388,8 @@
   async function programmeSheet() {
     var prog = await S.progress(me.id);
     sheet('<h2>Choose a programme</h2><p class="muted small">Each programme has its own step-by-step roadmap. Your progress in each one is saved.</p>' +
-      '<div class="glass list">' + C.tracks.map(function (t) {
+      (can('choose_programme') ? '' : '<p class="small muted">Your mentor chooses which programmes you can follow.</p>') +
+      '<div class="glass list">' + C.tracks.filter(function (t) { return can('choose_programme') || (me.tracks || []).indexOf(t.id) > -1; }).map(function (t) {
         var p = prog[t.id], on = t.id === me.activeTrack;
         var sub = p ? p.done + ' of ' + p.total + ' steps approved' : t.steps.length + ' steps · not started';
         return '<button class="li li-btn" type="button" data-t="' + t.id + '"><span class="sicon ' + (on ? 'current' : p ? 'approved' : 'locked') + '">' + (on ? ic('check') : t.steps.length) + '</span>' +
@@ -396,11 +420,11 @@
     var d = stepOf(t, cur.step);
     var summary = '<div class="glass card today-head">' + ring(done, total) + '<div class="txt"><span class="small muted">' + esc(tr.name) + '</span><h3>' + done + ' of ' + total + ' steps approved</h3><span class="small muted">Today: Step ' + cur.step + ' · ' + esc(d.title) + '</span></div></div>';
     var body = stepCard(t, cur.step, st);
-    var help = '<div class="glass card help-card"><div><h3>Stuck on this step?</h3><p class="small muted">Ask your mentor in the chat. They’ll see which step you’re on.</p></div>' +
-      '<button class="btn btn-primary" type="button" id="ask">' + ic('msgs') + 'Ask your mentor</button></div>';
+    var help = can('chat') ? '<div class="glass card help-card"><div><h3>Stuck on this step?</h3><p class="small muted">Ask your mentor in the chat. They’ll see which step you’re on.</p></div>' +
+      '<button class="btn btn-primary" type="button" id="ask">' + ic('msgs') + 'Ask your mentor</button></div>' : '';
     return { html: head + summary + body.html + help, mount: function (m) {
       animateRing(m); bindProg(m); body.mount(m);
-      m.querySelector('#ask').addEventListener('click', function () { chatContext = tr.name + ' · Step ' + cur.step + ': ' + d.title; go('chat'); });
+      var ask = m.querySelector('#ask'); if (ask) ask.addEventListener('click', function () { chatContext = tr.name + ' · Step ' + cur.step + ': ' + d.title; go('chat'); });
     } };
   }
 
@@ -545,27 +569,28 @@
 
   /* ---------- admin: overview ---------- */
   async function vOverview(stats) {
-    var both = await Promise.all([S.queue(), S.applications()]), q = both[0], apps = both[1].filter(function (a) { return a.status === 'new'; });
+    var both = await Promise.all([S.queue(), can('applications') ? S.applications() : Promise.resolve([])]), q = both[0], apps = both[1].filter(function (a) { return a.status === 'new'; });
     var html = '<section class="page-head"><span class="eyebrow">' + today() + '</span><h1>' + greet() + ', ' + first(me.name) + '.</h1><p class="muted">' +
       (stats.pending ? stats.pending + ' submission' + (stats.pending > 1 ? 's are' : ' is') + ' waiting for review' + (stats.pendingMine ? ', ' + stats.pendingMine + ' from your students.' : '.') : 'You’re all caught up.') + '</p></section>' +
       '<div class="stats">' +
         '<a class="stat glass' + (stats.pending ? ' hot' : '') + '" href="#reviews"><b>' + stats.pending + '</b><span>Waiting for review</span></a>' +
         '<a class="stat glass" href="#members"><b>' + stats.myMembers + '</b><span>Your students</span></a>' +
-        '<a class="stat glass" href="#applications"><b>' + stats.applications + '</b><span>New applications</span></a>' +
+        (can('applications') ? '<a class="stat glass" href="#applications"><b>' + stats.applications + '</b><span>New applications</span></a>' : '<a class="stat glass" href="#messages"><b>' + (stats.unreadChats || 0) + '</b><span>Unread messages</span></a>') +
         '<div class="stat glass"><b>' + stats.approvedWeek + '</b><span>Approved this week</span></div>' +
       '</div>' +
       '<div class="grid-2">' +
         '<section class="stack"><div class="phase-title"><h3>Review queue</h3><a class="small" href="#reviews">See all</a></div>' + queueList(q.slice(0, 4)) + '</section>' +
-        '<section class="stack"><div class="phase-title"><h3>New applications</h3><a class="small" href="#applications">See all</a></div>' +
+        (can('applications') ? '<section class="stack"><div class="phase-title"><h3>New applications</h3><a class="small" href="#applications">See all</a></div>' +
           (apps.length ? '<div class="glass list">' + apps.slice(0, 3).map(function (a) {
             return '<a class="li" href="#applications"><span class="avatar">' + initials(a.name) + '</span><div class="li-main"><span class="li-title">' + esc(a.name) + '</span><span class="li-sub">' + esc(a.level) + '</span></div><div class="li-end"><span class="small muted">' + rel(a.createdAt) + '</span></div></a>';
           }).join('') + '</div>' : '<div class="glass empty"><span>No new applications.</span></div>') +
-        '</section>' +
-      '</div>';
+        '</section>' : '') +
+      '</div>' +
+      (isOwner() ? '<a class="glass card team-card" href="#team"><div class="li-main"><h3>Team & permissions</h3><span class="small muted">Add mentors, choose what each mentor and student can do, and see everyone’s activity.</span></div>' + ic('chev', 'chev') + '</a>' : '');
     return { html: html };
   }
   var mentorCache = [];
-  function mentorName(id) { var m = mentorCache.filter(function (x) { return x.id === id; })[0]; return m ? m.name.split(' ')[0] : ''; }
+  function mentorName(id) { var m = mentorCache.filter(function (x) { return x.id === id; })[0]; return m ? short(m.name) : ''; }
   function queueList(q) {
     if (!q.length) return '<div class="glass empty">' + ic('done') + '<b>All caught up</b><span>New submissions will appear here.</span></div>';
     return '<div class="glass list">' + q.map(function (s) {
@@ -581,10 +606,11 @@
     var q = await S.queue();
     var mine = q.filter(function (s) { return s.member.mentorId === me.id; });
     if (!reviewFilter) reviewFilter = mine.length ? 'mine' : 'all';
+    if (!seesAll()) reviewFilter = 'all';
     var list = reviewFilter === 'mine' ? mine : q, idx = reviewFilter === 'mine' ? 0 : 1;
     return {
       html: '<section class="page-head"><span class="eyebrow">Oldest first</span><h1>Reviews</h1><p class="muted">' + (q.length ? q.length + ' waiting. Aim to reply within 48 hours.' : 'Nothing waiting right now.') + '</p></section>' +
-        '<div class="seg" id="rfilter" style="--n:2;--i:' + idx + '"><button type="button" data-f="mine">Your students · ' + mine.length + '</button><button type="button" data-f="all">Everyone · ' + q.length + '</button></div>' +
+        (seesAll() ? '<div class="seg" id="rfilter" style="--n:2;--i:' + idx + '"><button type="button" data-f="mine">Your students · ' + mine.length + '</button><button type="button" data-f="all">Everyone · ' + q.length + '</button></div>' : '') +
         queueList(list),
       mount: function (m) {
         m.querySelectorAll('#rfilter button').forEach(function (b, i) {
@@ -601,7 +627,7 @@
     var d = stepOf(s.track, s.step), ph = phaseOf(s.track, s.step), open = s.status === 'review', total = T(s.track).steps.length;
     var html = '<a class="back" href="#reviews">' + ic('back', 'chev') + 'Reviews</a>' +
       '<a class="glass card row" href="#member-' + esc(s.userId) + '" style="text-decoration:none;color:inherit"><span class="avatar lg warm">' + initials(s.member.name) + '</span><div class="li-main"><h3>' + esc(s.member.name) + '</h3><span class="small muted">' + esc(s.member.college || '') + '</span></div>' + ic('chev', 'chev') + '</a>' +
-      (waNumber(s.member.phone) ? '<div class="row">' + waButton(waNumber(s.member.phone), 'Hi ' + s.member.name.split(' ')[0] + ', about your ' + T(s.track).name + ' Step ' + s.step + ' submission on Researchette: ', 'WhatsApp ' + s.member.name.split(' ')[0], 'btn-sm') + '</div>' : '') +
+      (waNumber(s.member.phone) ? '<div class="row">' + waButton(waNumber(s.member.phone), 'Hi ' + short(s.member.name) + ', about your ' + T(s.track).name + ' Step ' + s.step + ' submission on Researchette: ', 'WhatsApp ' + short(s.member.name), 'btn-sm') + '</div>' : '') +
       '<article class="glass card stack-lg">' +
         '<div class="step-head"><div class="row spread wrap"><span class="eyebrow">' + esc(T(s.track).short) + ' · ' + esc(ph.name) + '</span>' + pill(s.status) + '</div><h2>Step ' + s.step + ' · ' + esc(d.title) + '</h2></div>' +
         '<div class="stack"><span class="small muted"><b>Task:</b> ' + esc(d.task.prompt) + '</span></div>' +
@@ -609,25 +635,26 @@
         (s.history.length ? '<details><summary class="small muted" style="cursor:pointer">Earlier attempts (' + s.history.length + ')</summary><div class="stack" style="margin-top:12px">' + s.history.map(function (h) {
           return '<div class="note ' + (h.status === 'approved' ? 'teal' : 'red') + '"><span class="small muted">' + rel(h.createdAt) + '</span><div class="paper">' + esc(h.text) + '</div>' + (h.feedback ? '<p class="fb">' + esc(h.feedback) + '</p>' : '') + (h.reviewer ? '<div class="by">' + esc(h.reviewer.name) + '</div>' : '') + '</div>';
         }).join('') + '</div></details>' : '') +
-        (open ?
+        (open && !can('review') ? '<p class="note small">You can read this submission, but reviewing is switched off for your account.</p>' : '') +
+        (open && can('review') ?
           '<div class="stack"><label for="fb">Your feedback</label><div class="chips" id="quick">' +
             ['Clear and well structured.', 'Be more specific about the population.', 'Add a reference for this.', 'Check the formatting.'].map(function (c) { return '<button type="button" class="chip" style="cursor:pointer">' + c + '</button>'; }).join('') +
           '</div><textarea id="fb" placeholder="What’s good, what needs fixing, and how to fix it."></textarea><p class="error" id="fb-err" hidden></p>' +
           '<div class="actions"><button class="btn btn-glass" type="button" id="revise">Request changes</button><button class="btn btn-teal" type="button" id="approve">Approve</button></div></div>'
           : '<div class="note ' + (s.status === 'approved' ? 'teal' : 'red') + '"><b class="small">' + LABEL[s.status] + '</b>' + (s.feedback ? '<p class="fb">' + esc(s.feedback) + '</p>' : '') + '</div>' +
-            '<button class="btn btn-wa btn-sm" type="button" id="notify">' + ic('wa') + 'Notify ' + esc(s.member.name.split(' ')[0]) + ' on WhatsApp</button>') +
+            '<button class="btn btn-wa btn-sm" type="button" id="notify">' + ic('wa') + 'Notify ' + esc(short(s.member.name)) + ' on WhatsApp</button>') +
       '</article>';
     return {
       html: html, mount: function (m) {
-        if (!open) {
+        if (!open || !can('review')) {
           var nb = m.querySelector('#notify');
-          if (nb) nb.addEventListener('click', function () { notifySheet(s.member, 'Notify ' + s.member.name.split(' ')[0], reviewMessage(s, s.status)); });
+          if (nb) nb.addEventListener('click', function () { notifySheet(s.member, 'Notify ' + short(s.member.name), reviewMessage(s, s.status)); });
           return;
         }
         var fb = m.querySelector('#fb'), err = m.querySelector('#fb-err');
         m.querySelectorAll('#quick .chip').forEach(function (c) { c.addEventListener('click', function () { fb.value = (fb.value.trim() ? fb.value.trim() + ' ' : '') + c.textContent; fb.focus(); }); });
         function act(decision) {
-          var text = fb.value.trim(), who = s.member.name.split(' ')[0];
+          var text = fb.value.trim(), who = short(s.member.name);
           if (decision === 'revision' && !text) { err.textContent = 'Write what needs to change so the member knows how to fix it.'; err.hidden = false; fb.focus(); return; }
           if (!text) text = 'Well done. Approved.';
           S.review(id, decision, text, me.id).then(function () {
@@ -731,8 +758,8 @@
     var r = await S.chat(), context = chatContext; chatContext = null;
     var suggest = ['I’m stuck on today’s step.', 'Can you check my research question?', 'Which journal should I choose?'];
     return chatScreen({
-      messages: r.messages, context: context, placeholder: 'Message your mentors…',
-      head: '<section class="page-head"><span class="eyebrow">Chat</span><h1>Ask your mentors</h1><p class="muted">Stuck on a step or unsure about something? Ask here. Your mentors usually reply within a day.</p></section>',
+      messages: r.messages, context: context, placeholder: 'Message your mentor…',
+      head: '<section class="page-head"><span class="eyebrow">Chat</span><h1>Ask your mentor</h1><p class="muted">Stuck on a step or unsure about something? Ask here. Your mentor usually replies within a day.</p></section>',
       empty: '<div class="chat-empty">' + ic('msgs') + '<b>No messages yet</b><span>Ask anything about your research. Try one of these:</span><div class="chips">' +
         suggest.map(function (x) { return '<button class="chip" type="button" data-suggest>' + esc(x) + '</button>'; }).join('') + '</div></div>',
       load: function (after) { return S.chat(after); },
@@ -741,7 +768,7 @@
   }
 
   async function vMentorChat(id) {
-    var r = await S.chatWith(id), u = r.member, fn = u.name.split(' ')[0];
+    var r = await S.chatWith(id), u = r.member, fn = short(u.name);
     return chatScreen({
       messages: r.messages, placeholder: 'Reply to ' + fn + '…',
       head: '<a class="back" href="#messages">' + ic('back', 'chev') + 'Messages</a>' +
@@ -753,17 +780,129 @@
     });
   }
 
+  var chatFilter = 'mine';
   async function vMessages() {
-    var list = await S.chats(), unread = list.filter(function (c) { return c.unread; }).length;
+    var all = await S.chats(), mineList = all.filter(function (c) { return c.mine; });
+    var showAll = seesAll() && chatFilter === 'all', list = seesAll() ? (showAll ? all : mineList) : all;
+    var unread = list.filter(function (c) { return c.unread; }).length;
     var rows = list.map(function (c) {
+      var assigned = c.mine ? '' : '<span class="li-sub">' + (c.member.mentorName ? esc(first(c.member.mentorName)) + '’s student' : 'No mentor yet') + '</span>';
       var who = c.last.role === 'admin' ? (c.last.senderName && c.last.senderName !== me.name ? first(c.last.senderName) : 'You') + ': ' : '';
       return '<a class="li chat-li' + (c.unread ? ' unread' : '') + '" href="#chat-' + esc(c.member.id) + '"><span class="avatar warm">' + initials(c.member.name) + '</span>' +
-        '<div class="li-main"><span class="li-title">' + esc(c.member.name) + '</span><span class="li-sub">' + who + esc(c.last.body) + '</span></div>' +
+        '<div class="li-main"><span class="li-title">' + esc(c.member.name) + '</span><span class="li-sub">' + who + esc(c.last.body) + '</span>' + assigned + '</div>' +
         '<div class="li-end"><span class="small muted">' + rel(c.last.at) + '</span>' + (c.unread ? '<span class="badge">' + c.unread + '</span>' : '') + '</div></a>';
     }).join('');
     return { html: '<section class="page-head"><span class="eyebrow">Chat</span><h1>Messages</h1><p class="muted">' +
-        (list.length ? (unread ? unread + ' conversation' + (unread === 1 ? '' : 's') + ' waiting for a reply.' : 'You’re all caught up.') : 'When a member sends a message, it shows up here.') + '</p></section>' +
-      (list.length ? '<div class="glass list">' + rows + '</div>' : '<div class="glass empty">' + ic('msgs') + '<b>No conversations yet</b><span>To message a member first, open them in Members and tap Chat.</span></div>') };
+        (list.length ? (unread ? unread + ' conversation' + (unread === 1 ? '' : 's') + ' waiting for a reply.' : 'You’re all caught up.') : showAll ? 'No conversations yet.' : 'When one of your students sends a message, it shows up here.') + '</p></section>' +
+      (seesAll() ? '<div class="seg" id="cfilter" style="--n:2;--i:' + (showAll ? 1 : 0) + '"><button type="button" data-f="mine"' + (showAll ? '' : ' class="on"') + '>For you · ' + mineList.length + '</button><button type="button" data-f="all"' + (showAll ? ' class="on"' : '') + '>Everyone · ' + all.length + '</button></div>' : '') +
+      (list.length ? '<div class="glass list">' + rows + '</div>' : '<div class="glass empty">' + ic('msgs') + '<b>No conversations yet</b><span>To message a member first, open them in Members and tap Chat.</span></div>'),
+      mount: function (m) {
+        m.querySelectorAll('#cfilter button').forEach(function (b, i) {
+          b.addEventListener('click', function () { chatFilter = b.dataset.f; m.querySelector('#cfilter').style.setProperty('--i', i); setTimeout(render, 180); });
+        });
+      } };
+  }
+
+  /* ---------- switches (permissions) ---------- */
+  function toggles(items, name) {
+    return '<div class="toggles">' + items.map(function (t) {
+      return '<label class="toggle"><span class="t-txt"><b>' + esc(t[1]) + '</b>' + (t[2] ? '<span>' + esc(t[2]) + '</span>' : '') + '</span>' +
+        '<input type="checkbox" role="switch" data-' + name + '="' + t[0] + '"' + (t[3] ? ' checked' : '') + (t[4] ? ' disabled' : '') + '><span class="sw" aria-hidden="true"></span></label>';
+    }).join('') + '</div>';
+  }
+  function bindToggles(root, name, fn) {
+    root.querySelectorAll('[data-' + name + ']').forEach(function (i) { i.addEventListener('change', function () { fn(i.getAttribute('data-' + name), i.checked, i); }); });
+  }
+
+  /* ---------- owners: team & permissions ---------- */
+  var MENTOR_PERMS = [
+    ['review', 'Review submissions', 'Approve tasks or ask for changes, for their students.'],
+    ['chat', 'Chat with students', 'Read and reply to their students’ messages.'],
+    ['edit_members', 'Edit student details', 'Change their students’ programmes and WhatsApp numbers.'],
+    ['see_all', 'See all students', 'See every student, not only the ones assigned to them.'],
+    ['applications', 'Handle applications', 'See applications, mark them paid, approve or decline.'],
+    ['add_members', 'Add and remove students', 'Create student logins and delete students.'],
+    ['passwords', 'Reset student passwords', 'Reset or set passwords for their students.']
+  ];
+  async function vTeam() {
+    var r = await S.team();
+    var rows = r.team.map(function (t) {
+      var on = MENTOR_PERMS.filter(function (p) { return t.perms[p[0]]; }).length;
+      return '<a class="li" href="#admin-' + esc(t.id) + '"><span class="avatar">' + initials(t.name) + '</span><div class="li-main"><span class="li-title">' + esc(t.name) + (t.id === me.id ? ' <span class="muted small">(you)</span>' : '') + '</span>' +
+        '<span class="li-sub">' + esc(t.title || 'Mentor') + ' · ' + t.students + ' student' + (t.students === 1 ? '' : 's') + (t.owner ? '' : ' · ' + on + ' of ' + MENTOR_PERMS.length + ' permissions') + '</span></div>' +
+        '<div class="li-end">' + (t.owner ? '<span class="pill approved">Owner</span>' : t.active ? '<span class="pill">Mentor</span>' : '<span class="pill revision">Paused</span>') + ic('chev', 'chev') + '</div></a>';
+    }).join('');
+    return { html: '<a class="back" href="#overview">' + ic('back', 'chev') + 'Overview</a>' +
+      '<section class="page-head"><div class="row spread wrap"><div class="stack" style="gap:6px"><span class="eyebrow">Owners only</span><h1>Team & permissions</h1></div><button class="btn btn-primary" type="button" id="add-mentor">+ Add mentor</button></div>' +
+      '<p class="muted">Owners see and manage everything. Mentors see only the students assigned to them, and only do what you switch on.' + (r.unassigned ? ' ' + r.unassigned + ' student' + (r.unassigned === 1 ? ' has' : 's have') + ' no mentor, so their messages come to the owners.' : '') + '</p></section>' +
+      '<div class="glass list">' + rows + '</div>',
+      mount: function (m) { m.querySelector('#add-mentor').addEventListener('click', addMentorSheet); } };
+  }
+  function addMentorSheet() {
+    sheet('<h2>Add a mentor</h2><p class="muted small">Creates a mentor login with a temporary password. They start with the basic permissions; change them after.</p>' +
+      '<form id="amt" class="stack" novalidate>' +
+        '<div class="field"><label for="amt-name">Full name</label><input id="amt-name" autocomplete="off" required placeholder="Dr Sara Khan"></div>' +
+        '<div class="field"><label for="amt-email">Email</label><input id="amt-email" type="email" autocomplete="off" required placeholder="sara@researchette.com"></div>' +
+        '<div class="field"><label for="amt-title">Title</label><input id="amt-title" autocomplete="off" placeholder="Mentor"></div>' +
+        '<label class="toggle"><span class="t-txt"><b>Make them an owner</b><span>Owners can see everything and manage the team.</span></span><input type="checkbox" role="switch" id="amt-owner"><span class="sw" aria-hidden="true"></span></label>' +
+        '<p class="error" id="amt-err" role="alert" hidden></p>' +
+        '<button class="btn btn-primary btn-block" type="submit">Create mentor</button><button class="btn btn-quiet btn-block btn-sm" type="button" data-close>Cancel</button>' +
+      '</form>',
+      function (el, close) {
+        var f = el.querySelector('#amt'), err = el.querySelector('#amt-err'), v = function (id) { return el.querySelector('#' + id).value.trim(); };
+        f.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var show = function (msg) { err.textContent = msg; err.hidden = false; };
+          if (!v('amt-name')) return show('Enter the mentor’s name.');
+          if (!/.+@.+\..+/.test(v('amt-email'))) return show('Enter a valid email address.');
+          S.addMentor({ name: v('amt-name'), email: v('amt-email'), title: v('amt-title'), owner: el.querySelector('#amt-owner').checked })
+            .then(function (res) { close(); credentialsSheet(res.user, res.password, 'Mentor added', 'Send these details to the new mentor.'); }, function (x) { show(x.message); });
+        });
+      });
+  }
+  async function vTeamMember(id) {
+    var r = await S.team(), t = r.team.filter(function (x) { return x.id === id; })[0];
+    if (!t) return { html: '<a class="back" href="#team">' + ic('back', 'chev') + 'Team</a><div class="glass empty"><b>Mentor not found</b><span>They may have been removed.</span></div>' };
+    var self = t.id === me.id, fn = short(t.name);
+    var html = '<a class="back" href="#team">' + ic('back', 'chev') + 'Team</a>' +
+      '<div class="glass card stack"><div class="row"><span class="avatar lg">' + initials(t.name) + '</span><div class="li-main"><h2>' + esc(t.name) + '</h2><span class="small muted">' + esc(t.email) + '</span></div></div>' +
+        '<div class="chips"><span class="chip">' + (t.owner ? 'Owner' : 'Mentor') + '</span><span class="chip">' + t.students + ' student' + (t.students === 1 ? '' : 's') + '</span><span class="chip">Joined ' + rel(t.joined) + '</span></div>' +
+        '<form class="row wrap" id="title-f"><input id="title-in" value="' + esc(t.title || '') + '" placeholder="Title, e.g. Senior mentor" aria-label="Title" style="flex:1;min-width:180px"><button class="btn btn-glass btn-sm" type="submit">Save title</button></form>' +
+      '</div>' +
+      '<div class="glass card stack"><div><h3>Role</h3><p class="small muted">Owners can see every student, message and activity, and manage the team.</p></div>' +
+        toggles([['owner', 'Owner', 'Full access to everything, including this page.', t.owner], ['active', 'Account active', 'Pausing logs them out and stops them logging in. Their students stay.', t.active, self]], 'role') + '</div>' +
+      (t.owner ? '<div class="glass card"><p class="small muted">Owners have every permission.</p></div>' :
+        '<div class="glass card stack"><div><h3>What ' + esc(fn) + ' can do</h3><p class="small muted">They only ever see the students assigned to them' + (t.perms.see_all ? ', plus everyone, because “See all students” is on.' : '.') + '</p></div>' +
+          toggles(MENTOR_PERMS.map(function (p) { return [p[0], p[1], p[2], t.perms[p[0]]]; }), 'perm') + '</div>') +
+      '<div class="glass card stack"><h3>Account</h3><div class="account-actions">' +
+        '<button class="btn btn-glass btn-sm" type="button" id="t-reset">Reset password</button><button class="btn btn-glass btn-sm" type="button" id="t-set">Set a password</button>' +
+        (self ? '' : '<button class="btn btn-danger btn-sm" type="button" id="t-remove">Remove from team</button>') + '</div>' +
+        '<p class="small muted">Resetting their password logs them out everywhere and disconnects their AI apps.</p></div>';
+    return { html: html, mount: function (m) {
+      var save = function (data, input) { return S.updateMentor(id, data).then(function () { toast('Saved'); if (data.owner !== undefined && self) { forgetMe(); } render(); }, function (e) { if (input) input.checked = !input.checked; toast(e.message); }); };
+      m.querySelector('#title-f').addEventListener('submit', function (e) { e.preventDefault(); save({ title: m.querySelector('#title-in').value.trim() }); });
+      bindToggles(m, 'role', function (k, on, input) { var d = {}; d[k] = on; save(d, input); });
+      bindToggles(m, 'perm', function (k, on, input) { var d = { perms: {} }; d.perms[k] = on; save(d, input); });
+      m.querySelector('#t-reset').addEventListener('click', function () {
+        sheet('<h2>Reset ' + esc(fn) + '’s password?</h2><p class="muted">A new temporary password is created, the old one stops working, and they’re logged out everywhere.</p><div class="row"><button class="btn btn-glass" type="button" data-close style="flex:1">Cancel</button><button class="btn btn-primary" type="button" id="yes" style="flex:1">Reset</button></div>',
+          function (el, close) { el.querySelector('#yes').addEventListener('click', function () { S.mentorPassword(id).then(function (res) { close(); credentialsSheet(res.user, res.password, 'Password reset', 'Send the new password to ' + fn + '.'); }, function (e) { toast(e.message); }); }); });
+      });
+      m.querySelector('#t-set').addEventListener('click', function () {
+        sheet('<h2>Set a password for ' + esc(fn) + '</h2><form id="tsp" class="stack" novalidate><div class="field"><label for="tsp-in">New password</label><input id="tsp-in" type="text" autocomplete="off" placeholder="At least 8 characters"></div><p class="error" id="tsp-err" role="alert" hidden></p><button class="btn btn-primary btn-block" type="submit">Save password</button><button class="btn btn-quiet btn-block btn-sm" type="button" data-close>Cancel</button></form>',
+          function (el, close) {
+            el.querySelector('#tsp').addEventListener('submit', function (e) {
+              e.preventDefault();
+              S.mentorPassword(id, el.querySelector('#tsp-in').value).then(function (res) { close(); if (self) { forgetMe(); go('login'); return; } credentialsSheet(res.user, res.password, 'Password changed', 'Send the new password to ' + fn + '.'); },
+                function (x) { var er = el.querySelector('#tsp-err'); er.textContent = x.message; er.hidden = false; });
+            });
+          });
+      });
+      var rmv = m.querySelector('#t-remove');
+      if (rmv) rmv.addEventListener('click', function () {
+        sheet('<h2>Remove ' + esc(t.name) + '?</h2><p class="muted">Their login stops working. Their ' + t.students + ' student' + (t.students === 1 ? '' : 's') + ' stay, with no mentor, so the owners get their messages until you assign someone new.</p><div class="row"><button class="btn btn-glass" type="button" data-close style="flex:1">Cancel</button><button class="btn btn-danger" type="button" id="yes" style="flex:1">Remove</button></div>',
+          function (el, close) { el.querySelector('#yes').addEventListener('click', function () { S.removeMentor(id).then(function () { close(); toast(t.name + ' removed'); go('team'); }, function (e) { toast(e.message); }); }); });
+      });
+    } };
   }
 
   /* ---------- admin: members ---------- */
@@ -776,7 +915,7 @@
     }).join('') + '</div>';
   }
   function welcomeMessage(u, pw) {
-    return 'Welcome to Researchette, ' + u.name.split(' ')[0] + '!\n\nYour member portal login:\nEmail: ' + u.email + '\nPassword: ' + pw + '\n\nLog in here: ' + location.href.split('#')[0] + '\nYour first task is waiting.';
+    return 'Welcome to Researchette, ' + short(u.name) + '!\n\nYour member portal login:\nEmail: ' + u.email + '\nPassword: ' + pw + '\n\nLog in here: ' + location.href.split('#')[0] + '\nYour first task is waiting.';
   }
   function credentialsSheet(u, pw, title, note) {
     var msg = welcomeMessage(u, pw), num = waNumber(u.phone);
@@ -795,14 +934,14 @@
      edit and send, so the student knows to open the portal. */
   var portalUrl = function () { return location.href.split('#')[0]; };
   function reviewMessage(s, decision) {
-    var fn = s.member.name.split(' ')[0], tr = T(s.track), d = stepOf(s.track, s.step), last = s.step >= tr.steps.length;
+    var fn = short(s.member.name), tr = T(s.track), d = stepOf(s.track, s.step), last = s.step >= tr.steps.length;
     var what = 'your ' + tr.name + ' Step ' + s.step + ' (' + d.title + ')';
     if (decision === 'approved') return 'Hi ' + fn + ', ' + what + ' has been approved on Researchette. ' +
       (last ? 'That completes the whole ' + tr.name + ' programme. Well done!' : 'Step ' + (s.step + 1) + ' is now unlocked.') + '\n\nLog in to read the feedback: ' + portalUrl();
     return 'Hi ' + fn + ', I’ve reviewed ' + what + ' on Researchette and asked for a few changes. Log in to read the feedback and resubmit: ' + portalUrl();
   }
   function notifySheet(member, title, msg) {
-    var num = waNumber(member.phone), fn = member.name.split(' ')[0];
+    var num = waNumber(member.phone), fn = short(member.name);
     sheet('<h2>' + esc(title) + '</h2><p class="muted">Let ' + esc(fn) + ' know on WhatsApp so they check the portal. You can edit the message first.</p>' +
       '<textarea id="n-msg" rows="6" aria-label="Message">' + esc(msg) + '</textarea>' +
       (num ? '<a class="btn btn-wa btn-block" id="n-wa" data-autofocus href="' + esc(waLink(num, msg)) + '" target="_blank" rel="noopener">' + ic('wa') + 'Send to ' + esc(fn) + ' on WhatsApp</a>'
@@ -821,22 +960,22 @@
   async function vMembers() {
     var got = await Promise.all([S.members(), S.mentors()]), list = got[0]; mentorCache = got[1];
     var mine = list.filter(function (u) { return u.mentorId === me.id; });
-    var shown = memberFilter === 'mine' ? mine : list, idx = memberFilter === 'mine' ? 1 : 0;
+    var shown = memberFilter === 'mine' && seesAll() ? mine : list, idx = memberFilter === 'mine' ? 1 : 0;
     var rows = function (arr) {
-      if (!arr.length) return '<div class="empty"><span>' + (memberFilter === 'mine' ? 'No students are assigned to you yet.' : 'No members yet. Add one to get started.') + '</span></div>';
+      if (!arr.length) return '<div class="empty"><span>' + (memberFilter === 'mine' || !seesAll() ? 'No students are assigned to you yet.' : 'No members yet. Add one to get started.') + '</span></div>';
       return arr.map(function (u) {
         var st = u.current ? u.current.status : 'approved';
-        var sub = [T(u.activeTrack).short + (u.tracks.length > 1 ? ' +' + (u.tracks.length - 1) : ''), u.mentor ? u.mentor.name.split(' ')[0] : 'No mentor'].join(' · ');
+        var sub = [T(u.activeTrack).short + (u.tracks.length > 1 ? ' +' + (u.tracks.length - 1) : ''), u.mentor ? short(u.mentor.name) : 'No mentor'].join(' · ');
         return '<a class="li" href="#member-' + esc(u.id) + '" data-q="' + esc((u.name + ' ' + u.email + ' ' + (u.college || '')).toLowerCase()) + '"><span class="avatar warm">' + initials(u.name) + '</span><div class="li-main"><span class="li-title">' + esc(u.name) + '</span><span class="li-sub">' + esc(sub) + '</span></div><div class="li-end"><span class="small muted">' + u.done + '/' + u.total + '</span>' + pill(st) + '</div></a>';
       }).join('');
     };
     return {
-      html: '<section class="page-head"><div class="row spread wrap"><div class="stack" style="gap:6px"><span class="eyebrow">' + list.length + ' members</span><h1>Members</h1></div><button class="btn btn-primary" type="button" id="add-member">+ Add member</button></div></section>' +
-        '<div class="seg" id="mfilter" style="--n:2;--i:' + idx + '"><button type="button" data-f="all">Everyone · ' + list.length + '</button><button type="button" data-f="mine">Your students · ' + mine.length + '</button></div>' +
+      html: '<section class="page-head"><div class="row spread wrap"><div class="stack" style="gap:6px"><span class="eyebrow">' + list.length + ' members</span><h1>' + (seesAll() ? 'Members' : 'Your students') + '</h1></div>' + (can('add_members') ? '<button class="btn btn-primary" type="button" id="add-member">+ Add member</button>' : '') + '</div></section>' +
+        (seesAll() ? '<div class="seg" id="mfilter" style="--n:2;--i:' + idx + '"><button type="button" data-f="all">Everyone · ' + list.length + '</button><button type="button" data-f="mine">Your students · ' + mine.length + '</button></div>' : '') +
         '<div class="search">' + ic('search') + '<input id="q" type="search" placeholder="Search by name, email or college" aria-label="Search members"></div>' +
         '<div class="glass list" id="mlist">' + rows(shown) + '</div>',
       mount: function (m) {
-        m.querySelector('#add-member').addEventListener('click', addMemberSheet);
+        var am = m.querySelector('#add-member'); if (am) am.addEventListener('click', addMemberSheet);
         m.querySelectorAll('#mfilter button').forEach(function (b, i) {
           b.classList.toggle('on', i === idx);
           b.addEventListener('click', function () { memberFilter = b.dataset.f; m.querySelector('#mfilter').style.setProperty('--i', i); setTimeout(render, 180); });
@@ -860,7 +999,7 @@
         '<div class="field"><label for="am-college">Medical college / university</label><input id="am-college" placeholder="King Edward Medical University"></div>' +
         '<div class="field"><label for="am-level">Current level</label><select id="am-level">' + levelOptions('') + '</select></div>' +
         '<div class="field"><span class="small" style="font-weight:600">Programmes</span>' + trackChips(['original'], 'am-track') + '</div>' +
-        '<div class="field"><label for="am-mentor">Mentor</label><select id="am-mentor">' + mentorOptions(me.id) + '</select></div>' +
+        (isOwner() ? '<div class="field"><label for="am-mentor">Mentor</label><select id="am-mentor">' + mentorOptions(me.id) + '</select></div>' : '') +
         '<p class="error" id="am-err" role="alert" hidden></p>' +
         '<button class="btn btn-primary btn-block" type="submit">Create member</button>' +
         '<button class="btn btn-quiet btn-block btn-sm" type="button" data-close>Cancel</button>' +
@@ -876,7 +1015,7 @@
           if (!/.+@.+\..+/.test(v('am-email'))) return show('Enter a valid email address.');
           if (v('am-phone') && !waNumber(v('am-phone'))) return show('Enter a full WhatsApp number, like 0339 5888444, or leave it empty.');
           if (!tracks.length) return show('Choose at least one programme.');
-          S.addMember({ name: v('am-name'), email: v('am-email'), phone: v('am-phone'), college: v('am-college'), level: v('am-level'), tracks: tracks }, v('am-mentor'))
+          S.addMember({ name: v('am-name'), email: v('am-email'), phone: v('am-phone'), college: v('am-college'), level: v('am-level'), tracks: tracks }, isOwner() ? v('am-mentor') : me.id)
             .then(function (res) { close(); credentialsSheet(res.user, res.password, 'Member added', 'Send these details to the student by WhatsApp or email.'); }, function (x) { show(x.message); });
         });
       });
@@ -885,23 +1024,31 @@
   async function vMember(id) {
     var got = await Promise.all([S.member(id), S.mentors(), S.submissions(id)]), u = got[0]; mentorCache = got[1];
     if (!u) return { html: '<a class="back" href="#members">' + ic('back', 'chev') + 'Members</a><div class="glass empty"><b>Member not found</b><span>They may have been removed.</span></div>' };
-    var subs = got[2], fn = u.name.split(' ')[0], pend = changes[id] || [];
+    var subs = got[2], fn = short(u.name), pend = changes[id] || [];
     var html = '<a class="back" href="#members">' + ic('back', 'chev') + 'Members</a>' +
       (pend.length ? '<div class="glass card change-bar"><div class="li-main"><b>Let ' + esc(fn) + ' know?</b><span class="small muted">' + esc(pend.join(' · ')) + '</span></div>' +
         '<div class="row"><button class="btn btn-quiet btn-sm" type="button" id="ch-skip">Not now</button><button class="btn btn-wa btn-sm" type="button" id="ch-send">' + ic('wa') + 'Notify</button></div></div>' : '') +
       '<div class="glass card stack">' +
         '<div class="row"><span class="avatar lg warm">' + initials(u.name) + '</span><div class="li-main"><h2>' + esc(u.name) + '</h2><span class="small muted">' + esc(u.email) + (u.phone ? ' · ' + esc(u.phone) : '') + '</span></div></div>' +
-        '<div class="row wrap wa-row">' + (waNumber(u.phone)
-          ? waButton(waNumber(u.phone), 'Hi ' + fn + ', this is ' + me.name.split(' ')[0] + ' from Researchette.', 'WhatsApp ' + fn) + '<a class="btn btn-glass" href="#chat-' + esc(u.id) + '">' + ic('msgs') + 'Chat</a><button class="btn btn-quiet btn-sm" type="button" id="edit-phone">Change number</button>'
-          : '<a class="btn btn-glass" href="#chat-' + esc(u.id) + '">' + ic('msgs') + 'Chat</a><button class="btn btn-glass btn-sm" type="button" id="edit-phone">' + ic('wa') + 'Add WhatsApp number</button>') + '</div>' +
+        '<div class="row wrap wa-row">' + (waNumber(u.phone) ? waButton(waNumber(u.phone), 'Hi ' + fn + ', this is ' + short(me.name) + ' from Researchette.', 'WhatsApp ' + fn) : '') +
+          (can('chat') ? '<a class="btn btn-glass" href="#chat-' + esc(u.id) + '">' + ic('msgs') + 'Chat</a>' : '') +
+          (can('edit_members') ? (waNumber(u.phone) ? '<button class="btn btn-quiet btn-sm" type="button" id="edit-phone">Change number</button>' : '<button class="btn btn-glass btn-sm" type="button" id="edit-phone">' + ic('wa') + 'Add WhatsApp number</button>') : '') + '</div>' +
         '<form class="row wrap" id="phone-form" hidden><input id="phone-in" type="tel" inputmode="tel" placeholder="03xx xxxxxxx" value="' + esc(u.phone || '') + '" style="flex:1;min-width:180px" aria-label="WhatsApp number"><button class="btn btn-primary btn-sm" type="submit">Save</button></form>' +
         '<div class="chips">' + [u.college, u.level, 'Joined ' + rel(u.joined)].filter(Boolean).map(function (c) { return '<span class="chip">' + esc(c) + '</span>'; }).join('') + '</div>' +
         (u.topic ? '<p><span class="small muted">Study topic</span><br>' + esc(u.topic) + '</p>' : '') +
       '</div>' +
       '<div class="glass card stack">' +
-        '<div class="field"><label for="mentor-sel">Mentor</label><select id="mentor-sel">' + mentorOptions(u.mentorId) + '</select></div>' +
-        '<div class="field"><span class="small" style="font-weight:600">Programmes</span><span class="small muted">Tick the programmes this member can follow. Progress is kept if you untick one.</span>' + trackChips(u.tracks, 'm-track') + '</div>' +
+        (isOwner() ? '<div class="field"><label for="mentor-sel">Mentor</label><select id="mentor-sel">' + mentorOptions(u.mentorId) + '</select></div>'
+          : '<p><span class="small muted">Mentor</span><br>' + esc(u.mentor ? u.mentor.name : 'No mentor yet') + '</p>') +
+        (can('edit_members') ? '<div class="field"><span class="small" style="font-weight:600">Programmes</span><span class="small muted">Tick the programmes this member can follow. Progress is kept if you untick one.</span>' + trackChips(u.tracks, 'm-track') + '</div>'
+          : '<p><span class="small muted">Programmes</span><br>' + esc(u.tracks.map(function (t) { return T(t).name; }).join(', ')) + '</p>') +
       '</div>' +
+      (isOwner() && u.perms ? '<div class="glass card stack"><div><h3>What ' + esc(fn) + ' can do</h3><p class="small muted">Only you and the other owners can change this.</p></div>' +
+        toggles([
+          ['chat', 'Chat with their mentor', 'Send messages in the portal chat.', u.perms.chat],
+          ['choose_programme', 'Choose their own programmes', 'Otherwise they can only follow the programmes you tick above.', u.perms.choose_programme],
+          ['active', 'Account active', 'Pausing logs them out and stops them logging in. Nothing is deleted.', u.active]
+        ], 'macc') + '</div>' : '') +
       u.tracks.map(function (t, i) {
         var st = u.states[t], done = st.filter(function (x) { return x.status === 'approved'; }).length;
         return '<details class="glass card track-sec"' + (i === 0 ? ' open' : '') + '><summary><div class="li-main"><h3>' + esc(T(t).name) + (t === u.activeTrack ? ' <span class="pill approved">Current</span>' : '') + '</h3><span class="small muted">' + done + ' of ' + st.length + ' steps approved</span></div>' + ic('chev', 'chev down') + '</summary>' +
@@ -909,7 +1056,9 @@
       }).join('') +
       '<div class="glass card stack">' +
         '<h3>Account</h3>' +
-        '<div class="account-actions"><button class="btn btn-glass btn-sm" type="button" id="reset-pw">Reset password</button><button class="btn btn-glass btn-sm" type="button" id="set-pw">Set a password</button><button class="btn btn-danger btn-sm" type="button" id="remove">Remove member</button></div>' +
+        '<div class="account-actions">' + (can('passwords') ? '<button class="btn btn-glass btn-sm" type="button" id="reset-pw">Reset password</button><button class="btn btn-glass btn-sm" type="button" id="set-pw">Set a password</button>' : '') +
+          (can('add_members') ? '<button class="btn btn-danger btn-sm" type="button" id="remove">Remove member</button>' : '') + '</div>' +
+        (can('passwords') ? '' : '<p class="small muted">Password resets are handled by Zain and Taimoor.</p>') +
         '<p class="small muted">' + subs.length + ' submission' + (subs.length === 1 ? '' : 's') + ' in total.</p>' +
       '</div>';
     return {
@@ -922,15 +1071,19 @@
           });
         }
         var note = function (c) { (changes[id] = changes[id] || []).push(c); };
-        var f = m.querySelector('#phone-form');
-        m.querySelector('#edit-phone').addEventListener('click', function () { f.hidden = false; f.querySelector('input').focus(); });
+        var f = m.querySelector('#phone-form'), ep = m.querySelector('#edit-phone');
+        if (ep) ep.addEventListener('click', function () { f.hidden = false; f.querySelector('input').focus(); });
+        bindToggles(m, 'macc', function (k, on, input) {
+          var data = k === 'active' ? { active: on } : { perms: {} }; if (k !== 'active') data.perms[k] = on;
+          S.memberAccess(id, data).then(function () { toast('Saved'); }, function (e) { input.checked = !on; toast(e.message); });
+        });
         f.addEventListener('submit', function (e) {
           e.preventDefault();
           var v = f.querySelector('input').value;
           if (v.trim() && !waNumber(v)) { toast('Enter a full number, like 0339 5888444'); return; }
           S.setPhone(id, v).then(function () { toast(v.trim() ? 'Number saved' : 'Number removed'); render(); });
         });
-        m.querySelector('#mentor-sel').addEventListener('change', function () {
+        var ms = m.querySelector('#mentor-sel'); if (ms) ms.addEventListener('change', function () {
           var v = this.value;
           S.assignMentor(id, v).then(function () { toast(v ? 'Assigned to ' + mentorName(v) : 'Mentor removed'); note(v ? 'Your mentor is now ' + mentorName(v) : 'Your mentor assignment was removed'); render(); });
         });
@@ -941,11 +1094,11 @@
             S.setTracks(id, t).then(function () { toast(c.checked ? T(c.value).name + ' added' : T(c.value).name + ' removed'); note(c.checked ? T(c.value).name + ' programme added' : T(c.value).name + ' programme removed'); render(); });
           });
         });
-        m.querySelector('#reset-pw').addEventListener('click', function () {
+        var rp = m.querySelector('#reset-pw'); if (rp) rp.addEventListener('click', function () {
           sheet('<h2>Reset ' + esc(fn) + '’s password?</h2><p class="muted">A new temporary password is created and the old one stops working.</p><div class="row"><button class="btn btn-glass" type="button" data-close style="flex:1">Cancel</button><button class="btn btn-primary" type="button" id="yes" style="flex:1">Reset</button></div>',
             function (el, close) { el.querySelector('#yes').addEventListener('click', function () { S.resetPassword(id).then(function (res) { close(); credentialsSheet(res.user, res.password, 'Password reset', 'Send the new password to the student.'); }); }); });
         });
-        m.querySelector('#set-pw').addEventListener('click', function () {
+        var sp = m.querySelector('#set-pw'); if (sp) sp.addEventListener('click', function () {
           sheet('<h2>Set a password for ' + esc(fn) + '</h2><form id="sp" class="stack" novalidate><div class="field"><label for="sp-in">New password</label><div class="pw"><input id="sp-in" type="text" autocomplete="off" placeholder="At least 8 characters"></div></div><p class="error" id="sp-err" role="alert" hidden></p><button class="btn btn-primary btn-block" type="submit">Save password</button><button class="btn btn-quiet btn-block btn-sm" type="button" data-close>Cancel</button></form>',
             function (el, close) {
               el.querySelector('#sp').addEventListener('submit', function (e) {
@@ -955,7 +1108,7 @@
               });
             });
         });
-        m.querySelector('#remove').addEventListener('click', function () {
+        var rm = m.querySelector('#remove'); if (rm) rm.addEventListener('click', function () {
           sheet('<h2>Remove ' + esc(u.name) + '?</h2><p class="muted">Their login stops working and all their submissions and feedback are deleted. This can’t be undone.</p><div class="row"><button class="btn btn-glass" type="button" data-close style="flex:1">Cancel</button><button class="btn btn-danger" type="button" id="yes" style="flex:1">Remove</button></div>',
             function (el, close) { el.querySelector('#yes').addEventListener('click', function () { S.removeMember(id).then(function () { close(); toast(u.name + ' removed'); go('members'); }); }); });
         });
@@ -980,7 +1133,7 @@
         (a.goals && a.goals.length ? '<div class="chips">' + a.goals.map(function (g) { return '<span class="chip">' + esc(g) + '</span>'; }).join('') + '</div>' : '') +
         (a.why ? '<p class="quote">' + esc(a.why) + '</p>' : '') +
         '<p class="small"><span class="muted">Contact:</span> ' + esc(a.email) + (a.phone ? ' · ' + esc(a.phone) : '') + '</p>' +
-        (waNumber(a.phone) ? '<div class="row">' + waButton(waNumber(a.phone), 'Hi ' + a.name.split(' ')[0] + ', thank you for applying to Researchette!', 'WhatsApp ' + a.name.split(' ')[0], 'btn-sm') + '</div>' : '') +
+        (waNumber(a.phone) ? '<div class="row">' + waButton(waNumber(a.phone), 'Hi ' + short(a.name) + ', thank you for applying to Researchette!', 'WhatsApp ' + short(a.name), 'btn-sm') + '</div>' : '') +
         (a.status === 'approved' && a.userId ? '<a class="small" href="#member-' + esc(a.userId) + '">Open member page →</a>' : '') +
         (a.status === 'new' ?
           '<div class="row spread wrap" style="padding-top:12px;border-top:1px solid var(--line)"><label class="switch"><input type="checkbox" data-paid ' + (a.paid ? 'checked' : '') + '><span class="t"></span>Payment received</label>' +

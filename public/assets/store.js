@@ -55,6 +55,14 @@ window.Store = (function () {
     sendChatTo: function (memberId, body) { return post('/api/admin/chat/' + q(memberId), { body: body }); },
     adminUnread: function () { return call('GET', '/api/admin/chats/unread'); },
 
+    /* team and permissions (owners) */
+    team: function () { return call('GET', '/api/admin/team'); },
+    addMentor: function (data) { return post('/api/admin/team', data); },
+    updateMentor: function (id, data) { return post('/api/admin/team/' + q(id), data); },
+    mentorPassword: function (id, pw) { return post('/api/admin/team/' + q(id) + '/password', pw ? { password: pw } : {}); },
+    removeMentor: function (id) { cache = {}; return call('DELETE', '/api/admin/team/' + q(id)); },
+    memberAccess: function (id, data) { return post('/api/admin/member/' + q(id) + '/access', data); },
+
     /* website form */
     addApplication: function (data) { return post('/api/applications', data); },
 

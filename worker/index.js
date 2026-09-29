@@ -141,13 +141,62 @@ const EXTRA_SCHEMA = [
   'CREATE INDEX IF NOT EXISTS oauth_tokens_user ON oauth_tokens (user_id, client_id)',
   "CREATE TABLE IF NOT EXISTS messages (id TEXT PRIMARY KEY, member_id TEXT NOT NULL, sender_id TEXT NOT NULL, sender_role TEXT NOT NULL, body TEXT NOT NULL, context TEXT DEFAULT '', created_at TEXT NOT NULL)",
   'CREATE INDEX IF NOT EXISTS messages_member ON messages (member_id, created_at)',
-  'CREATE TABLE IF NOT EXISTS chat_reads (member_id TEXT NOT NULL, reader_id TEXT NOT NULL, last_read TEXT NOT NULL, PRIMARY KEY (member_id, reader_id))'
+  'CREATE TABLE IF NOT EXISTS chat_reads (member_id TEXT NOT NULL, reader_id TEXT NOT NULL, last_read TEXT NOT NULL, PRIMARY KEY (member_id, reader_id))',
+  "CREATE TABLE IF NOT EXISTS user_perms (user_id TEXT PRIMARY KEY, owner INTEGER DEFAULT 0, perms TEXT DEFAULT '{}')"
 ];
 let schemaReady = null;
 function ensureSchema(env) {
-  if (!schemaReady) schemaReady = env.DB.batch(EXTRA_SCHEMA.map((q) => env.DB.prepare(q))).catch((e) => { schemaReady = null; throw e; });
+  if (!schemaReady) schemaReady = env.DB.batch(EXTRA_SCHEMA.map((q) => env.DB.prepare(q))).then(() => seedOwners(env)).catch((e) => { schemaReady = null; throw e; });
   return schemaReady;
 }
+// Zain and Taimoor are the owners. If neither account exists, the longest-standing mentor is, so there's always one.
+const FIRST_OWNERS = ['uzain', 'utaimoor'];
+async function seedOwners(env) {
+  if (await env.DB.prepare('SELECT user_id FROM user_perms WHERE owner = 1 LIMIT 1').first()) return;
+  const ph = FIRST_OWNERS.map(() => '?').join(', ');
+  let { results } = await env.DB.prepare(`SELECT id FROM users WHERE role = 'admin' AND id IN (${ph})`).bind(...FIRST_OWNERS).all();
+  if (!results.length) ({ results } = await env.DB.prepare("SELECT id FROM users WHERE role = 'admin' ORDER BY joined LIMIT 1").all());
+  if (results.length) await env.DB.batch(results.map((r) => env.DB.prepare('INSERT INTO user_perms (user_id, owner) VALUES (?, 1) ON CONFLICT (user_id) DO UPDATE SET owner = 1').bind(r.id)));
+}
+
+/* ---------- owners and permissions ----------
+   Owners (Zain and Taimoor) can do and see everything, and manage the team. Other mentors only see
+   the members assigned to them, plus whatever the owners switch on below. Members' abilities can be
+   switched off one by one too. */
+const PERMS = {
+  admin: { review: true, chat: true, edit_members: true, see_all: false, applications: false, add_members: false, passwords: false },
+  member: { chat: true, choose_programme: true }
+};
+async function withAccess(env, u) {
+  if (!u) return u;
+  await ensureSchema(env);
+  const row = await env.DB.prepare('SELECT owner, perms FROM user_perms WHERE user_id = ?').bind(u.id).first();
+  let saved = {}; try { saved = JSON.parse((row && row.perms) || '{}'); } catch {}
+  const base = PERMS[u.role] || {};
+  u.owner = u.role === 'admin' && !!(row && row.owner);
+  u.perms = {};
+  Object.keys(base).forEach((k) => { u.perms[k] = typeof saved[k] === 'boolean' ? saved[k] : base[k]; });
+  return u;
+}
+function cleanPerms(role, input) {
+  const out = {}, base = PERMS[role] || {};
+  Object.keys(base).forEach((k) => { if (input && typeof input[k] === 'boolean') out[k] = input[k]; });
+  return out;
+}
+async function savePerms(env, userId, role, perms, owner) {
+  const row = await env.DB.prepare('SELECT owner, perms FROM user_perms WHERE user_id = ?').bind(userId).first();
+  let cur = {}; try { cur = JSON.parse((row && row.perms) || '{}'); } catch {}
+  const next = { ...cur, ...cleanPerms(role, perms) };
+  const own = owner === undefined ? (row ? row.owner : 0) : (owner ? 1 : 0);
+  await env.DB.prepare('INSERT INTO user_perms (user_id, owner, perms) VALUES (?, ?, ?) ON CONFLICT (user_id) DO UPDATE SET owner = excluded.owner, perms = excluded.perms')
+    .bind(userId, own, JSON.stringify(next)).run();
+}
+const can = (u, p) => !!u && ((u.role === 'admin' && u.owner) || !!(u.perms && u.perms[p]));
+function needPerm(u, p) { if (!can(u, p)) throw new HttpError(403, 'You don’t have permission for this. Ask Zain or Taimoor to switch it on.'); }
+function needOwner(u) { if (!(u && u.role === 'admin' && u.owner)) throw new HttpError(403, 'Only Zain and Taimoor can do this.'); }
+const seesAll = (a) => a.owner || can(a, 'see_all');
+// SQL condition limiting members (table alias u) to the ones this mentor may see
+const scopeOf = (a) => (seesAll(a) ? { sql: '1 = 1', args: [] } : { sql: 'u.mentor_id = ?', args: [a.id] });
 
 /* ---------- activity log ----------
    Everything members and mentors do is written here, so the connector can answer "what's new
@@ -195,12 +244,13 @@ async function sendMessage(env, ctx, memberId, sender, text, context) {
   return { id, senderId: sender.id, senderName: sender.name, role: sender.role, body: bodyText, context: str(context, 160), at };
 }
 // messages from the other side that this reader hasn't seen yet, per conversation
+// A member's messages count as unread for their assigned mentor; unassigned members' go to the owners.
 async function unreadFor(env, reader) {
   await ensureSchema(env);
-  const other = reader.role === 'admin' ? 'member' : 'admin';
-  const scope = reader.role === 'admin' ? '' : ' AND m.member_id = ?';
-  const { results } = await env.DB.prepare('SELECT m.member_id, COUNT(*) AS n FROM messages m LEFT JOIN chat_reads r ON r.member_id = m.member_id AND r.reader_id = ? WHERE m.sender_role = ? AND m.created_at > COALESCE(r.last_read, \'\')' + scope + ' GROUP BY m.member_id')
-    .bind(...(reader.role === 'admin' ? [reader.id, other] : [reader.id, other, reader.id])).all();
+  const admin = reader.role === 'admin';
+  const scope = admin ? ' AND (u.mentor_id = ? OR (? = 1 AND u.mentor_id IS NULL))' : ' AND m.member_id = ?';
+  const { results } = await env.DB.prepare('SELECT m.member_id, COUNT(*) AS n FROM messages m JOIN users u ON u.id = m.member_id LEFT JOIN chat_reads r ON r.member_id = m.member_id AND r.reader_id = ? WHERE m.sender_role = ? AND m.created_at > COALESCE(r.last_read, \'\')' + scope + ' GROUP BY m.member_id')
+    .bind(...(admin ? [reader.id, 'member', reader.id, reader.owner ? 1 : 0] : [reader.id, 'admin', reader.id])).all();
   const by = {}; let total = 0;
   results.forEach((r) => { by[r.member_id] = r.n; total += r.n; });
   return { total, by };
@@ -212,7 +262,8 @@ function pub(u) {
   return {
     id: u.id, role: u.role, name: u.name, email: u.email, phone: u.phone || '', college: u.college || '', level: u.level || '',
     topic: u.topic || '', title: u.title || '', tracks: JSON.parse(u.tracks || '["original"]'), activeTrack: u.active_track || 'original',
-    mentorId: u.mentor_id || null, active: u.active !== 0, joined: u.joined
+    mentorId: u.mentor_id || null, active: u.active !== 0, joined: u.joined,
+    ...(u.perms ? { owner: !!u.owner, perms: u.perms } : {})
   };
 }
 function cookieOf(request) {
@@ -232,12 +283,12 @@ async function asUser(env, ctx, origin, user, method, path, data) {
   return { status: res.status, body: await res.json() };
 }
 async function currentUser(request, env) {
-  if (actors.has(request)) return actors.get(request);
+  if (actors.has(request)) return withAccess(env, actors.get(request));
   const token = cookieOf(request);
   if (!token) return null;
   const row = await env.DB.prepare('SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ? AND s.expires > ? AND u.active = 1')
     .bind(await sha256(token), now()).first();
-  return row ? openUsers(env, row) : null;
+  return row ? withAccess(env, await openUsers(env, row)) : null;
 }
 async function requireUser(request, env) { const u = await currentUser(request, env); if (!u) throw new HttpError(401, 'Please log in again.'); return u; }
 async function requireAdmin(request, env) { const u = await requireUser(request, env); if (u.role !== 'admin') throw new HttpError(403, 'Mentors only.'); return u; }
@@ -245,6 +296,12 @@ async function getMember(env, id) {
   const u = await env.DB.prepare("SELECT * FROM users WHERE id = ? AND role = 'member'").bind(id).first();
   if (!u) throw new HttpError(404, 'Member not found.');
   return openUsers(env, u);
+}
+// a member this mentor is allowed to see (their own students, or anyone for owners and see_all)
+async function memberFor(env, admin, id) {
+  const u = await getMember(env, id);
+  if (!seesAll(admin) && u.mentor_id !== admin.id) throw new HttpError(404, 'Member not found.');
+  return u;
 }
 function validTracks(list) {
   const out = [];
@@ -314,6 +371,21 @@ async function createMember(env, data, mentorId) {
   const u = await openUsers(env, await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(id).first());
   return { user: pub(u), password };
 }
+async function createMentor(env, data) {
+  const name = str(data.name, 120), email = str(data.email, 200).toLowerCase();
+  if (!name) throw bad('Enter the mentor’s name.');
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw bad('Enter a valid email address.');
+  if (await env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(email).first()) throw bad('An account with this email already exists.');
+  const password = data.password ? pw(data.password) : tempPassword();
+  if (password.length < 8) throw bad('Use at least 8 characters for the password.');
+  const { hash, salt } = await hashPassword(password);
+  const id = randomId('u');
+  await env.DB.prepare("INSERT INTO users (id, role, name, email, phone, pw_hash, pw_salt, title, joined) VALUES (?, 'admin', ?, ?, ?, ?, ?, ?, ?)")
+    .bind(id, name, email, await seal(env, str(data.phone, 40)), hash, salt, str(data.title, 100) || 'Mentor', now()).run();
+  await savePerms(env, id, 'admin', data.perms || {}, !!data.owner);
+  const u = await withAccess(env, await openUsers(env, await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(id).first()));
+  return { user: pub(u), password };
+}
 async function setPassword(env, userId, password) {
   const { hash, salt } = await hashPassword(password);
   await env.DB.batch([
@@ -339,7 +411,7 @@ async function route(request, env, url, ctx) {
     const ok = u && safeEqual((await hashPassword(pw(b.password), u.pw_salt)).hash, u.pw_hash);
     if (!ok) throw new HttpError(401, 'That email and password don’t match. Check them and try again.');
     if (u.active === 0) throw new HttpError(403, 'This account is paused. Contact your mentor.');
-    await openUsers(env, u);
+    await withAccess(env, await openUsers(env, u));
     const token = hex(crypto.getRandomValues(new Uint8Array(32)));
     const expires = new Date(Date.now() + SESSION_DAYS * 864e5);
     await DB.batch([
@@ -388,7 +460,7 @@ async function route(request, env, url, ctx) {
   if (path === '/api/states' && method === 'GET') {
     const u = await requireUser(request, env), track = url.searchParams.get('track');
     if (!TRACK_STEPS[track]) throw bad('Unknown programme.');
-    const target = u.role === 'admin' && url.searchParams.get('user') ? await getMember(env, url.searchParams.get('user')) : u;
+    const target = u.role === 'admin' && url.searchParams.get('user') ? await memberFor(env, u, url.searchParams.get('user')) : u;
     return json(computeStates(await userSubs(env, target.id, true), track));
   }
   if (path === '/api/progress' && method === 'GET') {
@@ -398,14 +470,18 @@ async function route(request, env, url, ctx) {
   if (path === '/api/active-track' && method === 'POST') {
     const u = await requireUser(request, env), b = await body(request), t = str(b.track, 20);
     if (!TRACK_STEPS[t]) throw bad('That programme isn’t available.');
-    const tracks = pub(u).tracks; if (!tracks.includes(t)) tracks.push(t);
+    const tracks = pub(u).tracks;
+    if (!tracks.includes(t)) {
+      if (u.role === 'member' && !can(u, 'choose_programme')) throw new HttpError(403, 'Your mentor chooses your programmes. Ask them in the chat.');
+      tracks.push(t);
+    }
     await DB.prepare('UPDATE users SET tracks = ?, active_track = ? WHERE id = ?').bind(JSON.stringify(tracks), t, u.id).run();
     if (u.role === 'member' && t !== u.active_track) record(env, ctx, 'member.programme', u.name + ' switched to ' + trackName(t), [['Member', u.name], ['Was on', trackName(u.active_track)], ['Now on', trackName(t)]], 'member-' + u.id, u.id, u.id);
-    return json(pub(await openUsers(env, await DB.prepare('SELECT * FROM users WHERE id = ?').bind(u.id).first())));
+    return json(pub(await withAccess(env, await openUsers(env, await DB.prepare('SELECT * FROM users WHERE id = ?').bind(u.id).first()))));
   }
   if (path === '/api/submissions' && method === 'GET') {
     const u = await requireUser(request, env), who = url.searchParams.get('user');
-    const id = u.role === 'admin' && who ? (await getMember(env, who)).id : u.id;
+    const id = u.role === 'admin' && who ? (await memberFor(env, u, who)).id : u.id;
     return json(await userSubs(env, id, true));
   }
   if (path === '/api/submit' && method === 'POST') {
@@ -434,6 +510,7 @@ async function route(request, env, url, ctx) {
   if (path === '/api/chat' && method === 'POST') {
     const u = await requireUser(request, env), b = await body(request);
     if (u.role !== 'member') throw bad('Mentors reply from Messages.');
+    if (!can(u, 'chat')) throw new HttpError(403, 'Chat is turned off for your account.');
     const msg = await sendMessage(env, ctx, u.id, u, b.body, b.context);
     record(env, ctx, 'chat.member', u.name + ' sent a message', [['Member', u.name], ['About', msg.context], ['Message', msg.body.length > 500 ? msg.body.slice(0, 500) + '…' : msg.body]], 'chat-' + u.id, u.id, u.id);
     return json(msg, 201);
@@ -450,14 +527,15 @@ async function route(request, env, url, ctx) {
 
   if (path === '/api/admin/stats' && method === 'GET') {
     const one = (sql, ...p) => DB.prepare(sql).bind(...p).first().then((r) => r.n);
+    const sc = scopeOf(admin);
     const [unread, pending, pendingMine, members, myMembers, applications, approvedWeek] = await Promise.all([
       unreadFor(env, admin),
-      one("SELECT COUNT(*) n FROM submissions WHERE status = 'review'"),
+      one("SELECT COUNT(*) n FROM submissions s JOIN users u ON u.id = s.user_id WHERE s.status = 'review' AND " + sc.sql, ...sc.args),
       one("SELECT COUNT(*) n FROM submissions s JOIN users u ON u.id = s.user_id WHERE s.status = 'review' AND u.mentor_id = ?", admin.id),
-      one("SELECT COUNT(*) n FROM users WHERE role = 'member' AND active = 1"),
+      one("SELECT COUNT(*) n FROM users u WHERE u.role = 'member' AND u.active = 1 AND " + sc.sql, ...sc.args),
       one("SELECT COUNT(*) n FROM users WHERE role = 'member' AND mentor_id = ?", admin.id),
-      one("SELECT COUNT(*) n FROM applications WHERE status = 'new'"),
-      one("SELECT COUNT(*) n FROM submissions WHERE status = 'approved' AND reviewed_at > ?", daysAgo(7))
+      can(admin, 'applications') ? one("SELECT COUNT(*) n FROM applications WHERE status = 'new'") : 0,
+      one("SELECT COUNT(*) n FROM submissions s JOIN users u ON u.id = s.user_id WHERE s.status = 'approved' AND s.reviewed_at > ? AND " + sc.sql, daysAgo(7), ...sc.args)
     ]);
     return json({ pending, pendingMine, members, myMembers, applications, approvedWeek, unreadChats: unread.total });
   }
@@ -466,8 +544,12 @@ async function route(request, env, url, ctx) {
     const since = str(url.searchParams.get('since'), 40) || daysAgo(7);
     const limit = Math.min(Math.max(parseInt(url.searchParams.get('limit'), 10) || 50, 1), 200);
     const type = str(url.searchParams.get('type'), 40);
-    const { results } = await DB.prepare("SELECT a.*, u.name AS actor_name FROM activity a LEFT JOIN users u ON u.id = a.actor_id WHERE a.created_at > ? AND (? = '' OR a.type LIKE ? || '%') ORDER BY a.created_at DESC LIMIT ?")
-      .bind(since, type, type, limit).all();
+    // owners see everything; other mentors see their own actions, their members' activity and (if allowed) applications
+    const scope = admin.owner ? '' : " AND (a.actor_id = ? OR a.member_id IN (SELECT u.id FROM users u WHERE u.role = 'member' AND " + scopeOf(admin).sql + ')' +
+      (can(admin, 'applications') ? " OR a.type LIKE 'application.%'" : '') + ')';
+    const args = admin.owner ? [] : [admin.id, ...scopeOf(admin).args];
+    const { results } = await DB.prepare("SELECT a.*, u.name AS actor_name FROM activity a LEFT JOIN users u ON u.id = a.actor_id WHERE a.created_at > ? AND (? = '' OR a.type LIKE ? || '%')" + scope + ' ORDER BY a.created_at DESC LIMIT ?')
+      .bind(since, type, type, ...args, limit).all();
     const events = await Promise.all(results.map(async (r) => {
       let detail = {}; try { detail = JSON.parse((await unseal(env, r.detail)) || '{}'); } catch {}
       return { id: r.id, type: r.type, summary: r.summary, at: r.created_at, by: r.actor_name || null, memberId: r.member_id || null,
@@ -488,19 +570,23 @@ async function route(request, env, url, ctx) {
   }
   if (path === '/api/admin/chats' && method === 'GET') {
     await ensureSchema(env);
+    needPerm(admin, 'chat');
+    const sc = scopeOf(admin);
     const [{ results }, unread] = await Promise.all([
-      DB.prepare('SELECT m.*, u.name AS m_name, u.college AS m_college, s.name AS s_name FROM messages m JOIN (SELECT member_id, MAX(created_at) AS mx FROM messages GROUP BY member_id) t ON t.member_id = m.member_id AND t.mx = m.created_at JOIN users u ON u.id = m.member_id LEFT JOIN users s ON s.id = m.sender_id ORDER BY m.created_at DESC').all(),
+      DB.prepare('SELECT m.*, u.name AS m_name, u.college AS m_college, u.mentor_id AS m_mentor, mt.name AS mentor_name, s.name AS s_name FROM messages m JOIN (SELECT member_id, MAX(created_at) AS mx FROM messages GROUP BY member_id) t ON t.member_id = m.member_id AND t.mx = m.created_at JOIN users u ON u.id = m.member_id LEFT JOIN users mt ON mt.id = u.mentor_id LEFT JOIN users s ON s.id = m.sender_id WHERE ' + sc.sql + ' ORDER BY m.created_at DESC').bind(...sc.args).all(),
       unreadFor(env, admin)
     ]);
     return json(await Promise.all(results.map(async (r) => ({
-      member: { id: r.member_id, name: r.m_name, college: r.m_college || '' },
+      member: { id: r.member_id, name: r.m_name, college: r.m_college || '', mentorId: r.m_mentor || null, mentorName: r.mentor_name || '' },
+      mine: r.m_mentor === admin.id || (admin.owner && !r.m_mentor),
       last: { body: (await unseal(env, r.body)).slice(0, 160), role: r.sender_role, senderName: r.s_name || '', at: r.created_at },
       unread: unread.by[r.member_id] || 0
     }))));
   }
   if (path === '/api/admin/chats/unread' && method === 'GET') return json({ unread: (await unreadFor(env, admin)).total });
   if ((m = path.match(/^\/api\/admin\/chat\/([\w-]+)$/))) {
-    const u = await getMember(env, m[1]);
+    needPerm(admin, 'chat');
+    const u = await memberFor(env, admin, m[1]);
     if (method === 'GET') {
       const messages = await chatMessages(env, u.id, str(url.searchParams.get('after'), 40));
       await markRead(env, u.id, admin.id);
@@ -513,12 +599,80 @@ async function route(request, env, url, ctx) {
       return json(msg, 201);
     }
   }
+  /* team: only owners add, change and remove mentors */
+  if (path === '/api/admin/team' && method === 'GET') {
+    needOwner(admin);
+    const [{ results }, { results: counts }] = await Promise.all([
+      DB.prepare("SELECT * FROM users WHERE role = 'admin' ORDER BY joined").all(),
+      DB.prepare("SELECT mentor_id, COUNT(*) AS n FROM users WHERE role = 'member' GROUP BY mentor_id").all()
+    ]);
+    const n = {}; counts.forEach((c) => { n[c.mentor_id || ''] = c.n; });
+    await openUsers(env, results);
+    const team = await Promise.all(results.map(async (u) => ({ ...pub(await withAccess(env, u)), students: n[u.id] || 0 })));
+    return json({ team, unassigned: n[''] || 0 });
+  }
+  if (path === '/api/admin/team' && method === 'POST') {
+    needOwner(admin);
+    const b = await body(request);
+    const res = await createMentor(env, { name: b.name, email: b.email, phone: b.phone, title: b.title, password: b.password, perms: b.perms, owner: b.owner === true });
+    record(env, ctx, 'team.added', admin.name + ' added ' + res.user.name + (res.user.owner ? ' as an owner' : ' as a mentor'), [['Mentor', res.user.name], ['Email', res.user.email]], 'admin-' + res.user.id, admin.id);
+    return json(res, 201);
+  }
+  if ((m = path.match(/^\/api\/admin\/team\/([\w-]+)(\/password)?$/))) {
+    needOwner(admin);
+    const t = await DB.prepare("SELECT * FROM users WHERE id = ? AND role = 'admin'").bind(m[1]).first();
+    if (!t) throw new HttpError(404, 'Mentor not found.');
+    await withAccess(env, await openUsers(env, t));
+    const otherOwners = async () => (await DB.prepare("SELECT COUNT(*) AS n FROM user_perms p JOIN users u ON u.id = p.user_id WHERE p.owner = 1 AND u.active = 1 AND u.id != ?").bind(t.id).first()).n;
+    if (m[2] && method === 'POST') {
+      const b = await body(request), newPw = b.password ? pw(b.password) : tempPassword();
+      if (newPw.length < 8) throw bad('Use at least 8 characters.');
+      await setPassword(env, t.id, newPw);
+      record(env, ctx, 'team.password', admin.name + (b.password ? ' set a new password for ' : ' reset the password for ') + t.name, [['Mentor', t.name]], 'admin-' + t.id, admin.id);
+      return json({ user: pub(t), password: newPw });
+    }
+    if (!m[2] && method === 'POST') {
+      const b = await body(request), changes = [];
+      if (typeof b.owner === 'boolean' && b.owner !== t.owner) {
+        if (!b.owner && !(await otherOwners())) throw bad('There must always be at least one owner.');
+        changes.push(b.owner ? 'made owner' : 'no longer owner');
+      }
+      if (typeof b.active === 'boolean' && b.active !== (t.active !== 0)) {
+        if (t.id === admin.id) throw bad('You can’t pause your own account.');
+        if (!b.active && t.owner && !(await otherOwners())) throw bad('There must always be at least one owner.');
+        await DB.prepare('UPDATE users SET active = ? WHERE id = ?').bind(b.active ? 1 : 0, t.id).run();
+        if (!b.active) { await DB.prepare('DELETE FROM sessions WHERE user_id = ?').bind(t.id).run(); await revokeApps(env, t.id); }
+        changes.push(b.active ? 'reactivated' : 'paused');
+      }
+      if (typeof b.title === 'string') { await DB.prepare('UPDATE users SET title = ? WHERE id = ?').bind(str(b.title, 100), t.id).run(); changes.push('title'); }
+      if (b.perms || typeof b.owner === 'boolean') { await savePerms(env, t.id, 'admin', b.perms || {}, typeof b.owner === 'boolean' ? b.owner : undefined); if (b.perms) changes.push('permissions'); }
+      const after = await withAccess(env, await openUsers(env, await DB.prepare('SELECT * FROM users WHERE id = ?').bind(t.id).first()));
+      record(env, ctx, 'team.changed', admin.name + ' updated ' + t.name + (changes.length ? ' (' + changes.join(', ') + ')' : ''), [['Mentor', t.name], ['Owner', after.owner ? 'yes' : 'no'], ['Permissions', JSON.stringify(after.perms)]], 'admin-' + t.id, admin.id);
+      return json(pub(after));
+    }
+    if (!m[2] && method === 'DELETE') {
+      if (t.id === admin.id) throw bad('You can’t remove your own account.');
+      if (t.owner && !(await otherOwners())) throw bad('There must always be at least one owner.');
+      // their students stay, unassigned, so the owners pick them up
+      await DB.batch([
+        DB.prepare('UPDATE users SET mentor_id = NULL WHERE mentor_id = ?').bind(t.id),
+        DB.prepare('DELETE FROM sessions WHERE user_id = ?').bind(t.id),
+        DB.prepare('DELETE FROM oauth_tokens WHERE user_id = ?').bind(t.id),
+        DB.prepare('DELETE FROM chat_reads WHERE reader_id = ?').bind(t.id),
+        DB.prepare('DELETE FROM user_perms WHERE user_id = ?').bind(t.id),
+        DB.prepare('DELETE FROM users WHERE id = ?').bind(t.id)
+      ]);
+      record(env, ctx, 'team.removed', admin.name + ' removed ' + t.name + ' from the team', [['Mentor', t.name], ['Email', t.email]], '', admin.id);
+      return json({ ok: true });
+    }
+  }
   if (path === '/api/admin/mentors' && method === 'GET') {
     const { results } = await DB.prepare("SELECT * FROM users WHERE role = 'admin' ORDER BY joined").all();
     return json((await openUsers(env, results)).map(pub));
   }
   if (path === '/api/admin/queue' && method === 'GET') {
-    const { results } = await DB.prepare("SELECT s.*, u.name AS m_name, u.email AS m_email, u.phone AS m_phone, u.college AS m_college, u.mentor_id AS m_mentor FROM submissions s JOIN users u ON u.id = s.user_id WHERE s.status = 'review' ORDER BY s.created_at ASC").all();
+    const sc = scopeOf(admin);
+    const { results } = await DB.prepare("SELECT s.*, u.name AS m_name, u.email AS m_email, u.phone AS m_phone, u.college AS m_college, u.mentor_id AS m_mentor FROM submissions s JOIN users u ON u.id = s.user_id WHERE s.status = 'review' AND " + sc.sql + ' ORDER BY s.created_at ASC').bind(...sc.args).all();
     await openRows(env, results, ['m_phone']);
     return json(results.map((r) => ({ ...toSub(r), member: { id: r.user_id, name: r.m_name, email: r.m_email, phone: r.m_phone || '', college: r.m_college || '', mentorId: r.m_mentor || null } })));
   }
@@ -526,12 +680,15 @@ async function route(request, env, url, ctx) {
     const r = await DB.prepare('SELECT * FROM submissions WHERE id = ?').bind(m[1]).first();
     if (!r) return json(null);
     const u = await openUsers(env, await DB.prepare('SELECT * FROM users WHERE id = ?').bind(r.user_id).first());
-    if (!u) return json(null);
+    if (!u || (!seesAll(admin) && u.mentor_id !== admin.id)) return json(null);
     const names = await adminNames(env);
     const { results } = await DB.prepare('SELECT * FROM submissions WHERE user_id = ? AND track = ? AND step = ? AND id != ? ORDER BY created_at DESC').bind(r.user_id, r.track, r.step, r.id).all();
     return json({ ...toSub(r, names), member: pub(u), history: results.map((x) => toSub(x, names)) });
   }
   if ((m = path.match(/^\/api\/admin\/review\/([\w-]+)$/)) && method === 'POST') {
+    needPerm(admin, 'review');
+    const owner = await DB.prepare('SELECT u.mentor_id FROM submissions s JOIN users u ON u.id = s.user_id WHERE s.id = ?').bind(m[1]).first();
+    if (!owner || (!seesAll(admin) && owner.mentor_id !== admin.id)) throw new HttpError(404, 'Submission not found.');
     const b = await body(request), decision = b.decision === 'approved' ? 'approved' : 'revision', feedback = str(b.feedback, 5000);
     const res = await DB.prepare("UPDATE submissions SET status = ?, feedback = ?, reviewer_id = ?, reviewed_at = ? WHERE id = ? AND status = 'review'").bind(decision, feedback, admin.id, now(), m[1]).run();
     if (!res.meta.changes) throw bad('This submission has already been reviewed.');
@@ -543,7 +700,7 @@ async function route(request, env, url, ctx) {
   if (path === '/api/admin/members' && method === 'GET') {
     const [names, { results: users }, { results: subs }] = await Promise.all([
       adminNames(env),
-      DB.prepare("SELECT * FROM users WHERE role = 'member'").all(),
+      DB.prepare("SELECT * FROM users u WHERE u.role = 'member' AND " + scopeOf(admin).sql).bind(...scopeOf(admin).args).all(),
       DB.prepare('SELECT * FROM submissions ORDER BY created_at DESC').all()
     ]);
     await openUsers(env, users);
@@ -552,33 +709,52 @@ async function route(request, env, url, ctx) {
     return json(out.sort((a, b) => (a.lastActive < b.lastActive ? 1 : -1)));
   }
   if (path === '/api/admin/members' && method === 'POST') {
+    needPerm(admin, 'add_members');
     const b = await body(request);
-    const res = await createMember(env, b, str(b.mentorId, 40) || admin.id);
+    // only owners choose another mentor; everyone else adds members to themselves
+    const res = await createMember(env, b, admin.owner ? (b.mentorId === '' ? null : str(b.mentorId, 40) || admin.id) : admin.id);
     record(env, ctx, 'member.added', admin.name + ' added ' + res.user.name, [['Member', res.user.name], ['Email', res.user.email]], 'member-' + res.user.id, admin.id, res.user.id);
     return json(res, 201);
   }
   if ((m = path.match(/^\/api\/admin\/member\/([\w-]+)$/))) {
-    const u = await getMember(env, m[1]);
+    const u = await memberFor(env, admin, m[1]);
     if (method === 'GET') {
+      if (admin.owner) await withAccess(env, u);   // owners also see and change the member's permissions
       const names = await adminNames(env), subs = await userSubs(env, u.id, names);  // names reused below
       const states = {}; pub(u).tracks.forEach((t) => { states[t] = computeStates(subs, t); });
       return json({ ...(await memberSummary(env, u, names, subs)), states });
     }
     if (method === 'DELETE') {
+      needPerm(admin, 'add_members');
       await DB.batch([
         DB.prepare('DELETE FROM sessions WHERE user_id = ?').bind(u.id),
         DB.prepare('DELETE FROM submissions WHERE user_id = ?').bind(u.id),
         DB.prepare('DELETE FROM messages WHERE member_id = ?').bind(u.id),
         DB.prepare('DELETE FROM chat_reads WHERE member_id = ? OR reader_id = ?').bind(u.id, u.id),
         DB.prepare('UPDATE applications SET user_id = NULL WHERE user_id = ?').bind(u.id),
+        DB.prepare('DELETE FROM user_perms WHERE user_id = ?').bind(u.id),
         DB.prepare('DELETE FROM users WHERE id = ?').bind(u.id)
       ]);
       record(env, ctx, 'member.removed', admin.name + ' removed ' + u.name, [['Member', u.name], ['Email', u.email]], '', admin.id, u.id);
       return json({ ok: true });
     }
   }
-  if ((m = path.match(/^\/api\/admin\/member\/([\w-]+)\/(reset-password|password|mentor|tracks|phone)$/)) && method === 'POST') {
+  if ((m = path.match(/^\/api\/admin\/member\/([\w-]+)\/access$/)) && method === 'POST') {
+    needOwner(admin);
     const u = await getMember(env, m[1]), b = await body(request);
+    if (b.perms) await savePerms(env, u.id, 'member', b.perms);
+    if (typeof b.active === 'boolean') {
+      await DB.prepare('UPDATE users SET active = ? WHERE id = ?').bind(b.active ? 1 : 0, u.id).run();
+      if (!b.active) await DB.batch([DB.prepare('DELETE FROM sessions WHERE user_id = ?').bind(u.id)]);
+    }
+    const after = await withAccess(env, await openUsers(env, await DB.prepare('SELECT * FROM users WHERE id = ?').bind(u.id).first()));
+    record(env, ctx, 'member.access', admin.name + ' changed what ' + u.name + ' can do', [['Member', u.name], ['Active', after.active !== 0 ? 'yes' : 'paused'], ['Permissions', JSON.stringify(after.perms)]], 'member-' + u.id, admin.id, u.id);
+    return json(pub(after));
+  }
+  if ((m = path.match(/^\/api\/admin\/member\/([\w-]+)\/(reset-password|password|mentor|tracks|phone)$/)) && method === 'POST') {
+    const u = await memberFor(env, admin, m[1]), b = await body(request);
+    if (m[2] === 'mentor') needOwner(admin);
+    else needPerm(admin, m[2] === 'reset-password' || m[2] === 'password' ? 'passwords' : 'edit_members');
     if (m[2] === 'reset-password' || m[2] === 'password') {
       const newPw = m[2] === 'password' ? pw(b.password) : tempPassword();
       if (newPw.length < 8) throw bad('Use at least 8 characters.');
@@ -602,10 +778,12 @@ async function route(request, env, url, ctx) {
     return json(pub(await openUsers(env, await DB.prepare('SELECT * FROM users WHERE id = ?').bind(u.id).first())));
   }
   if (path === '/api/admin/applications' && method === 'GET') {
+    needPerm(admin, 'applications');
     const { results } = await DB.prepare('SELECT * FROM applications ORDER BY created_at DESC').all();
     return json((await openRows(env, results, SEALED.applications)).map(toApp));
   }
   if ((m = path.match(/^\/api\/admin\/application\/([\w-]+)\/(paid|decline|approve)$/)) && method === 'POST') {
+    needPerm(admin, 'applications');
     const a = await openRows(env, await DB.prepare('SELECT * FROM applications WHERE id = ?').bind(m[1]).first(), SEALED.applications);
     if (!a) throw new HttpError(404, 'Application not found.');
     if (m[2] === 'paid') {
@@ -630,4 +808,4 @@ async function route(request, env, url, ctx) {
 }
 
 /* what connector.js needs from this file */
-const CONNECTOR_API = { asUser, ensureSchema, record, hashPassword, safeEqual, sha256, hex, randomId, now, currentUser, openUsers, pub, trackName, TRACK_STEPS, TRACK_NAMES };
+const CONNECTOR_API = { asUser, ensureSchema, withAccess, record, hashPassword, safeEqual, sha256, hex, randomId, now, currentUser, openUsers, pub, trackName, TRACK_STEPS, TRACK_NAMES };

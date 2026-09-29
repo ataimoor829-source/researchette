@@ -149,9 +149,9 @@ async function authorize(request, env, ctx, url, api) {
   const hidden = ['client_id', 'redirect_uri', 'response_type', 'code_challenge', 'code_challenge_method', 'state', 'scope', 'resource']
     .map((k) => '<input type="hidden" name="' + k + '" value="' + esc(k === 'redirect_uri' ? redirect : q[k] || '') + '">').join('');
   const consent = (error) => page('Connect ' + client.name + ' to Researchette',
-    '<p class="lede"><b>' + esc(client.name) + '</b> wants to manage Researchette as you. It will be able to:</p>' +
-    '<ul><li>See applications, members, submissions and activity</li><li>Approve or decline applications and create logins</li>' +
-    '<li>Review submissions and give feedback</li><li>Add or remove members, change programmes, mentors and passwords</li></ul>' +
+    '<p class="lede"><b>' + esc(client.name) + '</b> wants to manage Researchette as you, with the same access your account has. For owners that means everything, including:</p>' +
+    '<ul><li>See applications, members, submissions, chats and activity</li><li>Approve or decline applications and create logins</li>' +
+    '<li>Review submissions, reply in chats and give feedback</li><li>Add or remove members and mentors, change permissions and passwords</li></ul>' +
     '<p class="small">Only connect apps you trust. You can disconnect it any time from the portal’s account menu, and changing your password disconnects every app. It will return you to <b>' + esc(new URL(redirect).host) + '</b>.</p>' +
     '<form method="post" action="/oauth/authorize">' + hidden +
       (signedIn
@@ -238,7 +238,7 @@ async function bearerUser(request, env, api) {
   const u = await activeMentor(env, t.user_id);
   if (!u) return { error: 'invalid_token' };
   const c = await getClient(env, t.client_id);
-  return { user: await api.openUsers(env, u), client: c ? c.name : 'Connected app' };
+  return { user: await api.withAccess(env, await api.openUsers(env, u)), client: c ? c.name : 'Connected app' };
 }
 
 /* ---------- MCP (Streamable HTTP, JSON responses, stateless) ---------- */
@@ -273,7 +273,7 @@ async function handle(m, env, ctx, url, api, auth) {
         protocolVersion: PROTOCOLS.includes(asked) ? asked : PROTOCOLS[0],
         capabilities: { tools: { listChanged: false } },
         serverInfo: { name: 'researchette', title: 'Researchette', version: '1.0.0' },
-        instructions: 'Researchette is a medical research mentorship programme. You are acting as the mentor ' + auth.user.name + '. ' +
+        instructions: 'Researchette is a medical research mentorship programme. You are acting as ' + auth.user.name + (auth.user.owner ? ', an owner, with full access.' : ', a mentor, who can only see their assigned students and do what the owners allow (' + Object.keys(auth.user.perms || {}).filter((k) => auth.user.perms[k]).join(', ') + ').') + ' ' +
           'Use get_recent_activity to see what is new (applications, submissions, chat messages, logins, reviews); pass the checkedAt value from the last call as "since" next time. ' +
           'Applications: mark paid, then approve to create the student login (the temporary password is returned once; share it only with the student). ' +
           'Reviews: read the submission, then review_submission with feedback. Chat: list_chats shows unread conversations; reply with send_chat_message. Ask the user before destructive actions like removing a member or declining an application.'
@@ -318,6 +318,26 @@ const TOOLS = [
     annotations: READ, run: (a, call) => need(call('GET', '/api/admin/activity?since=' + q(a.since || '') + '&type=' + q(a.type || '') + '&limit=' + q(a.limit || 50))) },
   { name: 'list_programmes', title: 'Programmes', description: 'The programmes members can follow, with their ids and number of steps.',
     inputSchema: obj(), annotations: READ, run: (a, call, api) => Object.keys(api.TRACK_STEPS).map((k) => ({ id: k, name: api.TRACK_NAMES[k], steps: api.TRACK_STEPS[k] })) },
+  { name: 'list_team', title: 'Team (owners)', description: 'Owners only. Every mentor and owner with their permissions, active state and number of students, plus how many students have no mentor.',
+    inputSchema: obj(), annotations: READ, run: (a, call) => need(call('GET', '/api/admin/team')) },
+  { name: 'add_mentor', title: 'Add mentor (owners)', description: 'Owners only. Create a mentor login. Returns a temporary password (shown once). Permissions start at the defaults; change them with update_mentor.',
+    inputSchema: obj({ name: { type: 'string' }, email: { type: 'string' }, title: { type: 'string' }, owner: { type: 'boolean', description: 'Make them an owner (full access).' } }, ['name', 'email']), annotations: WRITE,
+    run: (a, call) => need(call('POST', '/api/admin/team', { name: a.name, email: a.email, title: a.title, owner: a.owner === true })) },
+  { name: 'update_mentor', title: 'Update mentor (owners)', description: 'Owners only. Change a mentor’s title, owner role, active state (pause) or permissions. Permissions: review, chat, edit_members, see_all, applications, add_members, passwords. There must always be at least one owner.',
+    inputSchema: obj({ mentor_id: id('Mentor id (from list_team)'), title: { type: 'string' }, owner: { type: 'boolean' }, active: { type: 'boolean' },
+      permissions: { type: 'object', properties: { review: { type: 'boolean' }, chat: { type: 'boolean' }, edit_members: { type: 'boolean' }, see_all: { type: 'boolean' }, applications: { type: 'boolean' }, add_members: { type: 'boolean' }, passwords: { type: 'boolean' } }, additionalProperties: false } }, ['mentor_id']),
+    annotations: DANGER,
+    run: (a, call) => need(call('POST', '/api/admin/team/' + q(a.mentor_id), { title: a.title, owner: a.owner, active: a.active, perms: a.permissions })) },
+  { name: 'reset_mentor_password', title: 'Reset mentor password (owners)', description: 'Owners only. Give a mentor a new temporary password (returned once), or set one, and log them out everywhere.',
+    inputSchema: obj({ mentor_id: id('Mentor id'), password: { type: 'string', minLength: 8, description: 'Optional; default a temporary password.' } }, ['mentor_id']), annotations: DANGER,
+    run: (a, call) => need(call('POST', '/api/admin/team/' + q(a.mentor_id) + '/password', a.password ? { password: a.password } : {})) },
+  { name: 'remove_mentor', title: 'Remove mentor (owners)', description: 'Owners only. Delete a mentor’s account; their students stay with no mentor. Always confirm with the user first, then pass confirm: true.',
+    inputSchema: obj({ mentor_id: id('Mentor id'), confirm: { type: 'boolean' } }, ['mentor_id', 'confirm']), annotations: DANGER,
+    run: (a, call) => { if (a.confirm !== true) throw new Error('Confirm with the user, then call again with confirm: true.'); return need(call('DELETE', '/api/admin/team/' + q(a.mentor_id))); } },
+  { name: 'set_member_access', title: 'Set member access (owners)', description: 'Owners only. Switch a member’s abilities (chat, choose_programme) on or off, or pause/reactivate their account.',
+    inputSchema: obj({ member_id: id('Member id'), active: { type: 'boolean' }, permissions: { type: 'object', properties: { chat: { type: 'boolean' }, choose_programme: { type: 'boolean' } }, additionalProperties: false } }, ['member_id']),
+    annotations: DANGER,
+    run: (a, call) => need(call('POST', '/api/admin/member/' + q(a.member_id) + '/access', { active: a.active, perms: a.permissions })) },
   { name: 'list_mentors', title: 'Mentors', description: 'Mentor accounts (ids, names, emails).',
     inputSchema: obj(), annotations: READ, run: (a, call) => need(call('GET', '/api/admin/mentors')) },
 

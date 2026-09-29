@@ -5,12 +5,15 @@
    database with AES-256-GCM, using the DATA_KEY secret set in Cloudflare (never in this code).
    /mcp, /oauth/* and /.well-known/oauth-* are the MCP connector (see connector.js). */
 import { connector } from './connector.js';
+import { newSecret, checkTotp } from './totp.js';
 
 // Number of steps in each programme. Keep in sync with public/assets/curriculum.js.
 const TRACK_STEPS = { original: 10, case: 6, letter: 4, synopsis: 6, thesis: 6, meta: 7 };
 const GOALS = { 'Original article': 'original', 'Synopsis': 'synopsis', 'Thesis': 'thesis', 'Meta-analysis': 'meta', 'Systematic review / meta-analysis': 'meta', 'Case report': 'case', 'Letter to the editor': 'letter' };
 const TRACK_NAMES = { original: 'Original article', case: 'Case report', letter: 'Letter to the editor', synopsis: 'Synopsis', thesis: 'Thesis', meta: 'Systematic review & meta-analysis' };
 const COOKIE = 'rt_s';
+const DEVICE_COOKIE = 'rt_d';     // marks a device that passed two-step verification
+const DEVICE_DAYS = 30;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERATIONS = 100000;
 
@@ -73,6 +76,10 @@ function safeEqual(a, b) {
   return r === 0;
 }
 async function sha256(s) { return hex(await crypto.subtle.digest('SHA-256', enc.encode(s))); }
+function base36(n) {
+  const a = 'abcdefghijkmnpqrstuvwxyz23456789', r = crypto.getRandomValues(new Uint8Array(n));
+  return Array.from(r, (x) => a[x % a.length]).join('');
+}
 function tempPassword() {
   const a = 'abcdefghjkmnpqrstuvwxyz', r = crypto.getRandomValues(new Uint32Array(5));
   let out = ''; for (let i = 0; i < 4; i++) out += a[r[i] % a.length];
@@ -142,7 +149,11 @@ const EXTRA_SCHEMA = [
   "CREATE TABLE IF NOT EXISTS messages (id TEXT PRIMARY KEY, member_id TEXT NOT NULL, sender_id TEXT NOT NULL, sender_role TEXT NOT NULL, body TEXT NOT NULL, context TEXT DEFAULT '', created_at TEXT NOT NULL)",
   'CREATE INDEX IF NOT EXISTS messages_member ON messages (member_id, created_at)',
   'CREATE TABLE IF NOT EXISTS chat_reads (member_id TEXT NOT NULL, reader_id TEXT NOT NULL, last_read TEXT NOT NULL, PRIMARY KEY (member_id, reader_id))',
-  "CREATE TABLE IF NOT EXISTS user_perms (user_id TEXT PRIMARY KEY, owner INTEGER DEFAULT 0, perms TEXT DEFAULT '{}')"
+  "CREATE TABLE IF NOT EXISTS user_perms (user_id TEXT PRIMARY KEY, owner INTEGER DEFAULT 0, perms TEXT DEFAULT '{}')",
+  "CREATE TABLE IF NOT EXISTS two_factor (user_id TEXT PRIMARY KEY, secret TEXT NOT NULL, enabled INTEGER DEFAULT 0, last_step INTEGER DEFAULT 0, recovery TEXT DEFAULT '[]', created_at TEXT NOT NULL)",
+  'CREATE TABLE IF NOT EXISTS trusted_devices (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, created_at TEXT NOT NULL, expires TEXT NOT NULL)',
+  'CREATE INDEX IF NOT EXISTS trusted_devices_user ON trusted_devices (user_id)',
+  'CREATE TABLE IF NOT EXISTS login_tickets (ticket_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, purpose TEXT NOT NULL, attempts INTEGER DEFAULT 0, expires TEXT NOT NULL)'
 ];
 let schemaReady = null;
 function ensureSchema(env) {
@@ -266,10 +277,60 @@ function pub(u) {
     ...(u.perms ? { owner: !!u.owner, perms: u.perms } : {})
   };
 }
-function cookieOf(request) {
-  const m = (request.headers.get('cookie') || '').match(new RegExp('(?:^|;\\s*)' + COOKIE + '=([^;]+)'));
+function cookieOf(request, name = COOKIE) {
+  const m = (request.headers.get('cookie') || '').match(new RegExp('(?:^|;\\s*)' + name + '=([^;]+)'));
   return m ? m[1] : null;
 }
+
+/* ---------- two-step verification (owners) ----------
+   Owners enter a 6-digit code from Apple Passwords (or any authenticator app) when they log in on a
+   device that hasn't passed the check in the last 30 days. The first time, they set it up by scanning
+   a QR code, and get recovery codes in case they lose their phone. */
+const needsTwoStep = (u) => u.role === 'admin' && !!u.owner;
+async function deviceTrusted(env, request, userId) {
+  const t = cookieOf(request, DEVICE_COOKIE);
+  if (!t) return false;
+  await ensureSchema(env);
+  return !!(await env.DB.prepare('SELECT 1 FROM trusted_devices WHERE token_hash = ? AND user_id = ? AND expires > ?').bind(await sha256(t), userId, now()).first());
+}
+async function twoStepOf(env, userId) {
+  await ensureSchema(env);
+  return env.DB.prepare('SELECT * FROM two_factor WHERE user_id = ?').bind(userId).first();
+}
+// checks a 6-digit code (or an unused recovery code) and records it so it can't be used again
+async function checkSecondFactor(env, userId, code) {
+  const tf = await twoStepOf(env, userId);
+  if (!tf) return false;
+  const secret = await unseal(env, tf.secret);
+  const step = await checkTotp(secret, code, tf.last_step);
+  if (step) { await env.DB.prepare('UPDATE two_factor SET last_step = ? WHERE user_id = ?').bind(step, userId).run(); return 'code'; }
+  const rc = String(code || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (tf.enabled && rc.length === 10) {
+    const list = JSON.parse(tf.recovery || '[]'), h = await sha256(rc), i = list.indexOf(h);
+    if (i > -1) { list.splice(i, 1); await env.DB.prepare('UPDATE two_factor SET recovery = ? WHERE user_id = ?').bind(JSON.stringify(list), userId).run(); return 'recovery'; }
+  }
+  return false;
+}
+async function trustDevice(env, userId) {
+  const token = hex(crypto.getRandomValues(new Uint8Array(32))), expires = new Date(Date.now() + DEVICE_DAYS * 864e5);
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM trusted_devices WHERE expires < ?').bind(now()),
+    env.DB.prepare('INSERT INTO trusted_devices (token_hash, user_id, created_at, expires) VALUES (?, ?, ?, ?)').bind(await sha256(token), userId, now(), expires.toISOString())
+  ]);
+  return `${DEVICE_COOKIE}=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Expires=${expires.toUTCString()}`;
+}
+async function forgetDevices(env, userId) { await ensureSchema(env); await env.DB.prepare('DELETE FROM trusted_devices WHERE user_id = ?').bind(userId).run(); }
+async function startSession(env, ctx, u, extraCookies = []) {
+  const token = hex(crypto.getRandomValues(new Uint8Array(32)));
+  const expires = new Date(Date.now() + SESSION_DAYS * 864e5);
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM sessions WHERE expires < ?').bind(now()),
+    env.DB.prepare('INSERT INTO sessions (token_hash, user_id, expires) VALUES (?, ?, ?)').bind(await sha256(token), u.id, expires.toISOString())
+  ]);
+  record(env, ctx, u.role + '.login', u.name + ' logged in', [['Name', u.name], ['Email', u.email]], u.role === 'member' ? 'member-' + u.id : '', u.id, u.role === 'member' ? u.id : null);
+  return [`${COOKIE}=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Expires=${expires.toUTCString()}`, ...extraCookies];
+}
+function withCookies(res, cookies) { cookies.forEach((c) => res.headers.append('set-cookie', c)); return res; }
 /* The connector's tool calls run through the same routes as the portal, as the mentor who approved it. */
 const actors = new WeakMap();
 async function asUser(env, ctx, origin, user, method, path, data) {
@@ -392,7 +453,7 @@ async function setPassword(env, userId, password) {
     env.DB.prepare('UPDATE users SET pw_hash = ?, pw_salt = ? WHERE id = ?').bind(hash, salt, userId),
     env.DB.prepare('DELETE FROM sessions WHERE user_id = ?').bind(userId)
   ]);
-  await revokeApps(env, userId);
+  await Promise.all([revokeApps(env, userId), forgetDevices(env, userId)]);
 }
 function toApp(r) {
   return { id: r.id, name: r.name, email: r.email, phone: r.phone || '', college: r.college || '', level: r.level || '', experience: r.experience || '',
@@ -412,14 +473,60 @@ async function route(request, env, url, ctx) {
     if (!ok) throw new HttpError(401, 'That email and password don’t match. Check them and try again.');
     if (u.active === 0) throw new HttpError(403, 'This account is paused. Contact your mentor.');
     await withAccess(env, await openUsers(env, u));
-    const token = hex(crypto.getRandomValues(new Uint8Array(32)));
-    const expires = new Date(Date.now() + SESSION_DAYS * 864e5);
-    await DB.batch([
-      DB.prepare('DELETE FROM sessions WHERE expires < ?').bind(now()),
-      DB.prepare('INSERT INTO sessions (token_hash, user_id, expires) VALUES (?, ?, ?)').bind(await sha256(token), u.id, expires.toISOString())
-    ]);
-    record(env, ctx, u.role + '.login', u.name + ' logged in', [['Name', u.name], ['Email', u.email]], u.role === 'member' ? 'member-' + u.id : '', u.id, u.role === 'member' ? u.id : null);
-    return json(pub(u), 200, { 'set-cookie': `${COOKIE}=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Expires=${expires.toUTCString()}` });
+    if (needsTwoStep(u) && !(await deviceTrusted(env, request, u.id))) {
+      // password was right; now the code (or, the first time, setting up the authenticator)
+      let tf = await twoStepOf(env, u.id);
+      const purpose = tf && tf.enabled ? 'verify' : 'setup';
+      let secret = null;
+      if (purpose === 'setup') {
+        // reuse the key from an unfinished setup, so a code already scanned into Passwords keeps working
+        secret = (tf && (await unseal(env, tf.secret))) || newSecret();
+        await DB.prepare('INSERT INTO two_factor (user_id, secret, enabled, last_step, recovery, created_at) VALUES (?, ?, 0, 0, \'[]\', ?) ON CONFLICT (user_id) DO UPDATE SET secret = excluded.secret, enabled = 0, last_step = 0')
+          .bind(u.id, await seal(env, secret), now()).run();
+      }
+      const ticket = hex(crypto.getRandomValues(new Uint8Array(32)));
+      await DB.batch([
+        DB.prepare('DELETE FROM login_tickets WHERE expires < ?').bind(now()),
+        DB.prepare('INSERT INTO login_tickets (ticket_hash, user_id, purpose, attempts, expires) VALUES (?, ?, ?, 0, ?)').bind(await sha256(ticket), u.id, purpose, new Date(Date.now() + 10 * 60e3).toISOString())
+      ]);
+      const out = { twoFactor: purpose, ticket, name: u.name, email: u.email };
+      if (secret) {
+        out.secret = secret.replace(/(.{4})/g, '$1 ').trim();
+        out.otpauth = 'otpauth://totp/' + encodeURIComponent('Researchette:' + u.email) + '?secret=' + secret + '&issuer=Researchette&algorithm=SHA1&digits=6&period=30';
+      }
+      return json(out);
+    }
+    return withCookies(json(pub(u)), await startSession(env, ctx, u));
+  }
+  if (path === '/api/login/verify' && method === 'POST') {
+    const b = await body(request);
+    await ensureSchema(env);
+    const th = await sha256(str(b.ticket, 100));
+    const t = await DB.prepare('SELECT * FROM login_tickets WHERE ticket_hash = ?').bind(th).first();
+    if (!t || t.expires < now() || t.attempts >= 5) {
+      if (t) await DB.prepare('DELETE FROM login_tickets WHERE ticket_hash = ?').bind(th).run();
+      throw new HttpError(401, 'This sign-in has expired. Enter your email and password again.');
+    }
+    await DB.prepare('UPDATE login_tickets SET attempts = attempts + 1 WHERE ticket_hash = ?').bind(th).run();
+    const how = await checkSecondFactor(env, t.user_id, b.code);
+    if (!how || (t.purpose === 'setup' && how !== 'code')) throw new HttpError(401, 'That code isn’t right. Check the code in your authenticator and try again.');
+    await DB.prepare('DELETE FROM login_tickets WHERE ticket_hash = ?').bind(th).run();
+    const u = await withAccess(env, await openUsers(env, await DB.prepare('SELECT * FROM users WHERE id = ? AND active = 1').bind(t.user_id).first()));
+    if (!u) throw new HttpError(403, 'This account is paused.');
+    const out = pub(u);
+    if (t.purpose === 'setup') {
+      // switch it on and hand out recovery codes, shown once
+      const codes = Array.from({ length: 8 }, () => base36(10));
+      await DB.prepare('UPDATE two_factor SET enabled = 1, recovery = ? WHERE user_id = ?').bind(JSON.stringify(await Promise.all(codes.map((c) => sha256(c)))), u.id).run();
+      out.recoveryCodes = codes.map((c) => c.slice(0, 5) + '-' + c.slice(5));
+      record(env, ctx, 'admin.two_step', u.name + ' set up two-step verification', [['Name', u.name]], '', u.id);
+    }
+    if (how === 'recovery') {
+      out.recoveryUsed = true;
+      out.recoveryLeft = JSON.parse((await twoStepOf(env, u.id)).recovery || '[]').length;
+      record(env, ctx, 'admin.two_step', u.name + ' logged in with a recovery code', [['Name', u.name], ['Codes left', out.recoveryLeft]], '', u.id);
+    }
+    return withCookies(json(out), await startSession(env, ctx, u, [await trustDevice(env, u.id)]));
   }
   if (path === '/api/logout' && method === 'POST') {
     const token = cookieOf(request);
@@ -451,7 +558,7 @@ async function route(request, env, url, ctx) {
     if (next === pw(b.current)) throw bad('Choose a password that’s different from the current one.');
     const { hash, salt } = await hashPassword(next);
     await DB.prepare('UPDATE users SET pw_hash = ?, pw_salt = ? WHERE id = ?').bind(hash, salt, u.id).run();
-    await revokeApps(env, u.id);
+    await Promise.all([revokeApps(env, u.id), forgetDevices(env, u.id)]);
     record(env, ctx, u.role + '.password', u.name + ' changed their password', [['Name', u.name], ['Email', u.email]], u.role === 'member' ? 'member-' + u.id : '', u.id, u.role === 'member' ? u.id : null);
     return json({ ok: true });
   }
@@ -608,7 +715,14 @@ async function route(request, env, url, ctx) {
     ]);
     const n = {}; counts.forEach((c) => { n[c.mentor_id || ''] = c.n; });
     await openUsers(env, results);
-    const team = await Promise.all(results.map(async (u) => ({ ...pub(await withAccess(env, u)), students: n[u.id] || 0 })));
+    const [{ results: tfs }, { results: devs }] = await Promise.all([
+      DB.prepare('SELECT user_id, enabled, recovery FROM two_factor').all(),
+      DB.prepare('SELECT user_id, COUNT(*) AS n FROM trusted_devices WHERE expires > ? GROUP BY user_id').bind(now()).all()
+    ]);
+    const tfBy = {}; tfs.forEach((x) => { tfBy[x.user_id] = x; });
+    const devBy = {}; devs.forEach((x) => { devBy[x.user_id] = x.n; });
+    const team = await Promise.all(results.map(async (u) => ({ ...pub(await withAccess(env, u)), students: n[u.id] || 0,
+      twoStep: { on: !!(tfBy[u.id] && tfBy[u.id].enabled), recoveryLeft: tfBy[u.id] ? JSON.parse(tfBy[u.id].recovery || '[]').length : 0, devices: devBy[u.id] || 0 } })));
     return json({ team, unassigned: n[''] || 0 });
   }
   if (path === '/api/admin/team' && method === 'POST') {
@@ -617,6 +731,19 @@ async function route(request, env, url, ctx) {
     const res = await createMentor(env, { name: b.name, email: b.email, phone: b.phone, title: b.title, password: b.password, perms: b.perms, owner: b.owner === true });
     record(env, ctx, 'team.added', admin.name + ' added ' + res.user.name + (res.user.owner ? ' as an owner' : ' as a mentor'), [['Mentor', res.user.name], ['Email', res.user.email]], 'admin-' + res.user.id, admin.id);
     return json(res, 201);
+  }
+  if ((m = path.match(/^\/api\/admin\/team\/([\w-]+)\/two-step$/)) && method === 'DELETE') {
+    needOwner(admin);
+    const t = await DB.prepare("SELECT id, name FROM users WHERE id = ? AND role = 'admin'").bind(m[1]).first();
+    if (!t) throw new HttpError(404, 'Mentor not found.');
+    // they set it up again on their next login; this also logs them out everywhere
+    await DB.batch([
+      DB.prepare('DELETE FROM two_factor WHERE user_id = ?').bind(t.id),
+      DB.prepare('DELETE FROM trusted_devices WHERE user_id = ?').bind(t.id),
+      DB.prepare('DELETE FROM sessions WHERE user_id = ?').bind(t.id)
+    ]);
+    record(env, ctx, 'team.two_step', admin.name + ' reset two-step verification for ' + t.name, [['Mentor', t.name]], 'admin-' + t.id, admin.id);
+    return json({ ok: true });
   }
   if ((m = path.match(/^\/api\/admin\/team\/([\w-]+)(\/password)?$/))) {
     needOwner(admin);
@@ -660,6 +787,8 @@ async function route(request, env, url, ctx) {
         DB.prepare('DELETE FROM oauth_tokens WHERE user_id = ?').bind(t.id),
         DB.prepare('DELETE FROM chat_reads WHERE reader_id = ?').bind(t.id),
         DB.prepare('DELETE FROM user_perms WHERE user_id = ?').bind(t.id),
+        DB.prepare('DELETE FROM two_factor WHERE user_id = ?').bind(t.id),
+        DB.prepare('DELETE FROM trusted_devices WHERE user_id = ?').bind(t.id),
         DB.prepare('DELETE FROM users WHERE id = ?').bind(t.id)
       ]);
       record(env, ctx, 'team.removed', admin.name + ' removed ' + t.name + ' from the team', [['Mentor', t.name], ['Email', t.email]], '', admin.id);
@@ -808,4 +937,4 @@ async function route(request, env, url, ctx) {
 }
 
 /* what connector.js needs from this file */
-const CONNECTOR_API = { asUser, ensureSchema, withAccess, record, hashPassword, safeEqual, sha256, hex, randomId, now, currentUser, openUsers, pub, trackName, TRACK_STEPS, TRACK_NAMES };
+const CONNECTOR_API = { asUser, ensureSchema, withAccess, needsTwoStep, deviceTrusted, twoStepOf, checkSecondFactor, record, hashPassword, safeEqual, sha256, hex, randomId, now, currentUser, openUsers, pub, trackName, TRACK_STEPS, TRACK_NAMES };

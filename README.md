@@ -68,6 +68,8 @@ Code: `worker/connector.js`. Its tables are created automatically on first use.
 
 ## Accounts and security
 
+- **Two-step verification for owners:** Zain and Taimoor enter a 6-digit code when they log in on a device that hasn't been verified in the last 30 days. The first login after this was added shows a QR code: scan it with the iPhone Camera and tap “Add Verification Code in Passwords” (any authenticator app works too), then enter the code. Eight one-time recovery codes are shown once, for a lost phone. Owners can reset each other's two-step verification from Team & permissions. Changing a password also forgets remembered devices. The AI connector's approval page asks owners for the code too. Code: `worker/totp.js` (RFC 6238) and the login routes in `worker/index.js`. The QR code is drawn by `public/assets/qrcode.js` (qrcode-generator, MIT).
+
 - Mentor accounts live in the database. Mentors create member logins from the portal (approve an application, or Members → Add member).
 - Passwords are hashed (PBKDF2-SHA256, 100,000 rounds) and never stored in plain text. Logins use a secure, HttpOnly session cookie that lasts 30 days.
 - Anyone can change their own password from the account menu (tap your initials, top right). Mentors can reset or set a member's password from the member page.

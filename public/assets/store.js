@@ -36,6 +36,7 @@ window.Store = (function () {
     /* account */
     signIn: function (email, password) { return post('/api/login', { email: email, password: password }); },
     signOut: function () { return post('/api/logout'); },
+    verifyLogin: function (ticket, code) { return post('/api/login/verify', { ticket: ticket, code: code }); },
     me: function () { return call('GET', '/api/me').catch(function () { return null; }); },
     changePassword: function (_userId, current, next) { return post('/api/me/password', { current: current, next: next }); },
 
@@ -61,6 +62,7 @@ window.Store = (function () {
     updateMentor: function (id, data) { return post('/api/admin/team/' + q(id), data); },
     mentorPassword: function (id, pw) { return post('/api/admin/team/' + q(id) + '/password', pw ? { password: pw } : {}); },
     removeMentor: function (id) { cache = {}; return call('DELETE', '/api/admin/team/' + q(id)); },
+    resetTwoStep: function (id) { cache = {}; return call('DELETE', '/api/admin/team/' + q(id) + '/two-step'); },
     memberAccess: function (id, data) { return post('/api/admin/member/' + q(id) + '/access', data); },
 
     /* website form */

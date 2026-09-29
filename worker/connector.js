@@ -148,7 +148,7 @@ async function authorize(request, env, ctx, url, api) {
   const signedIn = session && session.role === 'admin' ? session : null;
   const hidden = ['client_id', 'redirect_uri', 'response_type', 'code_challenge', 'code_challenge_method', 'state', 'scope', 'resource']
     .map((k) => '<input type="hidden" name="' + k + '" value="' + esc(k === 'redirect_uri' ? redirect : q[k] || '') + '">').join('');
-  const consent = (error) => page('Connect ' + client.name + ' to Researchette',
+  const consent = (error, askCode) => page('Connect ' + client.name + ' to Researchette',
     '<p class="lede"><b>' + esc(client.name) + '</b> wants to manage Researchette as you, with the same access your account has. For owners that means everything, including:</p>' +
     '<ul><li>See applications, members, submissions, chats and activity</li><li>Approve or decline applications and create logins</li>' +
     '<li>Review submissions, reply in chats and give feedback</li><li>Add or remove members and mentors, change permissions and passwords</li></ul>' +
@@ -157,7 +157,8 @@ async function authorize(request, env, ctx, url, api) {
       (signedIn
         ? '<p class="who">Signed in as <b>' + esc(signedIn.name) + '</b> (' + esc(signedIn.email) + ')</p>'
         : '<label for="e">Mentor email</label><input id="e" name="email" type="email" autocomplete="username" required value="' + esc(q.email || '') + '">' +
-          '<label for="p">Password</label><input id="p" name="password" type="password" autocomplete="current-password" required>') +
+          '<label for="p">Password</label><input id="p" name="password" type="password" autocomplete="current-password" required>' +
+          (askCode ? '<label for="c">Verification code</label><input id="c" name="code" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code from Passwords" required>' : '')) +
       (error ? '<p class="error" role="alert">' + esc(error) + '</p>' : '') +
       '<div class="row"><button class="btn quiet" name="action" value="deny" type="submit" formnovalidate>Cancel</button><button class="btn" name="action" value="allow" type="submit">Allow</button></div>' +
     '</form>', error ? 401 : 200);
@@ -171,6 +172,14 @@ async function authorize(request, env, ctx, url, api) {
     const ok = u && api.safeEqual((await api.hashPassword(String(q.password || '').trim(), u.pw_salt)).hash, u.pw_hash);
     if (!ok) return consent('That email and password don’t match.');
     if (u.role !== 'admin' || u.active === 0) return consent('Only mentor accounts can connect apps.');
+    // owners need their verification code too, unless this device already passed two-step verification
+    await api.withAccess(env, u);
+    if (api.needsTwoStep(u) && !(await api.deviceTrusted(env, request, u.id))) {
+      const tf = await api.twoStepOf(env, u.id);
+      if (!tf || !tf.enabled) return consent('Log in to the Researchette portal once to set up two-step verification, then connect the app.');
+      if (!q.code) return consent('Enter the 6-digit code from your authenticator.', true);
+      if (!(await api.checkSecondFactor(env, u.id, q.code))) return consent('That code isn’t right. Enter your password and the current code.', true);
+    }
     user = u;
   }
   const code = randomToken('rtk_');

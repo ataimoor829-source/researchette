@@ -15,5 +15,6 @@
       "database_id": "963c8eea-6d00-440e-ba3f-f058143bc8bd"
     }
   ],
+  "placement": { "mode": "smart" },
   "observability": { "enabled": true }
 }

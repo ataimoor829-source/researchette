@@ -119,8 +119,12 @@ function computeStates(subs, track) {
   return out;
 }
 async function userSubs(env, userId, reviewers) {
-  const { results } = await env.DB.prepare('SELECT * FROM submissions WHERE user_id = ? ORDER BY created_at DESC').bind(userId).all();
-  return results.map((r) => toSub(r, reviewers));
+  // reviewers may be a name map, `true` (look the names up in parallel) or empty
+  const [res, names] = await Promise.all([
+    env.DB.prepare('SELECT * FROM submissions WHERE user_id = ? ORDER BY created_at DESC').bind(userId).all(),
+    reviewers === true ? adminNames(env) : reviewers
+  ]);
+  return res.results.map((r) => toSub(r, names));
 }
 function progressOf(u, subs) {
   const p = {};
@@ -220,7 +224,7 @@ async function route(request, env, url) {
     const u = await requireUser(request, env), track = url.searchParams.get('track');
     if (!TRACK_STEPS[track]) throw bad('Unknown programme.');
     const target = u.role === 'admin' && url.searchParams.get('user') ? await getMember(env, url.searchParams.get('user')) : u;
-    return json(computeStates(await userSubs(env, target.id, await adminNames(env)), track));
+    return json(computeStates(await userSubs(env, target.id, true), track));
   }
   if (path === '/api/progress' && method === 'GET') {
     const u = await requireUser(request, env);
@@ -236,7 +240,7 @@ async function route(request, env, url) {
   if (path === '/api/submissions' && method === 'GET') {
     const u = await requireUser(request, env), who = url.searchParams.get('user');
     const id = u.role === 'admin' && who ? (await getMember(env, who)).id : u.id;
-    return json(await userSubs(env, id, await adminNames(env)));
+    return json(await userSubs(env, id, true));
   }
   if (path === '/api/submit' && method === 'POST') {
     const u = await requireUser(request, env), b = await body(request), track = str(b.track, 20), step = Number(b.step), text = str(b.text, 20000);
@@ -289,9 +293,11 @@ async function route(request, env, url) {
     return json({ ok: true });
   }
   if (path === '/api/admin/members' && method === 'GET') {
-    const names = await adminNames(env);
-    const { results: users } = await DB.prepare("SELECT * FROM users WHERE role = 'member'").all();
-    const { results: subs } = await DB.prepare('SELECT * FROM submissions ORDER BY created_at DESC').all();
+    const [names, { results: users }, { results: subs }] = await Promise.all([
+      adminNames(env),
+      DB.prepare("SELECT * FROM users WHERE role = 'member'").all(),
+      DB.prepare('SELECT * FROM submissions ORDER BY created_at DESC').all()
+    ]);
     const all = subs.map((r) => toSub(r));
     const out = await Promise.all(users.map((u) => memberSummary(env, u, names, all)));
     return json(out.sort((a, b) => (a.lastActive < b.lastActive ? 1 : -1)));
@@ -303,7 +309,7 @@ async function route(request, env, url) {
   if ((m = path.match(/^\/api\/admin\/member\/([\w-]+)$/))) {
     const u = await getMember(env, m[1]);
     if (method === 'GET') {
-      const names = await adminNames(env), subs = await userSubs(env, u.id, names);
+      const names = await adminNames(env), subs = await userSubs(env, u.id, names);  // names reused below
       const states = {}; pub(u).tracks.forEach((t) => { states[t] = computeStates(subs, t); });
       return json({ ...(await memberSummary(env, u, names, subs)), states });
     }

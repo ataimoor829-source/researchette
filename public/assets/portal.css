@@ -228,6 +228,7 @@ label { font-weight: 600; font-size: .88rem; }
 a.li { transition: opacity .2s; }
 a.li:hover .li-title { color: var(--pen); }
 .li-main { min-width: 0; display: grid; gap: 2px; }
+.li.app { grid-template-columns: 1fr auto; }
 .li-title { font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; transition: color .2s; }
 .li-sub { color: var(--muted); font-size: .85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .li-end { display: flex; align-items: center; gap: 10px; }

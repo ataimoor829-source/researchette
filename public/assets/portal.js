@@ -187,6 +187,7 @@
       '<div class="row"><span class="avatar lg ' + (me.role === 'admin' ? '' : 'warm') + '">' + initials(me.name) + '</span><div><h3>' + esc(me.name) + '</h3><p class="small muted">' + esc(me.email) + '</p>' + (me.college ? '<p class="small muted">' + esc(me.college) + '</p>' : '') + '</div></div>' +
       '<div class="field"><span class="small muted">Appearance</span><div class="seg" id="theme-seg" style="--n:3;--i:' + idx + '"><button type="button" data-v="system">System</button><button type="button" data-v="light">Light</button><button type="button" data-v="dark">Dark</button></div></div>' +
       (me.role === 'member' ? waButton(MENTOR_WA, 'Hi, I’m ' + me.name + ', a Researchette member. I have a question.', 'Contact your mentor on WhatsApp', 'btn-block') : '') +
+      (me.role === 'admin' ? '<button class="btn btn-glass btn-block" type="button" id="apps">Connected apps</button>' : '') +
       '<button class="btn btn-glass btn-block" type="button" id="chpw">Change password</button>' +
       '<button class="btn btn-glass btn-block" type="button" id="logout">Log out</button>' +
       (S.demo && me.role === 'admin' ? '<button class="btn btn-quiet btn-block btn-sm" type="button" id="reset">Reset demo data</button>' : '') +
@@ -201,6 +202,7 @@
           });
         });
         el.querySelector('#chpw').addEventListener('click', function () { close(); passwordSheet(); });
+        var ap = el.querySelector('#apps'); if (ap) ap.addEventListener('click', function () { close(); appsSheet(); });
         el.querySelector('#logout').addEventListener('click', function () { S.signOut().then(function () { forgetMe(); close(); app.dataset.shell = ''; go('login'); }); });
         var rs = el.querySelector('#reset');
         if (rs) rs.addEventListener('click', function () {
@@ -208,6 +210,25 @@
           rs.dataset.armed = '1'; rs.textContent = 'Tap again to reset all demo data';
         });
       });
+  }
+
+  /* AI apps connected through the MCP connector (Claude, Gemini, ChatGPT…) */
+  function appsSheet() {
+    var url = location.origin + '/mcp';
+    S.connections().then(function (list) {
+      sheet('<h2>Connected apps</h2><p class="muted">AI assistants you’ve connected can manage Researchette as you. To connect one, add a custom connector with this address, then log in and tap Allow.</p>' +
+        '<div class="cred"><span>Connector address</span><b id="mcp-url">' + esc(url) + '</b></div><button class="btn btn-glass btn-block btn-sm" type="button" id="cp-url">Copy address</button>' +
+        (list.length ? '<div class="list">' + list.map(function (c) {
+          return '<div class="li app"><div class="li-main"><span class="li-title">' + esc(c.name) + '</span><span class="li-sub">Connected ' + rel(c.since) + ' · active ' + rel(c.lastUsed) + '</span></div><button class="btn btn-danger btn-sm" type="button" data-cid="' + esc(c.clientId) + '">Disconnect</button></div>';
+        }).join('') + '</div>' : '<p class="small muted">No apps connected yet.</p>') +
+        '<p class="small muted">Changing your password disconnects every app.</p><button class="btn btn-quiet btn-block btn-sm" type="button" data-close>Close</button>',
+        function (el, close) {
+          el.querySelector('#cp-url').addEventListener('click', function () { copy(url, el.querySelector('#mcp-url')); });
+          el.querySelectorAll('[data-cid]').forEach(function (b) {
+            b.addEventListener('click', function () { S.disconnect(b.dataset.cid).then(function () { close(); toast('App disconnected'); appsSheet(); }, function (e) { toast(e.message); }); });
+          });
+        });
+    }, function (e) { toast(e.message); });
   }
 
   function passwordSheet() {

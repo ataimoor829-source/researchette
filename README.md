@@ -16,6 +16,7 @@ Medical research mentorship: daily tasks, step-by-step lessons and mentor feedba
   - `manifest.webmanifest`, `sw.js`, `assets/icons/`: make the portal installable as a phone app.
   - `_headers`: security headers for every page. `robots.txt` keeps the portal out of search results.
 - `worker/index.js`: the API (Cloudflare Worker). Handles logins, applications, members, submissions and reviews.
+- `worker/connector.js`: the MCP connector and its OAuth sign-in.
 - `db/schema.sql`: the database tables (Cloudflare D1, database `researchette-db`).
 - `wrangler.jsonc`: Cloudflare config. `/api/*` goes to the Worker; everything else is served from `public/`.
 
@@ -41,15 +42,18 @@ If you add steps to a programme in `curriculum.js`, update `TRACK_STEPS` in `wor
 - **WhatsApp the student:** after you approve or send back a task, a ready-made message opens so you can tell the student on WhatsApp (you can edit it first). Reviewed tasks also have a “Notify on WhatsApp” button. When you change a member’s mentor or programmes, their page offers to send them an update.
 - **Applications:** applications from the website. Mark payment as received, then approve to create a login. The temporary password and a ready-to-send welcome message are shown once.
 
-## Email alerts
+## AI connector (MCP)
 
-The founder gets an email when a member logs in, submits or resubmits a task, changes their password or switches programme, and when a new application arrives. Emails go through [Resend](https://resend.com) (free for up to 3,000 a month):
+The website is also an MCP server, so a mentor can connect Claude, Gemini, ChatGPT or any app that supports custom MCP connectors, and manage Researchette by chatting.
 
-1. Sign up at resend.com **with itszainr1@gmail.com** (without your own domain, Resend only sends to the email you signed up with).
-2. In Resend, go to API Keys → Create API key (permission: Sending access) and copy it.
-3. In Cloudflare: Workers & Pages → researchette → Settings → Variables and Secrets → Add → type **Secret**, name `RESEND_API_KEY`, paste the key, and deploy.
+- **Connector address:** `https://<your-site>/mcp` (shown in the portal under account menu → Connected apps).
+- **Sign-in:** OAuth 2.1 with automatic app registration and PKCE. When you add the connector, the app opens a Researchette page: log in with a mentor account and tap Allow. Member accounts can't connect.
+- **Tools (act as the mentor who approved):** overview, recent activity, programmes, mentors; applications (list, mark paid, approve, decline); review queue, submission, review; members (list, view, add, remove, reset or set password, assign mentor, set programmes, set WhatsApp number).
+- **Notifications:** connectors can't push messages, so ask your AI app to check `get_recent_activity` on a schedule (for example “every hour, tell me about new applications and submissions”). It returns `checkedAt` to pass as `since` next time.
+- **Activity log:** everything members and mentors do, including actions through the connector, is recorded (details encrypted).
+- **Security:** access tokens last 1 hour and refresh for up to 90 days (refresh tokens rotate). Disconnect an app in Connected apps; changing your password disconnects every app. Only connect apps you trust: they can see and change student data.
 
-Optional: set `ALERT_EMAIL` to send alerts somewhere else, or `ALERT_FROM` once you've verified your own domain in Resend. Without `RESEND_API_KEY` the site works normally and sends no emails.
+Code: `worker/connector.js`. Its tables are created automatically on first use.
 
 ## Accounts and security
 

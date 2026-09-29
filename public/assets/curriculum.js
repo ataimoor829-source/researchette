@@ -444,3 +444,375 @@ var ORIGINAL = {
     return window.CURRICULUM.tracks.filter(function (t) { return t.id === id; })[0] || window.CURRICULUM.tracks[0];
   };
 })();
+
+/* ---------- Extra guidance: plain-language intros, charts, common mistakes, checklists and templates ----------
+   Keyed by "programme:step". Visual types: table {head, rows}, flow {steps}, choose {items: [if, then, note]},
+   pyramid {levels (strongest first)}, formula {expr, legend, worked}. */
+(function () {
+  var X = {};
+  function add(key, o) { X[key] = o; }
+
+  /* ===== Original article ===== */
+  add('original:1', {
+    intro: 'A research question is the one question your whole study will answer. Your title, method and analysis all come from it. A good question is small, clear and something you can actually measure in a few months.',
+    visuals: [{ type: 'table', title: 'PICO in one table', head: ['Letter', 'Stands for', 'Ask yourself', 'Example'], rows: [
+      ['P', 'Population', 'Who exactly am I studying?', '3rd year MBBS students at KEMU'],
+      ['I', 'Intervention or exposure', 'What is happening to them?', 'Professional exams'],
+      ['C', 'Comparison', 'Compared with what? (often optional)', 'Not needed for a prevalence study'],
+      ['O', 'Outcome', 'What will I measure?', 'Anxiety (GAD-7 score of 10 or more)']] }],
+    mistakes: ['Too broad, like “stress in students”.', 'No measurable outcome.', 'Asking three questions in one.', 'Choosing a population you can’t reach in time.'],
+    include: ['Your question in one sentence', 'P, I, C and O written separately', 'One line on why it’s doable for you'],
+    template: 'My research question:\n\nP (Population):\nI (Intervention / exposure):\nC (Comparison):\nO (Outcome):\n\nWhy this is feasible for me:'
+  });
+  add('original:2', {
+    intro: 'Before studying something, check what is already known. A literature search finds papers on your topic so you can see the gap your study will fill. PubMed is the main free database for medicine, and Google Scholar helps find extra papers.',
+    visuals: [
+      { type: 'flow', title: 'How to search, step by step', steps: [
+        ['Pick keywords', 'Take each part of your PICO and write 2–3 words for it.'],
+        ['Find MeSH terms', 'Search the MeSH database on PubMed for the official term.'],
+        ['Combine them', 'OR between similar words, AND between different ideas.'],
+        ['Search and filter', 'Run it on PubMed; filter to last 5–10 years and humans.'],
+        ['Save good papers', 'Save them in Zotero with one click.']] },
+      { type: 'table', title: 'The three search words', head: ['Word', 'What it does', 'Example'], rows: [
+        ['OR', 'Either word. Gives more results.', 'anxiety OR stress'],
+        ['AND', 'Both ideas together. Gives fewer, more focused results.', 'anxiety AND medical students'],
+        ['NOT', 'Leaves a word out. Use carefully.', 'anxiety NOT depression']] }],
+    mistakes: ['Typing a full sentence into PubMed.', 'Reading only abstracts.', 'Using very old papers without a reason.', 'Not saving your search string.'],
+    include: ['Your full PubMed search string', 'How many results it found', 'Titles of 3 relevant papers'],
+    template: 'Search string:\n\nNumber of results:\n\n3 relevant papers:\n1.\n2.\n3.'
+  });
+  add('original:3', {
+    intro: 'The study design is your plan for answering the question. Think of it as choosing the right tool. Some designs only describe what is happening, some compare groups to find causes, and some test a treatment. There are six main types you need to know. Choosing the right one now saves months later.',
+    visuals: [
+      { type: 'table', title: 'The main study designs', head: ['Design', 'Type', 'What you do', 'Example question', 'Time & cost'], rows: [
+        ['Case report / case series', 'Descriptive', 'Describe one or a few unusual patients in detail.', 'A rare presentation of dengue.', 'Very quick'],
+        ['Cross-sectional', 'Descriptive (can be analytical)', 'Measure everything at one point in time, like a snapshot.', 'How many MBBS students have anxiety during exams?', 'Quick and cheap. Most student projects.'],
+        ['Case-control', 'Analytical, observational', 'Start with people who have the disease and people who don’t, then look back for causes.', 'Is smoking linked to oral cancer?', 'Moderate'],
+        ['Cohort', 'Analytical, observational', 'Follow people with and without an exposure forward in time.', 'Do smokers develop more heart disease over 10 years?', 'Slow and costly'],
+        ['Randomised controlled trial (RCT)', 'Experimental', 'Randomly give one group a treatment and another group placebo or usual care.', 'Does vitamin D reduce pre-eclampsia?', 'Slow, costly, strict ethics'],
+        ['Systematic review & meta-analysis', 'Secondary (uses other studies)', 'Collect all good studies on one question and combine their results.', 'What is the pooled effect of vitamin D in pregnancy?', 'Moderate, no patients needed']] },
+      { type: 'choose', title: 'Which design should I use?', items: [
+        ['I want to know how common something is', 'Cross-sectional'],
+        ['I saw an unusual patient', 'Case report'],
+        ['The disease is rare and I want to find causes', 'Case-control'],
+        ['I want to follow people over time to see what happens', 'Cohort'],
+        ['I want to test whether a treatment works', 'Randomised controlled trial'],
+        ['I want to combine studies that already exist', 'Systematic review & meta-analysis']] },
+      { type: 'pyramid', title: 'Strength of evidence (strongest at the top)', levels: ['Systematic reviews & meta-analyses', 'Randomised controlled trials', 'Cohort studies', 'Case-control studies', 'Cross-sectional studies', 'Case reports & case series', 'Expert opinion']}],
+    mistakes: ['Writing “survey” instead of naming the design.', 'Claiming cause and effect from a cross-sectional study.', 'Choosing an RCT without time, funds or approval.', 'Vague inclusion and exclusion criteria.'],
+    include: ['The design name', 'Why it suits your question (2–3 sentences)', 'Setting and duration', 'Inclusion criteria', 'Exclusion criteria'],
+    template: 'Study design:\nWhy this design:\n\nSetting:\nDuration:\n\nInclusion criteria:\n- \n\nExclusion criteria:\n- '
+  });
+  add('original:4', {
+    intro: 'A synopsis is your study plan on paper. Your college or ethics committee (ERC/IRB) must approve it before you collect any data. Ethics approval protects participants, and journals won’t publish a study without it.',
+    visuals: [
+      { type: 'table', title: 'What goes in a synopsis', head: ['Section', 'What to write', 'Length'], rows: [
+        ['Title', 'Variable, population, setting, design', '1 line'],
+        ['Introduction', 'Background with global and local data', '300–500 words'],
+        ['Rationale', 'The gap and how your study helps', '3–4 lines'],
+        ['Objectives', 'What you will find out', '1–3 points'],
+        ['Operational definitions', 'Exactly how each variable is measured', '1–2 lines each'],
+        ['Methodology', 'Design, setting, sample, criteria, data collection, analysis', '1–2 pages'],
+        ['References', 'Vancouver style', '10–20']] },
+      { type: 'flow', title: 'Getting ethics approval', steps: [
+        ['Write the synopsis', 'Use your college’s format.'], ['Supervisor signs', 'They check and approve it.'], ['Submit to ERC/IRB', 'With the proforma and consent form.'],
+        ['Receive the approval letter', 'Keep the reference number.'], ['Start data collection', 'Only now, never before.']] }],
+    mistakes: ['Collecting data before approval.', 'No consent form.', 'Objectives that don’t match the title.', 'Definitions that can’t be measured.'],
+    include: ['Rationale (3–4 sentences)', 'Objective or objectives', 'Operational definition of your main outcome'],
+    template: 'Rationale:\n\nObjective(s):\n1.\n\nOperational definition of main outcome:'
+  });
+  add('original:5', {
+    intro: 'Sample size is how many people you need so your results can be trusted. Too few and your result could just be luck; too many wastes your time. You don’t guess it. You calculate it with a formula or a free calculator like OpenEpi.',
+    visuals: [
+      { type: 'formula', title: 'Sample size for a prevalence study', expr: 'n = Z² × p × (1 − p) ÷ d²', legend: [
+        ['Z', '1.96 for 95% confidence (almost always this)'], ['p', 'Expected prevalence from an earlier study, as a decimal (35% = 0.35)'], ['d', 'Margin of error, usually 0.05 (5%)']],
+        worked: '1.96² × 0.35 × 0.65 ÷ 0.05² = 350. Add 10% for people who won’t reply: 385.' },
+      { type: 'table', title: 'Ways to choose participants', head: ['Technique', 'How', 'When to use'], rows: [
+        ['Simple random', 'Pick names randomly from a full list', 'You have a complete list'],
+        ['Stratified random', 'Split into groups (e.g. by year), then pick randomly from each', 'Groups are different from each other'],
+        ['Systematic', 'Pick every k-th person', 'A list or a queue'],
+        ['Consecutive', 'Everyone who comes during the study period', 'Hospital or OPD studies (very common)'],
+        ['Convenience', 'Whoever is easiest to reach', 'Only if nothing else is possible; weakest']] }],
+    mistakes: ['Choosing a round number like 100 without a calculation.', 'Taking p from a very different population without saying so.', 'Forgetting to add extra for non-response.'],
+    include: ['The values you used (Z, p, d)', 'Where p came from (reference)', 'The final number', 'Your sampling technique and why'],
+    template: 'Z = 1.96 (95% confidence)\np = ___ (from reference: ___)\nd = ___\nCalculated n = ___\nAfter adding 10% for non-response = ___\n\nSampling technique:\nWhy:'
+  });
+  add('original:6', {
+    intro: 'A proforma (questionnaire) is the form you fill for each participant. A good one is short, clear and uses tested, “validated” scales, so your results mean the same thing as other studies that used them.',
+    visuals: [
+      { type: 'table', title: 'Common validated tools', head: ['Tool', 'Measures', 'Scoring'], rows: [
+        ['GAD-7', 'Anxiety', '0–21; 10 or more = moderate to severe'], ['PHQ-9', 'Depression', '0–27; 10 or more = moderate to severe'],
+        ['PSQI', 'Sleep quality', 'Above 5 = poor sleep'], ['DASS-21', 'Depression, anxiety and stress', 'Separate score for each'], ['PSS-10', 'Perceived stress', '0–40; higher = more stress']] },
+      { type: 'flow', title: 'From draft to data', steps: [
+        ['Draft the proforma', 'Demographics, exposures, then the outcome tool.'], ['Check every question', 'Each one should serve an objective.'], ['Pilot test', 'Try it on 5–10% of your sample.'],
+        ['Fix and finalise', 'Reword anything confusing.'], ['Collect and enter data', 'One row per person in Excel or SPSS, with a codebook.']] }],
+    mistakes: ['Yes/no questions for complex things like anxiety.', 'A very long form people won’t finish.', 'Entering the same answer in different ways (Male, M, male).'],
+    include: ['Sections and variables in your proforma', 'Any validated tool, with its citation', 'How you will collect data (3–4 sentences)'],
+    template: 'Proforma sections:\n1. Demographics:\n2. Exposure variables:\n3. Outcome tool:\n\nValidated tool and citation:\n\nData collection procedure:'
+  });
+  add('original:7', {
+    intro: 'Statistics turns your raw data into answers. First you describe your data with averages and percentages. Then you test whether a difference or link is real or just chance. You don’t need to be good at maths. You only need to know which test matches which kind of data.',
+    visuals: [
+      { type: 'table', title: 'Describe each variable', head: ['Kind of variable', 'Example', 'Report it as'], rows: [
+        ['Categories', 'Gender, anxiety yes/no', 'Number and percentage, n (%)'], ['Numbers, normally spread', 'Age, height', 'Mean ± SD'], ['Numbers, skewed', 'Days in hospital', 'Median (IQR)']] },
+      { type: 'choose', title: 'Which test should I use?', items: [
+        ['Two categorical variables (e.g. gender and anxiety yes/no)', 'Chi-square test'],
+        ['A number compared between 2 groups', 'Independent t-test', 'Mann-Whitney U if skewed'],
+        ['A number compared between 3 or more groups', 'ANOVA', 'Kruskal-Wallis if skewed'],
+        ['Two numbers together (e.g. sleep hours and marks)', 'Pearson correlation', 'Spearman if skewed'],
+        ['The same people before and after', 'Paired t-test', 'Wilcoxon if skewed']] }],
+    mistakes: ['Using a t-test for categories.', 'Reporting only p-values without the actual numbers.', 'Not checking whether data is normal or skewed.'],
+    include: ['The software you will use', 'How each main variable will be described', 'Which test answers each objective', 'Your significance level (p ≤ 0.05)'],
+    template: 'Software:\n\nDescriptive statistics:\n- \n\nTests:\n- Objective 1 → \n\nSignificance level: p ≤ 0.05'
+  });
+  add('original:8', {
+    intro: 'IMRaD is the standard shape of a research paper: Introduction, Methods, Results and Discussion. Each part answers one question: why did you do it, how, what did you find, and what does it mean?',
+    visuals: [
+      { type: 'table', title: 'The four parts', head: ['Section', 'Answers', 'Tense', 'Tip'], rows: [
+        ['Introduction', 'Why?', 'Present for known facts', 'End with your objective'], ['Methods', 'How?', 'Past', 'Enough detail for someone to repeat it'],
+        ['Results', 'What did you find?', 'Past', 'Numbers and tables only, no opinions'], ['Discussion', 'What does it mean?', 'Present and past', 'Compare, admit limitations, conclude']] },
+      { type: 'flow', title: 'The hourglass shape', steps: [
+        ['Introduction: wide to narrow', 'Big problem → what is missing → your objective.'], ['Methods and results: narrow', 'Exactly what you did and found.'],
+        ['Discussion: narrow to wide', 'Your finding → other studies → what it means for practice.']] }],
+    mistakes: ['Explaining results inside the Results section.', 'Repeating every table number in the text.', 'No limitations paragraph.'],
+    include: ['Your main finding in the first sentence', 'Comparison with at least two published studies', 'A possible reason for any difference'],
+    template: 'Main finding:\n\nCompared with other studies:\n\nPossible explanation:'
+  });
+  add('original:9', {
+    intro: 'Referencing means giving credit to every source you used. Most medical journals use Vancouver style: sources are numbered in the order you first mention them. A free reference manager like Zotero formats everything for you, so you never type references by hand.',
+    visuals: [
+      { type: 'table', title: 'Parts of a Vancouver reference', head: ['Part', 'Example'], rows: [
+        ['Authors', 'Spitzer RL, Kroenke K, Williams JB, Löwe B.'], ['Title', 'A brief measure for assessing generalized anxiety disorder: the GAD-7.'],
+        ['Journal (short name)', 'Arch Intern Med.'], ['Year;Volume(Issue):Pages', '2006;166(10):1092-7.']] },
+      { type: 'flow', title: 'Set up Zotero once', steps: [
+        ['Install Zotero', 'And its browser connector.'], ['Save papers', 'One click on any PubMed page.'], ['Add the Word plugin', 'It comes with Zotero.'],
+        ['Insert citations', 'Choose the Vancouver style.'], ['Add the bibliography', 'It updates itself.']] }],
+    mistakes: ['Copying references with errors from Google Scholar.', 'Mixing styles in one paper.', 'Citing papers you haven’t read.', 'A high similarity (plagiarism) score.'],
+    include: ['5 references in Vancouver style', 'One sentence with correct citation numbers'],
+    template: 'References:\n1.\n2.\n3.\n4.\n5.\n\nExample sentence with citations:'
+  });
+  add('original:10', {
+    intro: 'Submitting means choosing the right journal and following its rules exactly. Editors reject many papers within days simply because they don’t fit the journal or ignore its format, so this step matters as much as the writing.',
+    visuals: [
+      { type: 'flow', title: 'From submission to acceptance', steps: [
+        ['Choose a journal', 'Topic, indexing, fees.'], ['Read the author guidelines', 'Word limits, format, references.'], ['Format and write a cover letter', 'Short and clear.'],
+        ['Submit online', 'Upload files and declarations.'], ['Peer review', 'Usually weeks to months.'], ['Revise and reply', 'Answer every comment politely.'], ['Accepted', 'Your paper gets published.']] },
+      { type: 'table', title: 'Check before you choose', head: ['Check', 'Why it matters'], rows: [
+        ['Scope', 'Does it publish your kind of topic?'], ['Indexing (PubMed, Scopus, HEC category)', 'Counts for your CV and applications'],
+        ['Fees (APC)', 'Some journals charge to publish'], ['Review time', 'How long you will wait'],
+        ['Warning signs', 'Spam invitations, guaranteed acceptance or very fast review mean a predatory journal']] }],
+    mistakes: ['Submitting to two journals at the same time (not allowed).', 'Ignoring word limits.', 'Arguing rudely with reviewers.'],
+    include: ['Two journals and why they fit', 'A cover letter of 150–200 words'],
+    template: 'Journal 1 and why:\nJournal 2 and why:\n\nCover letter:\nDear Editor,\n'
+  });
+
+  /* ===== Case report ===== */
+  add('case:1', {
+    intro: 'A case report tells the story of one patient whose illness teaches something new. It is often the easiest first publication for a medical student, because you don’t need a large sample, just one interesting, well-documented case.',
+    visuals: [{ type: 'choose', title: 'Is my case worth reporting?', items: [
+      ['A rare disease', 'Yes'], ['A common disease presenting in an unusual way', 'Yes'], ['A new or unexpected side effect of a drug', 'Yes'],
+      ['A new way of diagnosing or treating', 'Yes'], ['A typical case of a common disease', 'Usually no']] }],
+    mistakes: ['Choosing a textbook case with nothing new.', 'Not checking PubMed for similar reports.', 'Missing records or test results.'],
+    include: ['The case in 3–4 sentences', 'Its single teaching point', 'How many similar cases you found on PubMed'],
+    template: 'My case in brief:\n\nTeaching point:\n\nSimilar cases on PubMed:'
+  });
+  add('case:2', {
+    intro: 'The patient must agree in writing to their case being published, and nothing in your report should let anyone identify them. Journals always ask for this.',
+    mistakes: ['Using the patient’s initials or hospital number.', 'Showing faces or tattoos in images.', 'Taking only verbal consent.'],
+    include: ['Your consent statement', 'A list of identifiers you will remove'],
+    template: 'Consent statement:\n\nIdentifiers I will remove:\n- '
+  });
+  add('case:3', {
+    intro: 'This is the heart of your report: what happened to the patient, in order. Write it like a clear clinical story, following the CARE checklist that journals use.',
+    visuals: [{ type: 'table', title: 'Example timeline table', head: ['Day', 'Event', 'Findings', 'Action'], rows: [
+      ['Day 0', 'Presented to emergency', 'Fever 10 days, RUQ pain', 'Admitted, bloods sent'], ['Day 1', 'Ultrasound', 'Thick-walled gallbladder, no stones', 'Surgical opinion'],
+      ['Day 2', 'Blood culture positive', 'Salmonella Typhi', 'IV ceftriaxone started'], ['Day 5', 'Clinical review', 'Pain settled', 'Continued antibiotics'], ['Week 4', 'Follow-up', 'Normal ultrasound', 'Discharged from clinic']] }],
+    mistakes: ['Including irrelevant history.', 'Events out of order.', 'Leaving out important negative findings.'],
+    include: ['Patient information', 'Clinical findings', 'A timeline table with at least 5 events'],
+    template: 'Patient information:\n\nClinical findings:\n\nTimeline:\nDay | Event | Findings | Action\n'
+  });
+  add('case:4', {
+    intro: 'Explain how you reached the diagnosis, what treatment you gave, and how the patient did afterwards. Include the other diagnoses you considered. Readers learn the most from how you thought.',
+    mistakes: ['No differential diagnosis.', 'Drugs without doses or duration.', 'No follow-up information.'],
+    include: ['Tests and differential diagnoses', 'Treatment with doses and duration', 'Follow-up and outcome'],
+    template: 'Diagnostic assessment and differentials:\n\nTreatment:\n\nFollow-up and outcome:'
+  });
+  add('case:5', {
+    intro: 'The introduction tells readers why the case matters. The discussion connects your case to what other doctors have reported and ends with clear lessons.',
+    mistakes: ['A long introduction that repeats textbook facts.', 'Saying “very rare” without evidence.', 'No learning points at the end.'],
+    include: ['Introduction (about 100 words)', 'Discussion with at least 3 references', '2–3 learning points'],
+    template: 'Introduction:\n\nDiscussion:\n\nLearning points:\n1.\n2.'
+  });
+  add('case:6', {
+    intro: 'The title and abstract are what editors and readers see first, so make them clear and specific. Then pick a journal that publishes case reports and follow its rules exactly.',
+    visuals: [{ type: 'table', title: 'Case report abstract', head: ['Part', 'What to write'], rows: [
+      ['Introduction', 'Why this case is important (1–2 sentences)'], ['Case presentation', 'The patient, key findings, diagnosis, treatment, outcome'], ['Conclusion', 'The main lesson'], ['Keywords', '3–5 MeSH terms']] }],
+    mistakes: ['A vague title without “case report”.', 'An abstract over the word limit.', 'Submitting without checking fees.'],
+    include: ['Title', 'Structured abstract', 'Keywords', 'Target journal'],
+    template: 'Title:\n\nAbstract\nIntroduction:\nCase presentation:\nConclusion:\n\nKeywords:\n\nTarget journal:'
+  });
+
+  /* ===== Letter to the editor ===== */
+  add('letter:1', {
+    intro: 'A letter to the editor is a short response to an article a journal recently published. You add a useful point: a limitation, another explanation or local data. It is short, quick to write and a great first publication.',
+    mistakes: ['Choosing an article that is years old.', 'Only praising the article.', 'Not reading the journal’s rules for letters.'],
+    include: ['Full citation of the article', 'The journal’s limits for letters', 'The 1–2 points you will make'],
+    template: 'Article citation:\n\nJournal limits (words, references, authors):\n\nMy points:\n1.\n2.'
+  });
+  add('letter:2', {
+    intro: 'Your argument is the heart of the letter. Make each point clearly, support it with evidence, and stay polite. Editors publish letters that add to the discussion, not attacks.',
+    mistakes: ['Several points squeezed into one paragraph.', 'Claims without references.', 'A rude tone.'],
+    include: ['One paragraph per point', 'At least one reference per point'],
+    template: 'Point 1:\n\nPoint 2:'
+  });
+  add('letter:3', {
+    intro: 'Now put it all together into a short, complete letter that fits the journal’s limits.',
+    visuals: [{ type: 'flow', title: 'Shape of a letter', steps: [
+      ['Dear Editor,', 'The standard opening.'], ['Opening line', '“We read with interest the article by… (1)”'], ['Your points', 'One short paragraph each.'], ['Closing sentence', 'A constructive suggestion.'], ['References', '5–10, Vancouver style.']] }],
+    mistakes: ['Going over the word limit.', 'Forgetting to cite the original article as reference 1.'],
+    include: ['The complete letter', 'References'],
+    template: 'Dear Editor,\n\nWe read with interest the article by ___ (1) ...\n\n\nReferences\n1.'
+  });
+  add('letter:4', {
+    intro: 'Before submitting, add the details every journal asks for. Missing declarations are one of the most common reasons for delays.',
+    mistakes: ['No conflict of interest statement.', 'Wrong article type chosen on the website.'],
+    include: ['Title and author line', 'Conflict of interest statement', 'Funding statement', 'The journal you are submitting to'],
+    template: 'Title:\nAuthors and affiliations:\n\n[Letter]\n\nConflicts of interest: None declared.\nFunding: None.\n\nJournal:'
+  });
+
+  /* ===== Synopsis ===== */
+  add('synopsis:1', {
+    intro: 'Every synopsis begins with three things: a clear title, one focused question and objectives that say exactly what you will find out. If these three are right, the rest of the synopsis becomes much easier.',
+    visuals: [{ type: 'table', title: 'Building a title', head: ['Part', 'Example'], rows: [
+      ['What you measure', 'Frequency of diabetic peripheral neuropathy'], ['In whom', 'among type 2 diabetics'], ['Where', 'presenting to the medical OPD of Mayo Hospital, Lahore'], ['Design', ': a cross-sectional study']] }],
+    mistakes: ['A title without the setting or design.', 'Objectives that don’t match the title.', 'Too many objectives.'],
+    include: ['Title', 'Research question', 'Objective or objectives'],
+    template: 'Title:\n\nResearch question:\n\nObjective(s):\n1.'
+  });
+  add('synopsis:2', {
+    intro: 'The introduction explains the problem and why your study is needed. Start broad and narrow down to your setting, using up-to-date numbers.',
+    visuals: [{ type: 'flow', title: 'Funnel shape', steps: [['Global problem', 'How big is it worldwide?'], ['In Pakistan', 'Local numbers.'], ['In your setting', 'What we don’t know here.'], ['Rationale', 'How your results will be used.']] }],
+    mistakes: ['Old statistics.', 'No local data.', 'A rationale that just says “this is important”.'],
+    include: ['Introduction with references', 'Rationale (3–4 sentences)'],
+    template: 'Introduction:\n\nRationale:'
+  });
+  add('synopsis:3', {
+    intro: 'Operational definitions say exactly how you will measure each variable, so anyone repeating your study measures it the same way.',
+    mistakes: ['Dictionary definitions instead of measurable ones.', 'No cut-off values.', 'A hypothesis for a descriptive study.'],
+    include: ['A definition for each main variable', 'A hypothesis, only if your study compares groups'],
+    template: 'Operational definitions:\n- \n\nHypothesis (if needed):\nH0:\nH1:'
+  });
+  add('synopsis:4', {
+    intro: 'Methodology is the recipe of your study: what design, where, how long, how many people and who can take part.',
+    visuals: [{ type: 'flow', title: 'Methodology checklist', steps: [['Study design', 'Name it.'], ['Setting', 'Exact place.'], ['Duration', 'Counted from approval.'], ['Sample size', 'With calculation and reference.'], ['Sampling technique', 'Named and justified.'], ['Inclusion and exclusion criteria', 'Clear and checkable.']] }],
+    mistakes: ['Sample size without a calculation.', 'Duration that starts before approval.'],
+    include: ['Design, setting, duration', 'Sample size calculation', 'Sampling technique', 'Inclusion and exclusion criteria'],
+    template: 'Study design:\nSetting:\nDuration:\nSample size:\nSampling technique:\nInclusion criteria:\nExclusion criteria:'
+  });
+  add('synopsis:5', {
+    intro: 'Describe step by step how data will be collected, and exactly how you will analyse it. Reviewers check this carefully.',
+    mistakes: ['No mention of consent.', 'A one-line analysis plan.', 'No stratification for effect modifiers.'],
+    include: ['Data collection procedure', 'Data analysis plan'],
+    template: 'Data collection procedure:\n\nData analysis plan:'
+  });
+  add('synopsis:6', {
+    intro: 'Finish with your references, a realistic timeline and the documents you must attach, then submit it in your institution’s format.',
+    mistakes: ['Old or missing references.', 'An unrealistic timeline.', 'Forgetting the consent form annex.'],
+    include: ['Timeline', 'Reference list', 'List of annexes'],
+    template: 'Timeline:\nMonth 1:\n\nReferences:\n1.\n\nAnnexes:\n- Proforma\n- Consent form'
+  });
+
+  /* ===== Thesis ===== */
+  add('thesis:1', {
+    intro: 'A thesis is a long document, so plan it before writing. An outline with headings and word targets turns one big task into many small, manageable ones.',
+    visuals: [{ type: 'table', title: 'Typical thesis chapters', head: ['Chapter', 'Contains', 'Rough length'], rows: [
+      ['1. Introduction', 'Background, problem, significance, objectives, definitions', '2,000 words'], ['2. Literature review', 'What is known, organised by themes', '4,000–6,000 words'],
+      ['3. Methodology', 'What you did and how', '2,000 words'], ['4. Results', 'Tables, figures and key numbers', '2,000 words'], ['5. Discussion & conclusion', 'Meaning, comparison, limitations, recommendations', '3,000 words']] }],
+    mistakes: ['Starting without checking the university format.', 'Writing chapters in random order.'],
+    include: ['Chapter outline with headings', 'Word targets', 'Your university’s format rules'],
+    template: 'Chapter 1:\n- \nChapter 2:\n- \n\nFormat rules:'
+  });
+  add('thesis:2', {
+    intro: 'Your introduction chapter expands your synopsis: explain the problem, why solving it matters, and what exactly you set out to do.',
+    mistakes: ['Copying the synopsis word for word.', 'Changing objectives from the approved synopsis.'],
+    include: ['Problem statement', 'Significance of the study'],
+    template: 'Problem statement:\n\nSignificance:'
+  });
+  add('thesis:3', {
+    intro: 'The literature review shows what is already known. Group studies by theme and compare them, rather than summarising one paper after another.',
+    visuals: [{ type: 'table', title: 'Literature matrix (use it before writing)', head: ['Author & year', 'Setting', 'Sample', 'Key finding', 'Limitation'], rows: [['Ali 2021', 'Lahore', '300', '32% prevalence', 'Single centre'], ['Khan 2019', 'Karachi', '520', '48% prevalence', 'Self-reported']] }],
+    mistakes: ['One paragraph per paper.', 'No comparison between studies.', 'Not ending with the gap.'],
+    include: ['One themed section of at least 300 words', 'At least 5 references'],
+    template: 'Theme:\n\n'
+  });
+  add('thesis:4', {
+    intro: 'The methodology chapter records what you actually did, in the past tense, including anything that changed from your plan.',
+    mistakes: ['Writing in future tense.', 'Hiding changes from the synopsis.', 'No ethics approval number.'],
+    include: ['Methodology in past tense', 'Any deviations and why', 'Ethics approval reference'],
+    template: 'Methodology:\n\nDeviations from synopsis:\n\nEthics approval reference:'
+  });
+  add('thesis:5', {
+    intro: 'Results present what you found, clearly and without opinion. Tables and figures carry the detail; the text points out what matters most.',
+    mistakes: ['Opinions in the results.', 'Missing denominators.', 'Table titles below tables.'],
+    include: ['Description of the baseline table', 'Results for your first objective'],
+    template: 'Baseline characteristics:\n\nObjective 1 results:'
+  });
+  add('thesis:6', {
+    intro: 'The discussion explains what your results mean, the conclusion answers your objectives, and final checks make sure the thesis is accepted without delays.',
+    mistakes: ['A conclusion that doesn’t answer the objectives.', 'No limitations.', 'Skipping the plagiarism check.'],
+    include: ['Conclusion', 'Recommendations', 'One limitations paragraph'],
+    template: 'Conclusion:\n\nRecommendations:\n\nLimitations:'
+  });
+
+  /* ===== Meta-analysis ===== */
+  add('meta:1', {
+    intro: 'A systematic review collects every good study on one question, and a meta-analysis combines their numbers into one stronger answer. It sits at the top of the evidence pyramid, and you can do it without seeing any patients.',
+    visuals: [{ type: 'pyramid', title: 'Where meta-analysis sits', levels: ['Systematic reviews & meta-analyses', 'Randomised controlled trials', 'Cohort studies', 'Case-control studies', 'Cross-sectional studies', 'Case reports']}],
+    mistakes: ['A question that is too broad.', 'Deciding eligibility after seeing results.', 'Not registering on PROSPERO.'],
+    include: ['PICO question', 'Eligibility criteria', 'Primary and secondary outcomes'],
+    template: 'P:\nI:\nC:\nO:\nStudy designs included:\n\nInclusion criteria:\nExclusion criteria:\n\nPrimary outcome:\nSecondary outcomes:'
+  });
+  add('meta:2', {
+    intro: 'Your search must find every relevant study, so search several databases and record exactly what you did. Someone else should be able to repeat it and get the same results.',
+    mistakes: ['Searching only PubMed.', 'Limiting to English without a reason.', 'Not recording the search date.'],
+    include: ['Full PubMed search string', 'Other databases', 'Number of results from each'],
+    template: 'PubMed string:\n\nOther databases:\n\nResults: PubMed ___, ___ ___, ___ ___\nSearch date:'
+  });
+  add('meta:3', {
+    intro: 'Screening means deciding which studies to include. Two people do it separately to avoid bias, first by title and abstract, then by reading the full text.',
+    visuals: [{ type: 'flow', title: 'PRISMA flow', steps: [['Records found', 'e.g. 1,248 from all databases'], ['Duplicates removed', 'e.g. 312'], ['Titles and abstracts screened', 'e.g. 936'], ['Full texts checked', 'e.g. 41, with reasons for exclusion'], ['Studies included', 'e.g. 12']] }],
+    mistakes: ['Screening alone.', 'Not recording reasons for exclusion.'],
+    include: ['Numbers at each stage', 'Main reasons for excluding full texts'],
+    template: 'Records identified:\nDuplicates removed:\nScreened:\nFull texts assessed:\nIncluded:\n\nReasons for exclusion:'
+  });
+  add('meta:4', {
+    intro: 'Data extraction means copying the key details and numbers from each included study into one sheet, carefully and consistently.',
+    mistakes: ['Extracting from abstracts only.', 'No pilot test of the sheet.', 'One person extracting alone.'],
+    include: ['Columns of your extraction sheet', 'Extracted data for 2 studies'],
+    template: 'Columns:\n\nStudy 1:\nStudy 2:'
+  });
+  add('meta:5', {
+    intro: 'Not all studies are equally trustworthy. Risk of bias tools help you judge each study fairly, domain by domain.',
+    visuals: [{ type: 'table', title: 'Which tool?', head: ['Study type', 'Tool'], rows: [['Randomised trials', 'RoB 2'], ['Non-randomised interventions', 'ROBINS-I'], ['Cohort and case-control', 'Newcastle–Ottawa Scale'], ['Certainty of the overall evidence', 'GRADE']] }],
+    mistakes: ['One overall score without reasons.', 'The wrong tool for the design.'],
+    include: ['The tool you will use', 'Judgements for 2 studies with reasons'],
+    template: 'Tool:\n\nStudy 1:\nStudy 2:'
+  });
+  add('meta:6', {
+    intro: 'Pooling combines the results into one overall effect, shown as a forest plot. You also check how much the studies disagree (heterogeneity).',
+    visuals: [{ type: 'table', title: 'Reading I² (heterogeneity)', head: ['I²', 'Meaning'], rows: [['About 25%', 'Low: studies mostly agree'], ['About 50%', 'Moderate'], ['About 75% or more', 'High: look for reasons why']] }],
+    mistakes: ['Using a fixed-effect model when studies differ a lot.', 'Ignoring high I².', 'A funnel plot with fewer than 10 studies.'],
+    include: ['Effect measure', 'Model', 'Pooled result or plan', 'I² and what the forest plot shows'],
+    template: 'Effect measure:\nModel:\nPooled result:\nI²:\nInterpretation:'
+  });
+  add('meta:7', {
+    intro: 'Report your review using PRISMA 2020 so editors and readers can trust and repeat it. Start with a clear abstract, the part most people read.',
+    mistakes: ['Skipping checklist items.', 'An abstract without numbers.', 'Overstating low-certainty evidence.'],
+    include: ['An abstract of about 250 words following PRISMA for Abstracts'],
+    template: 'Background:\nObjectives:\nMethods:\nResults:\nConclusions:'
+  });
+
+  window.CURRICULUM.tracks.forEach(function (t) {
+    t.steps.forEach(function (s) { var e = X[t.id + ':' + s.n]; if (e) Object.assign(s, e); });
+  });
+})();

@@ -335,6 +335,30 @@
     return { html: '<a class="back" href="#roadmap">' + ic('back', 'chev') + 'Roadmap</a>' + body.html, mount: body.mount };
   }
 
+  /* charts and diagrams inside lessons */
+  function visual(v) {
+    var body = '';
+    if (v.type === 'table') {
+      body = '<div class="viz-scroll"><table class="viz-table' + (v.head.length > 2 ? ' cards' : '') + '"><thead><tr>' + v.head.map(function (h) { return '<th>' + esc(h) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+        v.rows.map(function (r) { return '<tr>' + r.map(function (c, i) { return i === 0 ? '<th scope="row">' + esc(c) + '</th>' : '<td data-label="' + esc(v.head[i]) + '">' + esc(c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
+    } else if (v.type === 'flow') {
+      body = '<ol class="viz-flow">' + v.steps.map(function (x, i) { return '<li><span class="n">' + (i + 1) + '</span><div><b>' + esc(x[0]) + '</b><span>' + esc(x[1]) + '</span></div></li>'; }).join('') + '</ol>';
+    } else if (v.type === 'choose') {
+      body = '<div class="viz-choose">' + v.items.map(function (x) {
+        return '<div class="row-c"><span class="if">' + esc(x[0]) + '</span><span class="arrow" aria-hidden="true">→</span><span class="then"><b>' + esc(x[1]) + '</b>' + (x[2] ? '<small>' + esc(x[2]) + '</small>' : '') + '</span></div>';
+      }).join('') + '</div>';
+    } else if (v.type === 'pyramid') {
+      var n = v.levels.length;
+      body = '<div class="viz-pyramid">' + v.levels.map(function (l, i) {
+        return '<div class="lvl" style="--w:' + Math.round(56 + (44 * i) / Math.max(1, n - 1)) + '%;--k:' + (i / Math.max(1, n - 1)).toFixed(2) + '"><span>' + esc(l) + '</span></div>';
+      }).join('') + '<div class="pyr-legend"><span>Strongest evidence</span><span>Weakest</span></div></div>';
+    } else if (v.type === 'formula') {
+      body = '<div class="viz-formula"><div class="expr">' + esc(v.expr) + '</div><dl>' + v.legend.map(function (x) { return '<div><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>' +
+        (v.worked ? '<p class="worked"><b>Worked example:</b> ' + esc(v.worked) + '</p>' : '') + '</div>';
+    }
+    return '<figure class="viz"><figcaption>' + esc(v.title) + '</figcaption>' + body + '</figure>';
+  }
+
   function stepCard(t, n, st) {
     var x = st[n - 1], d = stepOf(t, n), ph = phaseOf(t, n), sub = x.submission, total = st.length;
     if (x.status === 'locked') {
@@ -349,19 +373,25 @@
       '<div id="panel"></div></article>';
 
     function panel(k) {
-      if (k === 0) return '<div class="panel stack"><ol class="lesson">' + d.lesson.map(function (l, i) {
-        return '<li><span class="n">' + (i + 1) + '</span><div><b>' + esc(l.h) + '</b><p>' + esc(l.p) + '</p></div></li>';
-      }).join('') + '</ol><button class="btn btn-glass" type="button" data-goto="1">See an example →</button></div>';
+      if (k === 0) return '<div class="panel stack-lg">' +
+        (d.intro ? '<div class="note simple"><span class="eyebrow">In simple words</span><p>' + esc(d.intro) + '</p></div>' : '') +
+        (d.visuals || []).map(visual).join('') +
+        '<div class="stack"><span class="eyebrow">Step by step</span><ol class="lesson">' + d.lesson.map(function (l, i) {
+          return '<li><span class="n">' + (i + 1) + '</span><div><b>' + esc(l.h) + '</b><p>' + esc(l.p) + '</p></div></li>';
+        }).join('') + '</ol></div>' +
+        (d.mistakes ? '<div class="note mistakes"><span class="eyebrow">Common mistakes to avoid</span><ul>' + d.mistakes.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul></div>' : '') +
+        '<button class="btn btn-glass" type="button" data-goto="1">See an example →</button></div>';
       if (k === 1) return '<div class="panel ex">' +
         '<div class="ex-box ex-weak"><span class="lbl">Weak</span><p>' + esc(d.example.weak) + '</p></div>' +
         '<div class="ex-box ex-strong"><span class="lbl">Strong</span><p>' + esc(d.example.strong) + '</p></div>' +
         '<p class="why"><b>Why it works:</b> ' + esc(d.example.why) + '</p>' +
         (x.status === 'current' || x.status === 'revision' ? '<button class="btn btn-primary" type="button" data-goto="2">Start the task →</button>' : '') + '</div>';
       var by = function (s) { return s && s.reviewer ? '<div class="by"><span class="avatar">' + initials(s.reviewer.name) + '</span>' + esc(s.reviewer.name) + ' · ' + rel(s.reviewedAt) + '</div>' : ''; };
-      var out = '<div class="panel stack"><span class="eyebrow">Your task</span><p class="prompt">' + esc(d.task.prompt) + '</p>';
+      var out = '<div class="panel stack"><span class="eyebrow">Your task</span><p class="prompt">' + esc(d.task.prompt) + '</p>' +
+        (d.include ? '<div class="include"><b class="small">What to include</b><ul>' + d.include.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>' : '');
       if (x.status === 'revision') out += '<div class="note red"><span class="small"><b>Your mentor asked for changes</b></span><p class="fb">' + esc(sub.feedback) + '</p>' + by(sub) + '</div>';
       if (x.status === 'current' || x.status === 'revision') {
-        out += '<div class="field"><label for="answer">Your answer</label><textarea id="answer" placeholder="Write your answer here. Your draft saves automatically."></textarea></div>' +
+        out += '<div class="field"><div class="row spread wrap"><label for="answer">Your answer</label>' + (d.template ? '<button class="btn btn-quiet btn-sm" type="button" id="use-tpl">Use a template</button>' : '') + '</div><textarea id="answer" placeholder="Write your answer here. Your draft saves automatically."></textarea></div>' +
           '<div class="row spread wrap"><span class="counter" id="counter"></span><button class="btn btn-primary" type="button" id="send" disabled>' + (x.status === 'revision' ? 'Resubmit' : 'Submit for review') + '</button></div>';
       }
       if (x.status === 'review') out += '<div class="note amber"><b class="small">Submitted ' + rel(sub.createdAt) + '</b><span class="small muted">Your mentor will review it within 48 hours. You’ll see their feedback here.</span></div><div class="paper">' + esc(sub.text) + '</div>';
@@ -383,9 +413,14 @@
           var key = 'rt-draft-' + me.id + '-' + t + '-' + n, cnt = box.querySelector('#counter'), send = box.querySelector('#send');
           ta.value = store(key) || (t === 'original' && store('rt-draft-' + me.id + '-' + n)) || (x.status === 'revision' ? sub.text : '');
           var upd = function () {
-            var w = words(ta.value), ok = w >= d.task.minWords;
-            cnt.textContent = w + ' words · minimum ' + d.task.minWords; cnt.classList.toggle('ok', ok); send.disabled = !ok;
+            var w = words(ta.value), ok = ta.value.trim().length > 0;
+            cnt.textContent = w ? w + ' word' + (w === 1 ? '' : 's') : 'Draft saves automatically'; send.disabled = !ok;
           };
+          var tpl = box.querySelector('#use-tpl');
+          if (tpl) tpl.addEventListener('click', function () {
+            if (ta.value.trim() && ta.value.trim() !== d.template.trim()) { ta.value = ta.value.replace(/\s*$/, '') + '\n\n' + d.template; } else ta.value = d.template;
+            store(key, ta.value); upd(); ta.focus();
+          });
           ta.addEventListener('input', function () { store(key, ta.value); upd(); }); upd();
           send.addEventListener('click', function () {
             send.disabled = true; send.textContent = 'Sending…';

@@ -50,12 +50,21 @@ The website is also an MCP server, so a mentor can connect Claude, Gemini, ChatG
 
 - **Connector address:** `https://<your-site>/mcp` (shown in the portal under account menu → Connected apps).
 - **Sign-in:** OAuth 2.1 with automatic app registration and PKCE. When you add the connector, the app opens a Researchette page: log in with a mentor account and tap Allow. Member accounts can't connect.
-- **Tools (act as the mentor who approved):** overview, recent activity, programmes, mentors; applications (list, mark paid, approve, decline); review queue, submission, review; chats (list, read, reply); members (list, view, add, remove, reset or set password, assign mentor, set programmes, set WhatsApp number).
+- **Tools (act as the mentor who approved):** overview, recent activity, programmes, mentors; applications (list, mark paid, approve, decline); review queue, submission, review; chats (list, read, reply); team and permissions (owners only: list, add, update, reset password, remove mentors; member access); members (list, view, add, remove, reset or set password, assign mentor, set programmes, set WhatsApp number).
 - **Notifications:** connectors can't push messages, so ask your AI app to check `get_recent_activity` on a schedule (for example “every hour, tell me about new applications and submissions”). It returns `checkedAt` to pass as `since` next time.
 - **Activity log:** everything members and mentors do, including actions through the connector, is recorded (details encrypted).
 - **Security:** access tokens last 1 hour and refresh for up to 90 days (refresh tokens rotate). Disconnect an app in Connected apps; changing your password disconnects every app. Only connect apps you trust: they can see and change student data.
 
 Code: `worker/connector.js`. Its tables are created automatically on first use.
+
+## Owners, mentors and permissions
+
+- **Owners** (Zain and Taimoor) see and do everything: every student, submission, chat and activity, including other mentors'. Only owners open **Team & permissions** (Overview, or the account menu), where they add, pause or remove mentors, reset mentors' passwords, make someone an owner, and switch each mentor's permissions on or off. There is always at least one owner.
+- **Mentors** see only the students assigned to them. By default they can review their students' tasks, chat with them and edit their programmes and WhatsApp numbers. Owners can also let a mentor see all students, handle applications, add and remove students, or reset students' passwords, and can switch any of the defaults off.
+- **Students**: owners can switch off a student's chat or their ability to choose their own programmes, or pause their account, from the student's page.
+- **Chat routing:** a student's messages go to their assigned mentor. Students with no mentor go to the owners. Owners can read every conversation (Messages → Everyone).
+- Only owners assign students to mentors. Removing a mentor leaves their students unassigned, so the owners pick them up.
+- The AI connector acts with exactly the same access as the person who connected it.
 
 ## Accounts and security
 

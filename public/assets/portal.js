@@ -90,6 +90,32 @@
     return '<span class="sicon ' + st + '">' + inner + '</span>';
   }
 
+  /* a short burst of confetti from an element (or the middle of the screen); skipped for reduced motion */
+  function confetti(from) {
+    if (reduce || !document.body.animate) return;
+    var r = from && from.getBoundingClientRect ? from.getBoundingClientRect() : { left: innerWidth / 2, top: innerHeight / 2, width: 0, height: 0 };
+    var x0 = r.left + r.width / 2, y0 = r.top + r.height / 2, box = document.createElement('div'), cols = ['#3448D8', '#0B9E8C', '#F2B43A', '#DD4460', '#8FA0FF', '#5CF2D8'];
+    box.className = 'confetti'; box.setAttribute('aria-hidden', 'true'); document.body.appendChild(box);
+    for (var i = 0; i < 34; i++) {
+      var p = document.createElement('i'), a = -Math.PI / 2 + (Math.random() - .5) * Math.PI * 1.3, v = 160 + Math.random() * 220;
+      var dx = Math.cos(a) * v, dy = Math.sin(a) * v, rot = (Math.random() - .5) * 720;
+      p.style.cssText = 'left:' + x0 + 'px;top:' + y0 + 'px;background:' + cols[i % cols.length] + (i % 3 ? '' : ';border-radius:50%;width:7px;height:7px');
+      box.appendChild(p);
+      p.animate([{ transform: 'translate(-50%,-50%) rotate(0)', opacity: 1 },
+        { transform: 'translate(calc(-50% + ' + dx * .75 + 'px), calc(-50% + ' + dy * .75 + 'px)) rotate(' + rot * .6 + 'deg)', opacity: 1, offset: .55 },
+        { transform: 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + (dy + 260) + 'px)) rotate(' + rot + 'deg)', opacity: 0 }],
+        { duration: 1100 + Math.random() * 500, easing: 'cubic-bezier(.2,.7,.4,1)', fill: 'forwards' });
+    }
+    setTimeout(function () { box.remove(); }, 1800);
+  }
+  /* numbers that count up to their value when a screen opens */
+  function countUp(root) {
+    root.querySelectorAll('[data-count]').forEach(function (el) {
+      var end = +el.dataset.count; if (reduce || !end) return;
+      var t0 = null; el.textContent = '0';
+      requestAnimationFrame(function step(t) { t0 = t0 || t; var k = Math.min(1, (t - t0) / 900); el.textContent = Math.round(end * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step); });
+    });
+  }
   function toast(msg) {
     document.querySelectorAll('.toast').forEach(function (x) { x.remove(); });
     var t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
@@ -365,7 +391,9 @@
     var main = document.getElementById('view');
     main.classList.remove('is-loading');
     main.innerHTML = v.html;
+    main.querySelectorAll('.list, .rise').forEach(function (l) { [].forEach.call(l.children, function (c, i) { c.style.setProperty('--si', Math.min(i, 10)); }); });
     main.classList.remove('view-enter'); void main.offsetWidth; main.classList.add('view-enter');
+    countUp(main);
     scrollTo({ top: 0, behavior: 'instant' });
     if (v.mount) v.mount(main);
     placeInstall();
@@ -566,7 +594,7 @@
   function ring(done, total) {
     var c = 2 * Math.PI * 32, off = c * (1 - done / total);
     return '<div class="ring"><svg viewBox="0 0 76 76" aria-hidden="true"><defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0B9E8C"/><stop offset="1" stop-color="#3448D8"/></linearGradient></defs>' +
-      '<circle class="track" cx="38" cy="38" r="32"/><circle class="fill" cx="38" cy="38" r="32" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + (reduce ? off : c).toFixed(1) + '" data-off="' + off.toFixed(1) + '"/></svg><b>' + done + '/' + total + '</b></div>';
+      '<circle class="track" cx="38" cy="38" r="32"/><circle class="fill" cx="38" cy="38" r="32" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + (reduce ? off : c).toFixed(1) + '" data-off="' + off.toFixed(1) + '"/></svg><b><span><span data-count="' + done + '">' + done + '</span>/' + total + '</span></b></div>';
   }
   function animateRing(root) { var f = root.querySelector('.ring .fill'); if (f) requestAnimationFrame(function () { requestAnimationFrame(function () { f.style.strokeDashoffset = f.dataset.off; }); }); }
   function progSwitch(t) {
@@ -605,7 +633,7 @@
     var head = '<section class="page-head"><span class="eyebrow">' + today() + '</span><h1>' + greet() + ', ' + first(me.name) + '.</h1></section>' + progSwitch(t);
     if (!cur) {
       return { html: head + '<div class="glass card locked-box">' + ring(total, total) + '<span class="stamp">Programme complete!</span><h2>You’ve finished all ' + total + ' steps of ' + esc(tr.name) + '.</h2><p class="muted">Your mentor will help you with the final submission. Ready for the next one?</p><button class="btn btn-primary" type="button" data-prog>Choose another programme</button></div>',
-        mount: function (m) { animateRing(m); bindProg(m); } };
+        mount: function (m) { animateRing(m); bindProg(m); if (store('rt-done-' + me.id + '-' + t) === null) { store('rt-done-' + me.id + '-' + t, '1'); setTimeout(function () { confetti(m.querySelector('.stamp')); }, 700); } } };
     }
     var d = stepOf(t, cur.step);
     var summary = '<div class="glass card today-head">' + ring(done, total) + '<div class="txt"><span class="small muted">' + esc(tr.name) + '</span><h3>' + done + ' of ' + total + ' steps approved</h3><span class="small muted">Today: Step ' + cur.step + ' · ' + esc(d.title) + '</span></div></div>';
@@ -720,15 +748,26 @@
       '<div class="seg" role="tablist" style="--n:3;--i:' + tab + '"><button type="button" role="tab" data-t="0">Learn</button><button type="button" role="tab" data-t="1">Example</button><button type="button" role="tab" data-t="2">Task</button></div>' +
       '<div id="panel"></div></article>';
 
+    var readKey = 'rt-read-' + me.id + '-' + t + '-' + n, quizKey = 'rt-quiz-' + me.id + '-' + t + '-' + n, lastTab = -1;
+    function readSet() { try { return JSON.parse(store(readKey) || '{}'); } catch (e) { return {}; } }
+    function readCount() { var r = readSet(), c = d.lesson.filter(function (l, i) { return r[i]; }).length; return c === d.lesson.length ? 'All ' + c + ' read ✓' : c + ' of ' + d.lesson.length + ' read'; }
     function panel(k) {
       if (k === 0) return '<div class="panel stack-lg">' +
         (d.intro ? '<div class="note simple"><span class="eyebrow">In simple words</span><p>' + esc(d.intro) + '</p></div>' : '') +
         (d.visuals || []).map(visual).join('') +
-        '<div class="stack"><span class="eyebrow">Step by step</span><ol class="lesson">' + d.lesson.map(function (l, i) {
-          return '<li><span class="n">' + (i + 1) + '</span><div><b>' + esc(l.h) + '</b><p>' + esc(l.p) + '</p></div></li>';
+        '<div class="stack"><div class="row spread wrap"><span class="eyebrow">Step by step</span>' + (preview ? '' : '<span class="pt-count small muted" aria-live="polite">' + readCount() + '</span>') + '</div>' +
+        (preview ? '' : '<p class="small muted pt-hint">Tap each point once you’ve read it.</p>') + '<ol class="lesson' + (preview ? '' : ' ticks') + '">' + d.lesson.map(function (l, i) {
+          var on = !preview && readSet()[i];
+          return '<li' + (preview ? '' : ' class="' + (on ? 'done' : '') + '" data-pt="' + i + '" role="checkbox" tabindex="0" aria-checked="' + !!on + '"') + '><span class="n">' + (on ? ic('check') : i + 1) + '</span><div><b>' + esc(l.h) + '</b><p>' + esc(l.p) + '</p></div></li>';
         }).join('') + '</ol></div>' +
         (d.mistakes ? '<div class="note mistakes"><span class="eyebrow">Common mistakes to avoid</span><ul>' + d.mistakes.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul></div>' : '') +
         '<button class="btn btn-glass" type="button" data-goto="1">See an example →</button></div>';
+      if (k === 1 && !preview && store(quizKey) === null) {
+        var strongFirst = Math.random() < .5, pick = function (strong) { return '<button type="button" class="ex-box ex-pick" data-strong="' + (strong ? 1 : 0) + '"><span class="lbl"></span><p>' + esc(strong ? d.example.strong : d.example.weak) + '</p></button>'; };
+        return '<div class="panel ex quiz"><p class="quiz-q"><b>Quick check:</b> which one is stronger? Tap it.</p>' + pick(strongFirst) + pick(!strongFirst) +
+          '<p class="quiz-msg" aria-live="polite"></p><div class="quiz-after" hidden><p class="why"><b>Why it works:</b> ' + esc(d.example.why) + '</p>' +
+          ((x.status === 'current' || x.status === 'revision') ? '<button class="btn btn-primary" type="button" data-goto="2">Start the task →</button>' : '') + '</div></div>';
+      }
       if (k === 1) return '<div class="panel ex">' +
         '<div class="ex-box ex-weak"><span class="lbl">Weak</span><p>' + esc(d.example.weak) + '</p></div>' +
         '<div class="ex-box ex-strong"><span class="lbl">Strong</span><p>' + esc(d.example.strong) + '</p></div>' +
@@ -757,7 +796,40 @@
         seg.style.setProperty('--i', k);
         seg.querySelectorAll('button').forEach(function (b) { var on = +b.dataset.t === k; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
         box.innerHTML = panel(k);
+        var pn = box.firstElementChild; if (pn && lastTab >= 0 && k !== lastTab) pn.classList.add(k > lastTab ? 'from-right' : 'from-left'); lastTab = k;
         box.querySelectorAll('[data-goto]').forEach(function (b) { b.addEventListener('click', function () { show(+b.dataset.goto); }); });
+        box.querySelectorAll('[data-pt]').forEach(function (li) {
+          var toggle = function () {
+            var r = readSet(), i = li.dataset.pt, on = !r[i];
+            if (on) r[i] = 1; else delete r[i];
+            store(readKey, JSON.stringify(r));
+            li.classList.toggle('done', on); li.setAttribute('aria-checked', on);
+            li.querySelector('.n').innerHTML = on ? ic('check') : (+i + 1);
+            if (on) { li.classList.remove('pop'); void li.offsetWidth; li.classList.add('pop'); }
+            box.querySelector('.pt-count').textContent = readCount();
+            if (on && d.lesson.every(function (l, j) { return r[j]; })) {
+              var nb = box.querySelector('[data-goto="1"]'); confetti(li.querySelector('.n'));
+              if (nb) { nb.classList.remove('nudge'); void nb.offsetWidth; nb.classList.add('nudge'); }
+            }
+          };
+          li.addEventListener('click', toggle);
+          li.addEventListener('keydown', function (e) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggle(); } });
+        });
+        box.querySelectorAll('.ex-pick').forEach(function (b) {
+          b.addEventListener('click', function () {
+            var right = b.dataset.strong === '1', msg = box.querySelector('.quiz-msg');
+            store(quizKey, right ? '1' : '0');
+            box.querySelectorAll('.ex-pick').forEach(function (o) {
+              var strong = o.dataset.strong === '1';
+              o.disabled = true; o.classList.add(strong ? 'ex-strong' : 'ex-weak'); o.querySelector('.lbl').textContent = strong ? 'Strong' : 'Weak';
+            });
+            b.classList.add('chosen', right ? 'right' : 'wrong');
+            msg.textContent = right ? 'Yes! That’s the stronger one.' : 'Not quite. The other one is stronger. Here’s why:';
+            msg.className = 'quiz-msg ' + (right ? 'ok' : 'no');
+            box.querySelector('.quiz-after').hidden = false;
+            if (right) confetti(b);
+          });
+        });
         var ta = box.querySelector('#answer');
         if (ta) {
           var key = 'rt-draft-' + me.id + '-' + t + '-' + n, cnt = box.querySelector('#counter'), send = box.querySelector('#send');
@@ -774,12 +846,19 @@
           ta.addEventListener('input', function () { store(key, ta.value); upd(); }); upd();
           send.addEventListener('click', function () {
             send.disabled = true; send.textContent = 'Sending…';
-            S.submit(me.id, t, n, ta.value.trim()).then(function () { store(key, null); toast('Sent to your mentor'); render(); }, function (e) { toast(e.message); send.disabled = false; });
+            S.submit(me.id, t, n, ta.value.trim()).then(function () {
+              store(key, null); send.classList.add('sent'); send.innerHTML = ic('check') + 'Sent!'; confetti(send);
+              toast('Sent to your mentor'); setTimeout(render, 900);
+            }, function (e) { toast(e.message); send.disabled = false; send.textContent = x.status === 'revision' ? 'Resubmit' : 'Submit for review'; });
           });
         }
       }
       seg.querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { show(+b.dataset.t); }); });
       show(tab);
+      if (!preview && x.status === 'approved' && sub && store('rt-cele-' + sub.id) === null) {
+        store('rt-cele-' + sub.id, '1');
+        setTimeout(function () { confetti(card.querySelector('.stamp') || card.querySelector('.pill')); }, 650);
+      }
     }
     return { html: html, mount: mount };
   }

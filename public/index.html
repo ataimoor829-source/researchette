@@ -254,8 +254,12 @@ section { padding-block: var(--gap-section) 0; }
 
 /* ---------- roadmap: stacking phase cards ---------- */
 .phases { display: grid; gap: 22px; }
-.phase { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 92px + var(--i) * 18px); }
-.phase-inner { padding: clamp(24px, 4vw, 44px); display: grid; grid-template-columns: .8fr 1.2fr; gap: 24px 48px; transform-origin: top center; transition: filter .3s; }
+.phase { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 92px + var(--i) * 18px); transform-origin: 50% 0; }
+/* all three cards are the same height (set by the script below), so they close into a neat, aligned stack;
+   a covered card shrinks back a little and its text fades out, following the scroll exactly */
+.phase-inner { min-height: var(--ph, auto); }
+.phase-inner > * { opacity: clamp(0, calc(1 - var(--p, 0) * 1.8), 1); }
+.phase-inner { padding: clamp(24px, 4vw, 44px); display: grid; grid-template-columns: .8fr 1.2fr; gap: 24px 48px; transform-origin: top center; }
 .phase-num { font-family: var(--f-mono); font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--teal); }
 .phase h3 { font-size: clamp(1.5rem, 1.2rem + 1.4vw, 2.2rem); letter-spacing: -.03em; margin-top: 10px; }
 .phase-head p { color: var(--muted); margin-top: 12px; font-size: .98rem; max-width: 34ch; }
@@ -624,31 +628,31 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
       <div class="phase" style="--i:0">
         <div class="phase-inner glass reveal">
           <div class="phase-head"><span class="phase-num">Phase 01</span><h3>Plan</h3><p>Choose a small, clear topic and get permission to start.</p></div>
-          <ol>
+          <ol class="stagger">
             <li><span class="n">01</span><div><b>Research topic</b><span>PICO and FINER</span></div></li>
             <li><span class="n">02</span><div><b>Literature search</b><span>Finding papers on PubMed</span></div></li>
-            <li><span class="n">03</span><div><b>Study design</b><span>Choosing the right one</span></div></li>
-            <li><span class="n">04</span><div><b>Synopsis and ethics</b><span>ERC approval and consent</span></div></li>
+            <li><span class="n">03</span><div><b>Study design</b><span>Pick the right type of study</span></div></li>
+            <li><span class="n">04</span><div><b>Synopsis and ethics</b><span>Your plan, and permission to start</span></div></li>
           </ol>
         </div>
       </div>
       <div class="phase" style="--i:1">
         <div class="phase-inner glass reveal">
-          <div class="phase-head"><span class="phase-num">Phase 02</span><h3>Collect &amp; analyse</h3><p>Gather clean data and make sense of it.</p></div>
-          <ol>
-            <li><span class="n">05</span><div><b>Sample size</b><span>OpenEpi and sampling</span></div></li>
-            <li><span class="n">06</span><div><b>Proforma and data</b><span>Questionnaires that work</span></div></li>
-            <li><span class="n">07</span><div><b>Statistical analysis</b><span>SPSS, tests and p-values</span></div></li>
+          <div class="phase-head"><span class="phase-num">Phase 02</span><h3>Collect &amp; analyse</h3><p>Collect your answers and find out what they say.</p></div>
+          <ol class="stagger">
+            <li><span class="n">05</span><div><b>Sample size</b><span>How many people you need</span></div></li>
+            <li><span class="n">06</span><div><b>Proforma and data</b><span>Your questionnaire and data sheet</span></div></li>
+            <li><span class="n">07</span><div><b>Statistical analysis</b><span>Turning answers into results</span></div></li>
           </ol>
         </div>
       </div>
       <div class="phase last" style="--i:2">
         <div class="phase-inner glass reveal">
-          <div class="phase-head"><span class="phase-num">Phase 03</span><h3>Write &amp; publish</h3><p>Turn your results into a paper journals accept.</p></div>
-          <ol>
-            <li><span class="n">08</span><div><b>Writing in IMRaD</b><span>With journal-ready tables</span></div></li>
-            <li><span class="n">09</span><div><b>Referencing</b><span>Vancouver with Zotero</span></div></li>
-            <li><span class="n">10</span><div><b>Journal submission</b><span>Cover letter and reviewers</span></div></li>
+          <div class="phase-head"><span class="phase-num">Phase 03</span><h3>Write &amp; publish</h3><p>Write it up and send it to a journal.</p></div>
+          <ol class="stagger">
+            <li><span class="n">08</span><div><b>Writing your paper</b><span>The four parts: IMRaD</span></div></li>
+            <li><span class="n">09</span><div><b>Referencing</b><span>Vancouver style with Zotero</span></div></li>
+            <li><span class="n">10</span><div><b>Journal submission</b><span>Choosing a journal and sending it</span></div></li>
           </ol>
         </div>
       </div>
@@ -705,7 +709,7 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
       <span class="eyebrow">Free guides</span>
       <h2>Start learning today, free.</h2>
     </div>
-    <div class="list glass reveal">
+    <div class="list glass reveal stagger">
       <details data-cat="start">
         <summary><div><b>How to find a research gap<span class="new-tag">New</span></b><small>Where new, publishable topics come from</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
         <div class="content">
@@ -919,7 +923,7 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
       <span class="eyebrow">FAQ</span>
       <h2>Good questions.</h2>
     </div>
-    <div class="list glass reveal">
+    <div class="list glass reveal stagger">
       <details><summary><div><b>Will you write my paper for me?</b></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary><div class="content"><p>No. You write it yourself and we correct every step. That keeps your work original, and you actually learn.</p></div></details>
       <details><summary><div><b>I’ve never done research. Can I join?</b></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary><div class="content"><p>Yes. The roadmap starts from zero, even in first year.</p></div></details>
       <details><summary><div><b>Will I get published?</b></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary><div class="content"><p>We guide you through journal choice, submission and reviewer replies. The final decision is the journal’s, but our mentored students have published.</p></div></details>
@@ -969,14 +973,38 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
   /* scroll: progress bar, aura parallax, stacking phases */
   var bar = document.getElementById('progress'), aura = document.getElementById('aura');
   var phases = [].slice.call(document.querySelectorAll('.phase'));
+  var inners = phases.map(function (p) { return p.querySelector('.phase-inner'); });
   var ticking = false;
+  /* same height for every roadmap card, so their bottoms line up when they stack */
+  function sizePhases() {
+    inners.forEach(function (x) { x.style.removeProperty('--ph'); });
+    var hmax = Math.max.apply(null, inners.map(function (x) { return x.offsetHeight; }));
+    inners.forEach(function (x) { x.style.setProperty('--ph', hmax + 'px'); });
+  }
+  /* how far the next card has slid over each card (0 to 1); covered cards shrink back and fade their text */
+  function stack() {
+    var cover = phases.map(function (p, i) {
+      var nx = phases[i + 1]; if (!nx) return 0;
+      var top = p.getBoundingClientRect().top, h = p.offsetHeight; // the top edge doesn't move when scaled from the top
+      return Math.max(0, Math.min(1, (top + h - nx.getBoundingClientRect().top) / h));
+    });
+    phases.forEach(function (p, i) {
+      var depth = 0; for (var j = i; j < cover.length; j++) depth += cover[j];
+      p.style.transform = depth > 0.001 ? 'scale(' + (1 - depth * .045).toFixed(4) + ')' : '';
+      inners[i].style.setProperty('--p', cover[i].toFixed(3));
+    });
+  }
   function update() {
     ticking = false;
     var h = root.scrollHeight - innerHeight;
     bar.style.transform = 'scaleX(' + (h > 0 ? scrollY / h : 0) + ')';
+    if (!reduce) stack();
   }
   function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
-  addEventListener('scroll', onScroll, { passive: true }); addEventListener('resize', onScroll); update();
+  addEventListener('scroll', onScroll, { passive: true });
+  addEventListener('resize', function () { sizePhases(); onScroll(); });
+  sizePhases(); update();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { sizePhases(); update(); });
 
   /* phone carousel progress */
   var list = document.getElementById('tracks-list'), swipe = document.getElementById('swipe-i');

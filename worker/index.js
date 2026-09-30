@@ -733,7 +733,16 @@ async function route(request, env, url, ctx) {
       can(admin, 'applications') ? one("SELECT COUNT(*) n FROM applications WHERE status = 'new'") : 0,
       one("SELECT COUNT(*) n FROM submissions s JOIN users u ON u.id = s.user_id WHERE s.status = 'approved' AND s.reviewed_at > ? AND " + sc.sql, daysAgo(7), ...sc.args)
     ]);
-    return json({ pending, pendingMine, members, myMembers, applications, approvedWeek, unreadChats: unread.total });
+    // day-by-day counts for the dashboard's chart and calendar (last 12 weeks)
+    const since84 = daysAgo(84);
+    const [subsByDay, reviewsByDay, reviewedTotal] = await Promise.all([
+      DB.prepare("SELECT substr(s.created_at, 1, 10) d, COUNT(*) n FROM submissions s JOIN users u ON u.id = s.user_id WHERE s.created_at > ? AND " + sc.sql + ' GROUP BY d').bind(since84, ...sc.args).all(),
+      DB.prepare("SELECT substr(reviewed_at, 1, 10) d, COUNT(*) n FROM submissions WHERE reviewer_id = ? AND reviewed_at > ? GROUP BY d").bind(admin.id, since84).all(),
+      one('SELECT COUNT(*) n FROM submissions WHERE reviewer_id = ? AND reviewed_at IS NOT NULL', admin.id)
+    ]);
+    const byDay = (r) => Object.fromEntries(r.results.map((x) => [x.d, x.n]));
+    return json({ pending, pendingMine, members, myMembers, applications, approvedWeek, unreadChats: unread.total,
+      submissionsByDay: byDay(subsByDay), reviewsByDay: byDay(reviewsByDay), reviewedTotal });
   }
   if (path === '/api/admin/activity' && method === 'GET') {
     await ensureSchema(env);

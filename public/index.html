@@ -254,11 +254,12 @@ section { padding-block: var(--gap-section) 0; }
 
 /* ---------- roadmap: stacking phase cards ---------- */
 .phases { display: grid; gap: 22px; }
-.phase { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 92px + var(--i) * 18px); transform-origin: 50% 0; }
-/* all three cards are the same height (set by the script below), so they close into a neat, aligned stack;
-   a covered card shrinks back a little and its text fades out, following the scroll exactly */
+.phase { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 92px + var(--i) * 18px); }
+/* all three cards are the same size (height set by the script below), so they close into a neat stack with
+   every edge lined up. Nothing is moved or scaled while scrolling (that makes sticky cards stutter on phones);
+   only the text of a covered card fades out, so just its clean top edge peeks out above the next card. */
 .phase-inner { min-height: var(--ph, auto); }
-.phase-inner > * { opacity: clamp(0, calc(1 - var(--p, 0) * 1.8), 1); }
+.phase-inner > * { opacity: clamp(0, calc((1 - var(--p, 0)) * 4), 1); }
 .phase-inner { padding: clamp(24px, 4vw, 44px); display: grid; grid-template-columns: .8fr 1.2fr; gap: 24px 48px; transform-origin: top center; }
 .phase-num { font-family: var(--f-mono); font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--teal); }
 .phase h3 { font-size: clamp(1.5rem, 1.2rem + 1.4vw, 2.2rem); letter-spacing: -.03em; margin-top: 10px; }
@@ -626,9 +627,9 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
     </div>
     <div class="phases" id="phases">
       <div class="phase" style="--i:0">
-        <div class="phase-inner glass reveal">
+        <div class="phase-inner glass">
           <div class="phase-head"><span class="phase-num">Phase 01</span><h3>Plan</h3><p>Choose a small, clear topic and get permission to start.</p></div>
-          <ol class="stagger">
+          <ol>
             <li><span class="n">01</span><div><b>Research topic</b><span>PICO and FINER</span></div></li>
             <li><span class="n">02</span><div><b>Literature search</b><span>Finding papers on PubMed</span></div></li>
             <li><span class="n">03</span><div><b>Study design</b><span>Pick the right type of study</span></div></li>
@@ -637,9 +638,9 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
         </div>
       </div>
       <div class="phase" style="--i:1">
-        <div class="phase-inner glass reveal">
+        <div class="phase-inner glass">
           <div class="phase-head"><span class="phase-num">Phase 02</span><h3>Collect &amp; analyse</h3><p>Collect your answers and find out what they say.</p></div>
-          <ol class="stagger">
+          <ol>
             <li><span class="n">05</span><div><b>Sample size</b><span>How many people you need</span></div></li>
             <li><span class="n">06</span><div><b>Proforma and data</b><span>Your questionnaire and data sheet</span></div></li>
             <li><span class="n">07</span><div><b>Statistical analysis</b><span>Turning answers into results</span></div></li>
@@ -647,9 +648,9 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
         </div>
       </div>
       <div class="phase last" style="--i:2">
-        <div class="phase-inner glass reveal">
+        <div class="phase-inner glass">
           <div class="phase-head"><span class="phase-num">Phase 03</span><h3>Write &amp; publish</h3><p>Write it up and send it to a journal.</p></div>
-          <ol class="stagger">
+          <ol>
             <li><span class="n">08</span><div><b>Writing your paper</b><span>The four parts: IMRaD</span></div></li>
             <li><span class="n">09</span><div><b>Referencing</b><span>Vancouver style with Zotero</span></div></li>
             <li><span class="n">10</span><div><b>Journal submission</b><span>Choosing a journal and sending it</span></div></li>
@@ -981,28 +982,27 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
     var hmax = Math.max.apply(null, inners.map(function (x) { return x.offsetHeight; }));
     inners.forEach(function (x) { x.style.setProperty('--ph', hmax + 'px'); });
   }
-  /* how far the next card has slid over each card (0 to 1); covered cards shrink back and fade their text */
+  /* how far the next card has slid over each card (0 to 1); a covered card's text fades out */
+  var lastP = [];
   function stack() {
-    var cover = phases.map(function (p, i) {
-      var nx = phases[i + 1]; if (!nx) return 0;
-      var top = p.getBoundingClientRect().top, h = p.offsetHeight; // the top edge doesn't move when scaled from the top
-      return Math.max(0, Math.min(1, (top + h - nx.getBoundingClientRect().top) / h));
-    });
     phases.forEach(function (p, i) {
-      var depth = 0; for (var j = i; j < cover.length; j++) depth += cover[j];
-      p.style.transform = depth > 0.001 ? 'scale(' + (1 - depth * .045).toFixed(4) + ')' : '';
-      inners[i].style.setProperty('--p', cover[i].toFixed(3));
+      var nx = phases[i + 1], v = 0;
+      if (nx) { var r = p.getBoundingClientRect(); v = Math.max(0, Math.min(1, (r.bottom - nx.getBoundingClientRect().top) / r.height)); }
+      v = Math.round(v * 50) / 50; // only touch the page when the value really changes
+      if (v !== lastP[i]) { lastP[i] = v; inners[i].style.setProperty('--p', v); }
     });
   }
   function update() {
     ticking = false;
     var h = root.scrollHeight - innerHeight;
     bar.style.transform = 'scaleX(' + (h > 0 ? scrollY / h : 0) + ')';
-    if (!reduce) stack();
+    stack();
   }
   function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
   addEventListener('scroll', onScroll, { passive: true });
-  addEventListener('resize', function () { sizePhases(); onScroll(); });
+  // phones fire resize whenever the address bar slides in or out; only re-measure when the width changes
+  var lastW = innerWidth;
+  addEventListener('resize', function () { if (innerWidth !== lastW) { lastW = innerWidth; sizePhases(); } onScroll(); });
   sizePhases(); update();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { sizePhases(); update(); });
 

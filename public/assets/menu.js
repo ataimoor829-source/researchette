@@ -36,8 +36,8 @@
   var bg = document.createElement('div'); bg.className = 'menu-bg'; bg.hidden = true;
   var panel = document.createElement('nav'); panel.className = 'menu-panel'; panel.id = 'site-menu'; panel.hidden = true; panel.setAttribute('aria-label', 'Site menu');
   panel.innerHTML = '<ul>' + ITEMS.map(function (x) {
-    var cur = (home && x[0] === 'Home') || (x[1].indexOf('#') < 0 && page(x[1]) === here);
-    return '<li><a class="' + (x[3] || '') + '" href="' + x[1] + '"' + (cur ? ' aria-current="page"' : '') + '><span class="mi">' + ic(x[2]) + '</span>' + x[0] +
+    var cur = !home && x[1].indexOf('#') < 0 && page(x[1]) === here;
+    return '<li><a class="' + (x[3] || '') + '" href="' + x[1] + '" data-name="' + x[0] + '"' + (cur ? ' aria-current="page"' : '') + '><span class="mi">' + ic(x[2]) + '</span>' + x[0] +
       '<svg class="mc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a></li>';
   }).join('') + '</ul>' +
     '<div class="menu-ctas"><a class="btn btn-glass" href="portal.html">Log in</a><a class="btn btn-primary" href="' + at('#join') + '">Join us today</a></div>';
@@ -45,8 +45,16 @@
 
   var open = false, timer = 0, reduce = matchMedia('(prefers-reduced-motion: reduce)');
   function place() { var n = document.querySelector('.nav'); panel.style.top = Math.round(n.getBoundingClientRect().bottom + 8) + 'px'; }
+  /* on the home page, “You’re here” follows the section on screen, not just the page */
+  var SECTIONS = [['tracks', 'Programmes'], ['roadmap', 'Roadmap'], ['guides', 'Free guides'], ['mentors', 'Mentors'], ['join', '']];
+  function markSection() {
+    if (!home) return;
+    var line = innerHeight * .4, now = 'Home';
+    SECTIONS.forEach(function (x) { var el = document.getElementById(x[0]); if (el && el.getBoundingClientRect().top <= line) now = x[1]; });
+    panel.querySelectorAll('li a').forEach(function (a) { if (a.dataset.name === now) a.setAttribute('aria-current', 'location'); else a.removeAttribute('aria-current'); });
+  }
   function show() {
-    clearTimeout(timer); open = true; place();
+    clearTimeout(timer); open = true; place(); markSection();
     bg.hidden = panel.hidden = false;
     requestAnimationFrame(function () { requestAnimationFrame(function () { document.documentElement.classList.add('menu-open'); }); });
     btn.setAttribute('aria-expanded', 'true'); btn.setAttribute('aria-label', 'Close menu');

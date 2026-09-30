@@ -760,6 +760,10 @@
     var both = await Promise.all([S.queue(), can('applications') ? S.applications() : Promise.resolve([])]), q = both[0], apps = both[1].filter(function (a) { return a.status === 'new'; });
     var html = '<section class="page-head"><span class="eyebrow">' + today() + '</span><h1>' + greet() + ', ' + first(me.name) + '.</h1><p class="muted">' +
       (stats.pending ? stats.pending + ' submission' + (stats.pending > 1 ? 's are' : ' is') + ' waiting for review' + (stats.pendingMine ? ', ' + stats.pendingMine + ' from your students.' : '.') : 'You’re all caught up.') + '</p></section>' +
+      (isOwner() ? '<div class="owner-tools">' +
+        '<a class="glass card team-card" href="#lessons"><span class="ot-icon">' + ic('pen') + '</span><div class="li-main"><h3>Edit lessons</h3><span class="small muted">Proofread any step as students see it and change the wording.</span></div>' + ic('chev', 'chev') + '</a>' +
+        '<a class="glass card team-card" href="#team"><span class="ot-icon">' + ic('users') + '</span><div class="li-main"><h3>Team & permissions</h3><span class="small muted">Mentors, what everyone can do, and all activity.</span></div>' + ic('chev', 'chev') + '</a>' +
+      '</div>' : '') +
       '<div class="stats">' +
         '<a class="stat glass' + (stats.pending ? ' hot' : '') + '" href="#reviews"><b>' + stats.pending + '</b><span>Waiting for review</span></a>' +
         '<a class="stat glass" href="#members"><b>' + stats.myMembers + '</b><span>Your students</span></a>' +
@@ -773,9 +777,7 @@
             return '<a class="li" href="#applications"><span class="avatar">' + initials(a.name) + '</span><div class="li-main"><span class="li-title">' + esc(a.name) + '</span><span class="li-sub">' + esc(a.level) + '</span></div><div class="li-end"><span class="small muted">' + rel(a.createdAt) + '</span></div></a>';
           }).join('') + '</div>' : '<div class="glass empty"><span>No new applications.</span></div>') +
         '</section>' : '') +
-      '</div>' +
-      (isOwner() ? '<a class="glass card team-card" href="#lessons"><div class="li-main"><h3>Lessons</h3><span class="small muted">Read every step as students see it, proofread it and edit the wording.</span></div>' + ic('chev', 'chev') + '</a>' : '') +
-      (isOwner() ? '<a class="glass card team-card" href="#team"><div class="li-main"><h3>Team & permissions</h3><span class="small muted">Add mentors, choose what each mentor and student can do, and see everyone’s activity.</span></div>' + ic('chev', 'chev') + '</a>' : '');
+      '</div>';
     return { html: html };
   }
   var mentorCache = [];
@@ -1035,7 +1037,7 @@
     var html = '<a class="back" href="#lessons">' + ic('back', 'chev') + 'Lessons</a>' +
       '<div class="glass card lesson-bar"><div class="li-main"><span class="eyebrow">' + esc(tr.name) + ' · Step ' + n + ' of ' + total + '</span>' +
         '<span class="small muted">' + (ed ? 'Edited by ' + esc(ed.by || 'an owner') + ' · ' + rel(ed.at) : 'Original wording') + '</span></div>' +
-        '<div class="row">' + (ed ? '<button class="btn btn-quiet btn-sm" type="button" id="l-reset">Reset to original</button>' : '') + '<button class="btn btn-primary btn-sm" type="button" id="l-edit">' + ic('pen') + 'Edit</button></div></div>' +
+        '<div class="row">' + (ed ? '<button class="btn btn-quiet btn-sm" type="button" id="l-reset">Reset to original</button>' : '') + '<button class="btn btn-primary btn-sm" type="button" id="l-edit">' + ic('pen') + 'Edit this step</button></div></div>' +
       '<p class="small muted">Preview: this is exactly what students see.</p>' + card.html + nav;
     return { html: html, mount: function (m) {
       card.mount(m);

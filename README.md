@@ -58,7 +58,7 @@ The website is also an MCP server, so a mentor can connect Claude, Gemini, ChatG
 - **Tools (act as the mentor who approved):** overview, recent activity, programmes, mentors; applications (list, mark paid, approve, decline); review queue, submission, review; chats (list, read, reply); team and permissions (owners only: list, add, update, reset password, remove mentors; member access); members (list, view, add, remove, reset or set password, assign mentor, set programmes, set WhatsApp number).
 - **Notifications:** connectors can't push messages, so ask your AI app to check `get_recent_activity` on a schedule (for example “every hour, tell me about new applications and submissions”). It returns `checkedAt` to pass as `since` next time.
 - **Activity log:** everything members and mentors do, including actions through the connector, is recorded (details encrypted).
-- **Security:** access tokens last 1 hour and refresh for up to 90 days (refresh tokens rotate). Disconnect an app in Connected apps; changing your password disconnects every app. Only connect apps you trust: they can see and change student data.
+- **Security:** access tokens last 30 days and renew themselves for up to a year of use (refresh tokens rotate, with a 2-minute grace period so an app's retries don't sign it out), so an assistant doesn't keep asking you to connect again. Disconnect an app in Connected apps; changing your password disconnects every app. Only connect apps you trust: they can see and change student data.
 
 Code: `worker/connector.js`. Its tables are created automatically on first use.
 

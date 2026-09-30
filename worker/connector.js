@@ -6,8 +6,11 @@
    the same routes and checks as the portal. Only mentor accounts can connect. Changing the mentor's
    password, or disconnecting the app in the portal, signs it out. */
 
-const ACCESS_TTL = 3600;            // 1 hour
-const REFRESH_TTL = 90 * 86400;     // 90 days
+// Long enough that an assistant doesn't have to keep asking you to connect again. You can still end it at any
+// time: disconnect the app in the portal (Overview → Connected apps) or change your password.
+const ACCESS_TTL = 30 * 86400;      // 30 days
+const REFRESH_TTL = 365 * 86400;    // 1 year, renewed every time it's used
+const REFRESH_GRACE = 120;          // seconds an already-used renewal still works (retries, parallel requests)
 const CODE_TTL = 600;               // 10 minutes
 const PROTOCOLS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
 
@@ -228,7 +231,10 @@ async function token(request, env, api) {
     const t = await env.DB.prepare("SELECT * FROM oauth_tokens WHERE token_hash = ? AND kind = 'refresh'").bind(h).first();
     if (!t || t.expires < api.now() || t.client_id !== client.client_id) return oauthError('invalid_grant', 'Please connect again.');
     if (!(await activeMentor(env, t.user_id))) return oauthError('invalid_grant', 'This mentor account is no longer active.');
-    await env.DB.prepare('DELETE FROM oauth_tokens WHERE token_hash = ?').bind(h).run();   // rotate
+    // rotate, but let the old renewal keep working for a couple of minutes: apps often retry, or renew twice
+    // at the same moment, and refusing the second one would make them ask you to connect again
+    const grace = future(REFRESH_GRACE);
+    if (t.expires > grace) await env.DB.prepare('UPDATE oauth_tokens SET expires = ? WHERE token_hash = ?').bind(grace, h).run();
     return issue(env, api, client.client_id, t.user_id, t.resource);
   }
   return oauthError('unsupported_grant_type', 'Use authorization_code or refresh_token.');

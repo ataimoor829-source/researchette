@@ -516,3 +516,14 @@ details[open] > summary .chev.down { transform: rotate(-90deg); }
 .tour-nav { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; }
 .tour-skip { justify-self: center; }
 @media (prefers-reduced-motion: reduce) { .tour-slide, .tour-slide.from-left { animation-name: fade; } .tour-art i { animation: none; } }
+
+/* ---------- owners: lessons ---------- */
+.lesson-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.lesson-bar .li-main { display: grid; gap: 4px; flex: 1; min-width: 200px; }
+.lesson-bar .btn svg { width: 16px; height: 16px; }
+.lesson-nav { margin-top: -4px; }
+.lesson-editor h3 { margin-top: 6px; padding-top: 14px; border-top: 1px solid var(--line); }
+.lesson-editor textarea { min-height: 0; }
+.le-point { display: grid; gap: 8px; padding: 12px; border-radius: 16px; background: var(--paper); }
+.le-point .le-del { justify-self: end; }
+.lesson-save { position: sticky; bottom: calc(12px + var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); padding: 10px; margin: 0 -10px -10px; border-radius: 20px; background: var(--glass-strong); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); }

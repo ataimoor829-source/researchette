@@ -59,6 +59,10 @@ The website is also an MCP server, so a mentor can connect Claude, Gemini, ChatG
 
 Code: `worker/connector.js`. Its tables are created automatically on first use.
 
+## Editing lessons (owners)
+
+Owners open **Lessons** (Overview, or the account menu) to read any step exactly as students see it and edit its wording: title, short description, minutes, “In simple words”, the step-by-step points, common mistakes, the weak/strong example, task instructions, what to include and the template. Edits are saved in the database (`lesson_edits`) and layered over `public/assets/curriculum.js`, so students see them straight away and any step can be reset to the original. Charts and tables, and the order of steps, still come from `curriculum.js`.
+
 ## Owners, mentors and permissions
 
 - **Owners** (Zain and Taimoor) see and do everything: every student, submission, chat and activity, including other mentors'. Only owners open **Team & permissions** (Overview, or the account menu), where they add, pause or remove mentors, reset mentors' passwords, make someone an owner, and switch each mentor's permissions on or off. There is always at least one owner.

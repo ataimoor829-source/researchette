@@ -11,7 +11,7 @@ Medical research mentorship: daily tasks, step-by-step lessons and mentor feedba
   - `reviews.html`: student reviews. Add real reviews to the `REVIEWS` list at the bottom of the file.
   - `research.html`: students' published papers, loaded from the database. Owners add and remove them in the portal.
   - `portal.html`: login, member portal and mentor portal.
-  - `assets/curriculum.js`: the programmes and all lesson content. Edit this to change the course.
+  - `assets/curriculum.js`: the programmes and all lesson content, written for complete beginners. Edit this to change the course. Lessons can include pictures drawn by `portal.js`: tables, flows, decision charts, the evidence pyramid, formulas, letter cards (PICO, FINER, SMART), funnels, AND/OR/NOT circles, a drawing of the PubMed screen, spreadsheets and a forest plot (the types are listed at the top of the extra-guidance section).
   - `assets/store.js`: talks to the API. `assets/portal.js`, `portal.css`: portal screens.
   - `assets/liquid.css`, `assets/fx.js`: shared glass look and pointer effects.
   - `assets/menu.js`: the phone menu (menu button in the top bar at 860px and below) on every public page.

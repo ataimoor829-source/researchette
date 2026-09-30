@@ -397,6 +397,65 @@ details[open] > summary .chev.down { transform: rotate(-90deg); }
 .viz-formula dd { margin: 0; color: var(--muted); }
 .viz-formula .worked { font-size: .9rem; padding: 10px 12px; border-radius: 12px; background: var(--teal-soft); }
 
+/* picture diagrams */
+.viz-letters { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+.viz-letters .lt { display: grid; grid-template-columns: 48px 1fr; gap: 12px; align-items: start; padding: 12px; border-radius: 16px; background: var(--paper); border: 1px solid var(--line); }
+.lt-l { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; font: 800 1.5rem var(--f-display); color: #fff; background: linear-gradient(135deg, #0B9E8C, #3448D8); }
+.lt-t { display: grid; gap: 3px; min-width: 0; }
+.lt-t b { font-size: .98rem; }
+.lt-t span { color: var(--muted); font-size: .88rem; line-height: 1.45; }
+.lt-t small { font-size: .82rem; line-height: 1.4; padding: 5px 8px; border-radius: 9px; margin-top: 3px; }
+.lt-t small.ok { background: var(--teal-soft); } .lt-t small.ok::before { content: "✓ "; color: var(--teal); font-weight: 700; }
+.lt-t small.no { background: var(--red-soft); } .lt-t small.no::before { content: "✕ "; color: var(--redpen); font-weight: 700; }
+.viz-funnel { display: grid; gap: 6px; justify-items: center; }
+.viz-funnel .fl { width: var(--w); max-width: 100%; display: grid; gap: 1px; text-align: center; padding: 10px 14px; border-radius: 12px; color: #fff; background: color-mix(in srgb, #3448D8 calc((1 - var(--k)) * 100%), #0B9E8C); }
+.viz-funnel .fl b { font-size: .72rem; font-family: var(--f-mono); font-weight: 500; letter-spacing: .08em; text-transform: uppercase; opacity: .85; }
+.viz-funnel .fl span { font-weight: 600; font-size: .92rem; line-height: 1.35; }
+.viz-funnel .fl.last { box-shadow: 0 0 0 3px var(--teal-soft); }
+@media (max-width: 520px) { .viz-funnel .fl { width: calc(60% + var(--w) * .4); } }
+.viz-venn { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.viz-venn .vn { display: grid; gap: 4px; justify-items: center; text-align: center; padding: 12px 10px; border-radius: 16px; background: var(--paper); border: 1px solid var(--line); }
+.viz-venn svg { width: 150px; height: auto; }
+.viz-venn .on circle { fill: var(--pen); opacity: .45; }
+.viz-venn .ring circle { fill: none; stroke: var(--pen); stroke-width: 2; }
+.vn-l { width: 150px; display: flex; justify-content: space-between; font-size: .72rem; color: var(--muted); margin-top: -4px; }
+.vn-op { font: 800 1.1rem var(--f-display); color: var(--pen); }
+.viz-venn code { font: 500 .8rem var(--f-mono); background: var(--pen-soft); padding: 3px 8px; border-radius: 8px; }
+.viz-venn small { color: var(--muted); font-size: .82rem; line-height: 1.4; }
+.viz-screen { border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: var(--paper); font-size: .78rem; }
+.sc-bar { display: flex; align-items: center; gap: 5px; padding: 7px 10px; background: var(--pen-soft); }
+.sc-bar i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+.sc-bar span { margin-left: 8px; padding: 2px 10px; border-radius: 99px; background: var(--paper); color: var(--muted); font-family: var(--f-mono); font-size: .7rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-body { padding: 12px; display: grid; gap: 10px; }
+.sc-search { display: flex; gap: 6px; }
+.sc-box, .sc-btn, .sc-filters, .sc-count, .sc-a { position: relative; }
+.sc-box { flex: 1; min-width: 0; padding: 8px 10px; border: 2px solid var(--pen); border-radius: 9px; font-family: var(--f-mono); font-size: .74rem; overflow-wrap: anywhere; }
+.sc-btn { padding: 8px 12px; border-radius: 9px; background: var(--pen); color: #fff; font-weight: 600; align-self: start; }
+.sc-main { display: grid; grid-template-columns: 110px 1fr; gap: 10px; }
+@media (max-width: 480px) { .sc-main { grid-template-columns: 1fr; } }
+.sc-filters { display: grid; gap: 5px; align-content: start; padding: 8px; border-radius: 9px; border: 1px solid var(--line); }
+.sc-filters b { font-size: .72rem; }
+.sc-filters span { color: var(--muted); } .sc-filters span::before { content: "☐ "; } .sc-filters span.on { color: var(--ink); } .sc-filters span.on::before { content: "☑ "; color: var(--pen); }
+.sc-results { display: grid; gap: 8px; align-content: start; min-width: 0; }
+.sc-count { font-weight: 700; justify-self: start; padding-right: 22px; }
+.sc-r { position: relative; display: grid; gap: 2px; padding: 0 24px 8px 0; border-bottom: 1px solid var(--line); }
+.viz-screen .sc-r > .mk { top: 0; right: 0; }
+.sc-t { color: var(--pen); font-weight: 600; line-height: 1.35; }
+.sc-a { color: var(--muted); font-size: .7rem; }
+.viz .mk { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: #F2B43A; color: #1a1a1a; font: 700 .7rem var(--f-display); box-shadow: 0 0 0 2px var(--paper); }
+.viz-screen .mk { position: absolute; top: -9px; right: -7px; }
+.sc-notes { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.sc-notes li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; font-size: .9rem; align-items: start; }
+.sc-notes .mk { margin-top: 1px; }
+.viz-sheet { border-collapse: collapse; font-size: .8rem; min-width: 100%; font-family: var(--f-mono); }
+.viz-sheet th, .viz-sheet td { border: 1px solid var(--line); padding: 6px 8px; text-align: left; white-space: nowrap; }
+.viz-sheet thead th, .viz-sheet tbody th { background: var(--pen-soft); color: var(--muted); font-weight: 500; text-align: center; font-size: .7rem; }
+.viz-sheet tr.hd td { font-weight: 700; color: var(--ink); background: var(--teal-soft); }
+
+.viz-forest { width: 100%; max-width: 520px; height: auto; justify-self: center; font-family: var(--f-body); }
+.viz-forest text { font-size: 11px; fill: var(--ink); } .viz-forest text.hd { font-size: 9px; fill: var(--muted); text-transform: uppercase; letter-spacing: .08em; } .viz-forest text.b { font-weight: 700; } .viz-forest text.lg { font-size: 9px; fill: var(--muted); }
+.viz-forest .axis { stroke: var(--muted); stroke-dasharray: 3 3; } .viz-forest .ci { stroke: var(--pen); stroke-width: 1.6; } .viz-forest .pt { fill: var(--pen); } .viz-forest .dm { fill: #0B9E8C; }
+
 /* on phones, wide tables become one card per row */
 @media (max-width: 560px) {
   .viz-table.cards { min-width: 0; }

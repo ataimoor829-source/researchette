@@ -760,7 +760,8 @@
     var tab = x.status === 'current' ? 0 : 2;
     var html = '<article class="glass card stack-lg" id="stepcard">' +
       '<div class="step-head"><div class="row spread wrap"><span class="eyebrow">' + esc(T(t).short) + ' · ' + esc(ph.name) + '</span>' + pill(x.status) + '</div>' +
-      '<h2>Step ' + n + ' · ' + esc(d.title) + '</h2><div class="step-meta">' + ic('clock', 'chev') + d.minutes + ' min · ' + esc(d.summary) + '</div></div>' +
+      '<h2>Step ' + n + ' · ' + esc(d.title) + '</h2><div class="step-meta">' + ic('clock', 'chev') + d.minutes + ' min · ' + esc(d.summary) + '</div>' +
+        (x.unlocked && !preview && x.status === 'current' && n > 1 && st[n - 2].status !== 'approved' ? '<p class="small unlocked-note">' + ic('check') + 'Your mentor unlocked this step for you, so you can start it now.</p>' : '') + '</div>' +
       '<div class="seg" role="tablist" style="--n:3;--i:' + tab + '"><button type="button" role="tab" data-t="0">Learn</button><button type="button" role="tab" data-t="1">Example</button><button type="button" role="tab" data-t="2">Task</button></div>' +
       '<div id="panel"></div></article>';
 
@@ -880,15 +881,16 @@
   }
 
   /* ---------- member: roadmap ---------- */
-  function roadmapList(t, st, linkFn) {
+  function roadmapList(t, st, linkFn, endFn) {
     return T(t).phases.map(function (ph, pi) {
       var items = st.filter(function (x) { return stepOf(t, x.step).phase === ph.id; });
       var pd = items.filter(function (x) { return x.status === 'approved'; }).length;
       return '<section class="stack" style="gap:0"><div class="phase-title"><h3>Phase 0' + (pi + 1) + ' · ' + esc(ph.name) + '</h3><span class="small muted">' + pd + '/' + items.length + '</span></div><div class="glass list">' +
         items.map(function (x) {
           var d = stepOf(t, x.step), href = linkFn(x);
-          var inner = sicon(x.status, x.step) + '<div class="li-main"><span class="li-title">' + x.step + '. ' + esc(d.title) + '</span><span class="li-sub">' + esc(d.summary) + ' · ' + d.minutes + ' min</span></div><div class="li-end">' + (x.status === 'locked' ? '' : pill(x.status) + (href ? ic('chev', 'chev') : '')) + '</div>';
-          return href ? '<a class="li" href="' + href + '">' + inner + '</a>' : '<div class="li"' + (x.status === 'locked' ? ' aria-disabled="true"' : '') + '>' + inner + '</div>';
+          var end = endFn && !href ? endFn(x) : null;
+          var inner = sicon(x.status, x.step) + '<div class="li-main"><span class="li-title">' + x.step + '. ' + esc(d.title) + '</span><span class="li-sub">' + esc(d.summary) + ' · ' + d.minutes + ' min</span></div><div class="li-end">' + (end != null ? end : x.status === 'locked' ? '' : pill(x.status) + (href ? ic('chev', 'chev') : '')) + '</div>';
+          return href ? '<a class="li" href="' + href + '">' + inner + '</a>' : '<div class="li"' + (x.status === 'locked' && end == null ? ' aria-disabled="true"' : '') + '>' + inner + '</div>';
         }).join('') + '</div></section>';
     }).join('');
   }
@@ -1567,7 +1569,11 @@
       u.tracks.map(function (t, i) {
         var st = u.states[t], done = st.filter(function (x) { return x.status === 'approved'; }).length;
         return '<details class="glass card track-sec"' + (i === 0 ? ' open' : '') + '><summary><div class="li-main"><h3>' + esc(T(t).name) + (t === u.activeTrack ? ' <span class="pill approved">Current</span>' : '') + '</h3><span class="small muted">' + done + ' of ' + st.length + ' steps approved</span></div>' + ic('chev', 'chev down') + '</summary>' +
-          '<div class="stack" style="margin-top:14px">' + dots(st) + roadmapList(t, st, function (x) { return x.submission ? '#review-' + x.submission.id : ''; }) + '</div></details>';
+          '<div class="stack" style="margin-top:14px">' + dots(st) + roadmapList(t, st, function (x) { return x.submission ? '#review-' + x.submission.id : ''; }, can('edit_members') ? function (x) {
+            if (x.status === 'locked') return '<button class="btn btn-glass btn-sm unlock-btn" type="button" data-unlock="' + t + ':' + x.step + '">' + ic('lock') + 'Unlock</button>';
+            if (x.unlocked && x.status === 'current') return '<span class="pill review">Unlocked</span><button class="btn btn-quiet btn-sm" type="button" data-relock="' + t + ':' + x.step + '">Lock again</button>';
+            return null;
+          } : null) + (can('edit_members') ? '<p class="small muted">Unlock any step to let ' + esc(fn) + ' start it now, without finishing the steps before it.</p>' : '') + '</div></details>';
       }).join('') +
       '<div class="glass card stack">' +
         '<h3>Account</h3>' +
@@ -1586,6 +1592,16 @@
           });
         }
         var note = function (c) { (changes[id] = changes[id] || []).push(c); };
+        m.querySelectorAll('[data-unlock], [data-relock]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            var k = (b.dataset.unlock || b.dataset.relock).split(':'), open = !!b.dataset.unlock, label = T(k[0]).name + ', Step ' + k[1] + ' (' + stepOf(k[0], +k[1]).title + ')';
+            b.disabled = true;
+            S.unlockStep(id, k[0], +k[1], open).then(function () {
+              if (open) note(label + ' is now open for you to start');
+              toast(open ? 'Step ' + k[1] + ' unlocked' : 'Step ' + k[1] + ' locked again'); render();
+            }, function (e) { b.disabled = false; toast(e.message); });
+          });
+        });
         var f = m.querySelector('#phone-form'), ep = m.querySelector('#edit-phone');
         if (ep) ep.addEventListener('click', function () { f.hidden = false; f.querySelector('input').focus(); });
         bindToggles(m, 'macc', function (k, on, input) {

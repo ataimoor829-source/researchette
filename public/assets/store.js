@@ -93,6 +93,7 @@ window.Store = (function () {
     resetPassword: function (id) { return post('/api/admin/member/' + q(id) + '/reset-password'); },
     setPassword: function (id, pw) { return post('/api/admin/member/' + q(id) + '/password', { password: pw }); },
     assignMentor: function (id, mentorId) { return post('/api/admin/member/' + q(id) + '/mentor', { mentorId: mentorId || '' }); },
+    unlockStep: function (id, track, step, unlock) { return post('/api/admin/member/' + q(id) + '/unlock', { track: track, step: step, unlock: unlock !== false }); },
     setTracks: function (id, tracks) { return post('/api/admin/member/' + q(id) + '/tracks', { tracks: tracks }); },
     setPhone: function (id, phone) { return post('/api/admin/member/' + q(id) + '/phone', { phone: phone }); },
     applications: function () { return get('/api/admin/applications'); },

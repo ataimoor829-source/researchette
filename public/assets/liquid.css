@@ -44,8 +44,6 @@ body { animation: lg-pagein .4s var(--ease-out) both; letter-spacing: 0; transit
    height. A blurred layer that changes size (it did every time a phone's address bar slid in or out) has
    to be redrawn from scratch, which made scrolling stutter. Same look, drawn once. */
 .aura i { filter: none !important; -webkit-mask-image: radial-gradient(closest-side, #000 15%, transparent 100%); mask-image: radial-gradient(closest-side, #000 15%, transparent 100%); }
-/* things that appear as you scroll use opacity and movement only (animating a blur is slow on phones) */
-.js .reveal { filter: none !important; transition: opacity .8s var(--ease), transform .8s var(--ease); transition-delay: var(--d, 0s); }
 .aura i, .manuscript, .chip, .eyebrow::before, .price::before, .sicon.current, .btn-primary::after { animation: none !important; }
 .btn-primary::after { display: none; }
 
@@ -56,6 +54,11 @@ body { animation: lg-pagein .4s var(--ease-out) both; letter-spacing: 0; transit
 small, .small, .muted small { letter-spacing: .01em; }
 .lede { line-height: 1.55; }
 
+/* shadows: a small, tight blur instead of a very wide one; nearly the same look, much cheaper to draw */
+:root { --shadow: 0 1px 2px rgba(24,32,61,.05), 0 10px 22px -14px rgba(40,50,110,.30); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --shadow: 0 1px 2px rgba(0,0,0,.35), 0 12px 24px -14px rgba(0,0,0,.65); } }
+:root[data-theme="dark"] { --shadow: 0 1px 2px rgba(0,0,0,.35), 0 12px 24px -14px rgba(0,0,0,.65); }
+
 /* glass surface */
 .glass {
   background: linear-gradient(155deg, var(--lg-a), var(--lg-b));
@@ -64,19 +67,13 @@ small, .small, .muted small { letter-spacing: .01em; }
      is the same, but scrolling no longer has to re-blur every card on every frame. Floating layers
      (top bar, tab bar, sheets, install bar) keep the real blur below. */
   -webkit-backdrop-filter: none; backdrop-filter: none;
-  box-shadow:
-    inset 0 1px 1px var(--glass-hi),
-    inset 0 12px 28px -20px var(--lg-inner),
-    inset 0 -10px 26px -20px var(--lg-inner),
-    var(--shadow);
+  /* The edge is a plain 1px border with a crisp highlight along the top. It used to be a masked gradient
+     ring plus three blurred inner glows, which looked almost the same but had to be redrawn for every card
+     that scrolled into view; this draws in a fraction of the time, so scrolling stays smooth. */
+  border: 1px solid var(--ring-b);
+  box-shadow: inset 0 1px 0 var(--ring-a), var(--shadow);
 }
-/* lit edge: a 1px gradient ring, bright at the top-left and bottom-right like curved glass */
-.glass::before {
-  content: ""; position: absolute; inset: 0; z-index: 1; padding: 1px; border-radius: inherit; pointer-events: none; opacity: 1;
-  background: linear-gradient(150deg, var(--ring-a), var(--ring-b) 38%, var(--ring-b) 64%, var(--ring-a));
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor; mask-composite: exclude;
-}
+.glass::before { display: none; }
 /* spotlight that follows the pointer (position set by fx.js) */
 .glass:not(.track)::after {
   content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
@@ -127,14 +124,11 @@ a, button, [role="button"], .track, .tab, summary { -webkit-tap-highlight-color:
 /* cards that tilt under the pointer (fx.js) */
 [data-tilt] { transition: transform .5s var(--spring), box-shadow .5s var(--spring); }
 
-/* scroll reveal: opacity and transform only, so it stays smooth */
-.js .reveal {
-  transform: translateY(16px);
-  filter: none;
-  transition: opacity .6s ease-out, transform .7s var(--spring);
-  transition-delay: var(--d, 0s);
-}
-.js .reveal.in { transform: none; }
+/* No scroll-triggered animation: content is simply there as you scroll. Each fade-in lifted the element onto
+   its own layer, drew it, then merged it back into the page and drew it again, all mid-scroll; removing
+   them halves the drawing work while scrolling. Entrances that aren't tied to scrolling (the hero, sheets,
+   the chat, the portal) keep their motion. */
+.js .reveal { opacity: 1; transform: none; filter: none; transition: transform .45s var(--spring), box-shadow .45s var(--spring); transition-delay: 0s; }
 
 /* install-app bar (portal, phones) */
 .install-bar {
@@ -157,7 +151,7 @@ a, button, [role="button"], .track, .tab, summary { -webkit-tap-highlight-color:
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   body { animation: none; }
-  .js .reveal { transform: none; transition: opacity .3s ease; }
+  .js .reveal { transform: none; transition: none; }
   [data-tilt] { transition: none; }
   .ticker-track, .ecg-path { animation: none !important; }
   .word, .fade-up, .hero-visual { animation-name: lg-fade !important; }
@@ -227,6 +221,5 @@ html.menu-open .menu-panel { opacity: 1; transform: none; }
 @media (prefers-reduced-transparency: reduce) { .menu-panel { background: var(--paper); -webkit-backdrop-filter: none; backdrop-filter: none; } }
 
 /* ---------- staggered entrances: children of .stagger arrive one after another (index set by fx.js) ---------- */
-.js .stagger > * { opacity: 0; transform: translateY(14px); transition: opacity .6s var(--ease, ease), transform .7s var(--spring, var(--ease, ease)); transition-delay: calc(var(--si, 0) * 60ms + .12s); }
-.js .in .stagger > *, .js .stagger.in > * { opacity: 1; transform: none; }
+.js .stagger > * { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) { .js .stagger > * { opacity: 1; transform: none; transition: none; } }

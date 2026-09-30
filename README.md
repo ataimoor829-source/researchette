@@ -58,13 +58,17 @@ The website is also an MCP server, so a mentor can connect Claude, Gemini, ChatG
 - **Tools (act as the mentor who approved):** overview, recent activity, programmes, mentors; applications (list, mark paid, approve, decline); review queue, submission, review; chats (list, read, reply); team and permissions (owners only: list, add, update, reset password, remove mentors; member access); members (list, view, add, remove, reset or set password, assign mentor, set programmes, set WhatsApp number).
 - **Notifications:** connectors can't push messages, so ask your AI app to check `get_recent_activity` on a schedule (for example “every hour, tell me about new applications and submissions”). It returns `checkedAt` to pass as `since` next time.
 - **Activity log:** everything members and mentors do, including actions through the connector, is recorded (details encrypted).
-- **Security:** access tokens last 1 hour and refresh for up to 90 days (refresh tokens rotate). Disconnect an app in Connected apps; changing your password disconnects every app. Only connect apps you trust: they can see and change student data.
+- **Security:** access tokens last 30 days and renew themselves for up to a year of use (refresh tokens rotate, with a 2-minute grace period so an app's retries don't sign it out), so an assistant doesn't keep asking you to connect again. Disconnect an app in Connected apps; changing your password disconnects every app. Only connect apps you trust: they can see and change student data.
 
 Code: `worker/connector.js`. Its tables are created automatically on first use.
 
 ## Editing lessons (owners)
 
 Owners, and mentors with the **View lessons** or **Edit lessons** permission, open **Lessons** (Overview, or the account menu) to read any step exactly as students see it and edit its wording: title, short description, minutes, “In simple words”, the step-by-step points, common mistakes, the weak/strong example, task instructions, what to include and the template. Edits are saved in the database (`lesson_edits`) and layered over `public/assets/curriculum.js`, so students see them straight away and any step can be reset to the original. Charts and tables, and the order of steps, still come from `curriculum.js`.
+
+## Unlocking steps
+
+On a member's page, every locked step has an **Unlock** button, so a member can start any step without the earlier ones being approved (for example a student who already has an approved synopsis). A step opens when the step before it is approved or when a mentor unlocked it; **Lock again** closes an unlocked step that has no work yet. Owners can do this for everyone, mentors for their own students when they have *Edit student details*. Unlocks are stored in `step_unlocks`; the connector's `unlock_step` tool does the same.
 
 ## Student publications (owners)
 

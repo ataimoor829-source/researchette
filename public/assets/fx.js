@@ -19,44 +19,22 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { number(); }); else number();
 })();
 
-/* smooth scrolling for mouse wheels. Each wheel click is eased into a glide instead of a jump.
-   Trackpads, touch screens, the keyboard and the scrollbar keep native scrolling; nothing changes
-   for people who ask for reduced motion, or inside anything that scrolls on its own (lists, sheets, text boxes). */
+/* While the page is scrolling with a mouse or trackpad, hover effects wait. Otherwise every card that slides
+   under a resting pointer lifts, tilts and lights up for a moment, which is a lot of redrawing mid-scroll.
+   A transparent layer goes over the page while it moves (so nothing underneath reacts) and steps aside
+   about a sixth of a second after scrolling stops. Only this one element changes, so it costs almost
+   nothing; scrolling itself stays native, exactly as on phones. */
 (function () {
-  if (!matchMedia('(hover: hover) and (pointer: fine)').matches || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  var target = scrollY, pos = scrollY, running = false, lastT = 0;
-  function max() { return document.documentElement.scrollHeight - innerHeight; }
-  function scrollsItself(el, dy) {
-    for (; el && el !== document.body && el !== document.documentElement; el = el.parentElement) {
-      var st = getComputedStyle(el);
-      if (/(auto|scroll)/.test(st.overflowY) && el.scrollHeight > el.clientHeight + 1) {
-        if ((dy < 0 && el.scrollTop > 0) || (dy > 0 && el.scrollTop + el.clientHeight < el.scrollHeight - 1)) return true;
-      }
-    }
-    return false;
+  if (!matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+  var shield = document.createElement('div'), idle = 0, on = false;
+  shield.setAttribute('aria-hidden', 'true');
+  shield.style.cssText = 'position:fixed;inset:0;z-index:2147483646;pointer-events:none';
+  function start() {
+    if (!on) { on = true; shield.style.pointerEvents = 'auto'; }
+    clearTimeout(idle); idle = setTimeout(function () { on = false; shield.style.pointerEvents = 'none'; }, 160);
   }
-  function frame(t) {
-    var dt = Math.min(64, t - (lastT || t)) || 16; lastT = t;
-    pos += (target - pos) * (1 - Math.pow(1 - .16, dt / 16.7));
-    if (Math.abs(target - pos) < .5) { pos = target; running = false; }
-    window.scrollTo({ top: pos, behavior: 'instant' });
-    if (running) requestAnimationFrame(frame); else lastT = 0;
-  }
-  addEventListener('wheel', function (e) {
-    if (e.ctrlKey || e.defaultPrevented || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
-    // a mouse wheel moves in big, even steps; trackpads send many small ones and are already smooth
-    var line = e.deltaMode === 1, big = line || Math.abs(e.deltaY) >= 50 && Number.isInteger(e.deltaY);
-    if (!big) { target = pos = scrollY; return; }
-    if (scrollsItself(e.target, e.deltaY) || document.querySelector('.sheet-bg, .menu-open, .tour')) return;
-    e.preventDefault();
-    if (!running) { target = pos = scrollY; }
-    target = Math.max(0, Math.min(max(), target + e.deltaY * (line ? 40 : 1)));
-    if (!running) { running = true; requestAnimationFrame(frame); }
-  }, { passive: false });
-  // anything else that scrolls the page (links, keys, scrollbar) takes over straight away
-  addEventListener('scroll', function () { if (!running) target = pos = scrollY; }, { passive: true });
-  addEventListener('keydown', function () { running = false; target = pos = scrollY; });
-  addEventListener('mousedown', function () { running = false; target = pos = scrollY; });
+  function add() { document.body.appendChild(shield); addEventListener('scroll', start, { passive: true }); }
+  if (document.body) add(); else document.addEventListener('DOMContentLoaded', add);
 })();
 
 (function () {

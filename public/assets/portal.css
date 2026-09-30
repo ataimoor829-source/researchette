@@ -533,3 +533,4 @@ details[open] > summary .chev.down { transform: rotate(-90deg); }
 .ot-icon { flex: none; width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; background: var(--pen-soft); color: var(--pen); }
 .ot-icon svg { width: 20px; height: 20px; }
 .owner-tools .team-card:nth-child(2) .ot-icon { background: var(--teal-soft); color: var(--teal); }
+.owner-tools.one { grid-template-columns: 1fr; }

@@ -1,7 +1,7 @@
 /* Researchette portal: login, member portal and admin (mentor) portal in one page.
    Routes live in the URL hash: #login, #today, #roadmap, #step-3, #feedback, #chat,
    #overview, #reviews, #review-<id>, #members, #member-<id>, #applications, #messages, #chat-<member id>,
-   #team, #admin-<id> (owners). */
+   #team, #admin-<id>, #lessons, #lesson-<track>-<n> (owners). */
 (function () {
   var S = window.Store, C = window.CURRICULUM, app = document.getElementById('app');
   var me = null, reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -54,6 +54,33 @@
   function pill(st) { return '<span class="pill ' + st + '">' + LABEL[st] + '</span>'; }
   function T(id) { return C.track(id); }
   function stepOf(t, n) { return T(t).steps[n - 1]; }
+  /* Owners' edits to lesson text (from the server) are layered over curriculum.js. The original of
+     every step is kept so an edit can be undone and so "Reset" shows the built-in wording. */
+  var ORIGINAL = {}, lessonEdits = {}, lessonsReady = null;
+  var EDITABLE = ['title', 'summary', 'minutes', 'intro', 'lesson', 'example', 'mistakes', 'include', 'template', 'task'];
+  function applyLessons(map) {
+    lessonEdits = map || {};
+    C.tracks.forEach(function (tr) {
+      tr.steps.forEach(function (st) {
+        var key = tr.id + ':' + st.n;
+        if (!ORIGINAL[key]) { var o = {}; EDITABLE.forEach(function (f) { if (st[f] !== undefined) o[f] = JSON.parse(JSON.stringify(st[f])); }); ORIGINAL[key] = o; }
+        EDITABLE.forEach(function (f) { if (ORIGINAL[key][f] !== undefined) st[f] = JSON.parse(JSON.stringify(ORIGINAL[key][f])); else delete st[f]; });
+        var e = lessonEdits[key];
+        if (e && e.data) {
+          Object.keys(e.data).forEach(function (f) {
+            if (f === 'task') st.task = Object.assign({}, st.task, e.data.task);
+            else if (f === 'mistakes' || f === 'include') { if (e.data[f].length) st[f] = e.data[f]; else delete st[f]; }
+            else if ((f === 'intro' || f === 'template') && !e.data[f]) delete st[f];
+            else st[f] = e.data[f];
+          });
+        }
+      });
+    });
+  }
+  function loadLessons(force) {
+    if (force || !lessonsReady) lessonsReady = S.lessons().then(applyLessons, function () { lessonsReady = null; });
+    return lessonsReady;
+  }
   function phaseOf(t, n) { var tr = T(t), st = stepOf(t, n); return tr.phases.filter(function (p) { return p.id === st.phase; })[0] || tr.phases[0]; }
   var LEVELS = ['MBBS (1st–2nd year)', 'MBBS (3rd–5th year)', 'BDS', 'Pharm-D / DPT / Nursing / Allied health', 'House officer / graduate doctor', 'Postgraduate trainee (FCPS / MS / MD)', 'MPhil / PhD', 'Other'];
   function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
@@ -206,7 +233,7 @@
       '<div class="row"><span class="avatar lg ' + (me.role === 'admin' ? '' : 'warm') + '">' + initials(me.name) + '</span><div><h3>' + esc(me.name) + '</h3><p class="small muted">' + esc(me.email) + '</p>' + (me.college ? '<p class="small muted">' + esc(me.college) + '</p>' : '') + '</div></div>' +
       '<div class="field"><span class="small muted">Appearance</span><div class="seg" id="theme-seg" style="--n:3;--i:' + idx + '"><button type="button" data-v="system">System</button><button type="button" data-v="light">Light</button><button type="button" data-v="dark">Dark</button></div></div>' +
       (me.role === 'member' && can('chat') ? '<button class="btn btn-primary btn-block" type="button" id="to-chat">' + ic('msgs') + 'Message your mentor</button>' : '') +
-      (isOwner() ? '<button class="btn btn-glass btn-block" type="button" id="team-btn">Team & permissions</button>' : '') +
+      (isOwner() ? '<button class="btn btn-glass btn-block" type="button" id="team-btn">Team & permissions</button><button class="btn btn-glass btn-block" type="button" id="lessons-btn">Lessons</button>' : '') +
       (me.role === 'admin' ? '<button class="btn btn-glass btn-block" type="button" id="apps">Connected apps</button>' : '') +
       '<button class="btn btn-glass btn-block" type="button" id="tour-btn">' + ic('sparkle') + 'How Researchette works</button>' +
       '<button class="btn btn-glass btn-block" type="button" id="chpw">Change password</button>' +
@@ -227,6 +254,7 @@
         var tc = el.querySelector('#to-chat'); if (tc) tc.addEventListener('click', function () { close(); go('chat'); });
         var ap = el.querySelector('#apps'); if (ap) ap.addEventListener('click', function () { close(); appsSheet(); });
         var tb = el.querySelector('#team-btn'); if (tb) tb.addEventListener('click', function () { close(); go('team'); });
+        var lb = el.querySelector('#lessons-btn'); if (lb) lb.addEventListener('click', function () { close(); go('lessons'); });
         el.querySelector('#logout').addEventListener('click', function () { S.signOut().then(function () { forgetMe(); close(); app.dataset.shell = ''; go('login'); }); });
         var rs = el.querySelector('#reset');
         if (rs) rs.addEventListener('click', function () {
@@ -290,14 +318,18 @@
     var r = (location.hash || '').slice(1);
     if (!me) { app.dataset.shell = ''; if (r !== 'login') setHash('login'); return loginView(); }
     if (r === 'login' || !r) { r = me.role === 'admin' ? 'overview' : 'today'; setHash(r); }
+    await loadLessons();
 
     var view, tab, badges = null, statsP = null;
     if (me.role === 'member') statsP = S.unread().then(function (x) { return { unread: x.unread }; }, function () { return null; });
     if (me.role === 'admin') {
       statsP = S.stats(me.id).catch(function () { return null; });
-      if ((r === 'applications' && !can('applications')) || ((r === 'messages' || /^chat-/.test(r)) && !can('chat')) || ((r === 'team' || /^admin-/.test(r)) && !isOwner())) { r = 'overview'; setHash(r); }
+      if ((r === 'applications' && !can('applications')) || ((r === 'messages' || /^chat-/.test(r)) && !can('chat')) || ((r === 'team' || /^admin-/.test(r) || r === 'lessons' || /^lesson-/.test(r)) && !isOwner())) { r = 'overview'; setHash(r); }
+      var lm = /^lesson-([a-z]+)-(\d+)$/.exec(r);
       if (/^review-/.test(r)) { view = vReview(r.slice(7)); tab = 'reviews'; }
       else if (r === 'team') { view = vTeam(); tab = 'overview'; }
+      else if (r === 'lessons') { view = vLessons(); tab = 'overview'; }
+      else if (lm) { view = vLesson(lm[1], +lm[2]); tab = 'overview'; }
       else if (/^admin-/.test(r)) { view = vTeamMember(r.slice(6)); tab = 'overview'; }
       else if (/^member-/.test(r)) { view = vMember(r.slice(7)); tab = 'members'; }
       else if (/^chat-/.test(r)) { view = vMentorChat(r.slice(5)); tab = 'messages'; }
@@ -612,7 +644,7 @@
     return '<figure class="viz"><figcaption>' + esc(v.title) + '</figcaption>' + body + '</figure>';
   }
 
-  function stepCard(t, n, st) {
+  function stepCard(t, n, st, preview) {
     var x = st[n - 1], d = stepOf(t, n), ph = phaseOf(t, n), sub = x.submission, total = st.length;
     if (x.status === 'locked') {
       var open = st.filter(function (s) { return s.status !== 'approved'; })[0];
@@ -638,10 +670,12 @@
         '<div class="ex-box ex-weak"><span class="lbl">Weak</span><p>' + esc(d.example.weak) + '</p></div>' +
         '<div class="ex-box ex-strong"><span class="lbl">Strong</span><p>' + esc(d.example.strong) + '</p></div>' +
         '<p class="why"><b>Why it works:</b> ' + esc(d.example.why) + '</p>' +
-        (x.status === 'current' || x.status === 'revision' ? '<button class="btn btn-primary" type="button" data-goto="2">Start the task →</button>' : '') + '</div>';
+        ((x.status === 'current' || x.status === 'revision') ? '<button class="btn btn-primary" type="button" data-goto="2">' + (preview ? 'See the task →' : 'Start the task →') + '</button>' : '') + '</div>';
       var by = function (s) { return s && s.reviewer ? '<div class="by"><span class="avatar">' + initials(s.reviewer.name) + '</span>' + esc(s.reviewer.name) + ' · ' + rel(s.reviewedAt) + '</div>' : ''; };
       var out = '<div class="panel stack"><span class="eyebrow">Your task</span><p class="prompt">' + esc(d.task.prompt) + '</p>' +
         (d.include ? '<div class="include"><b class="small">What to include</b><ul>' + d.include.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>' : '');
+      if (preview) return out + (d.template ? '<div class="stack"><span class="eyebrow">Template students can start from</span><div class="paper">' + esc(d.template) + '</div></div>' : '') +
+        '<p class="small muted">Students write their answer here and submit it for review.</p></div>';
       if (x.status === 'revision') out += '<div class="note red"><span class="small"><b>Your mentor asked for changes</b></span><p class="fb">' + esc(sub.feedback) + '</p>' + by(sub) + '</div>';
       if (x.status === 'current' || x.status === 'revision') {
         out += '<div class="field"><div class="row spread wrap"><label for="answer">Your answer</label>' + (d.template ? '<button class="btn btn-quiet btn-sm" type="button" id="use-tpl">Use a template</button>' : '') + '</div><textarea id="answer" placeholder="Write your answer here. Your draft saves automatically."></textarea></div>' +
@@ -740,6 +774,7 @@
           }).join('') + '</div>' : '<div class="glass empty"><span>No new applications.</span></div>') +
         '</section>' : '') +
       '</div>' +
+      (isOwner() ? '<a class="glass card team-card" href="#lessons"><div class="li-main"><h3>Lessons</h3><span class="small muted">Read every step as students see it, proofread it and edit the wording.</span></div>' + ic('chev', 'chev') + '</a>' : '') +
       (isOwner() ? '<a class="glass card team-card" href="#team"><div class="li-main"><h3>Team & permissions</h3><span class="small muted">Add mentors, choose what each mentor and student can do, and see everyone’s activity.</span></div>' + ic('chev', 'chev') + '</a>' : '');
     return { html: html };
   }
@@ -966,6 +1001,92 @@
   }
   function bindToggles(root, name, fn) {
     root.querySelectorAll('[data-' + name + ']').forEach(function (i) { i.addEventListener('change', function () { fn(i.getAttribute('data-' + name), i.checked, i); }); });
+  }
+
+  /* ---------- owners: lessons (proofread and edit) ---------- */
+  var lessonTrack = null;
+  async function vLessons() {
+    await loadLessons(true);
+    if (!lessonTrack) lessonTrack = C.tracks[0].id;
+    var tr = T(lessonTrack), edited = function (t, n) { return !!lessonEdits[t + ':' + n]; };
+    var count = Object.keys(lessonEdits).length;
+    return { html: '<a class="back" href="#overview">' + ic('back', 'chev') + 'Overview</a>' +
+      '<section class="page-head"><span class="eyebrow">Owners only</span><h1>Lessons</h1><p class="muted">Open any step to read it exactly as students see it, then edit the wording. Changes show up for students straight away. ' +
+        (count ? count + ' step' + (count === 1 ? ' has' : 's have') + ' been edited.' : 'Nothing has been edited yet.') + '</p></section>' +
+      '<div class="chips pick" id="ltracks">' + C.tracks.map(function (x) { return '<label><input type="radio" name="lt" value="' + x.id + '"' + (x.id === lessonTrack ? ' checked' : '') + '><span>' + esc(x.name) + '</span></label>'; }).join('') + '</div>' +
+      tr.phases.map(function (ph) {
+        var steps = tr.steps.filter(function (x) { return x.phase === ph.id; });
+        return '<div class="stack"><div class="phase-title"><h3>' + esc(ph.name) + '</h3></div><div class="glass list">' + steps.map(function (x) {
+          return '<a class="li" href="#lesson-' + tr.id + '-' + x.n + '"><span class="sicon ' + (edited(tr.id, x.n) ? 'review' : 'approved') + '">' + x.n + '</span><div class="li-main"><span class="li-title">' + esc(x.title) + '</span><span class="li-sub">' + esc(x.summary) + ' · ' + x.minutes + ' min</span></div>' +
+            '<div class="li-end">' + (edited(tr.id, x.n) ? '<span class="pill review">Edited</span>' : '') + ic('chev', 'chev') + '</div></a>';
+        }).join('') + '</div></div>';
+      }).join(''),
+      mount: function (m) { m.querySelectorAll('input[name="lt"]').forEach(function (i) { i.addEventListener('change', function () { lessonTrack = i.value; render(); }); }); } };
+  }
+  async function vLesson(t, n) {
+    await loadLessons(true);
+    if (!C.tracks.some(function (x) { return x.id === t; }) || !(n >= 1 && n <= T(t).steps.length)) { setHash('lessons'); return vLessons(); }
+    lessonTrack = t;
+    var tr = T(t), total = tr.steps.length, key = t + ':' + n, ed = lessonEdits[key], d = stepOf(t, n);
+    var fake = tr.steps.map(function (x) { return { step: x.n, status: x.n === n ? 'current' : 'approved', submission: null }; });
+    var card = stepCard(t, n, fake, true);
+    var nav = '<div class="row spread lesson-nav">' + (n > 1 ? '<a class="btn btn-quiet btn-sm" href="#lesson-' + t + '-' + (n - 1) + '">← Step ' + (n - 1) + '</a>' : '<span></span>') +
+      (n < total ? '<a class="btn btn-quiet btn-sm" href="#lesson-' + t + '-' + (n + 1) + '">Step ' + (n + 1) + ' →</a>' : '<span></span>') + '</div>';
+    var html = '<a class="back" href="#lessons">' + ic('back', 'chev') + 'Lessons</a>' +
+      '<div class="glass card lesson-bar"><div class="li-main"><span class="eyebrow">' + esc(tr.name) + ' · Step ' + n + ' of ' + total + '</span>' +
+        '<span class="small muted">' + (ed ? 'Edited by ' + esc(ed.by || 'an owner') + ' · ' + rel(ed.at) : 'Original wording') + '</span></div>' +
+        '<div class="row">' + (ed ? '<button class="btn btn-quiet btn-sm" type="button" id="l-reset">Reset to original</button>' : '') + '<button class="btn btn-primary btn-sm" type="button" id="l-edit">' + ic('pen') + 'Edit</button></div></div>' +
+      '<p class="small muted">Preview: this is exactly what students see.</p>' + card.html + nav;
+    return { html: html, mount: function (m) {
+      card.mount(m);
+      m.querySelector('#l-edit').addEventListener('click', function () { lessonEditor(m, t, n, d); });
+      var rs = m.querySelector('#l-reset');
+      if (rs) rs.addEventListener('click', function () {
+        sheet('<h2>Reset step ' + n + ' to the original?</h2><p class="muted">Your edits to “' + esc(d.title) + '” are removed and students see the built-in wording again.</p><div class="row"><button class="btn btn-glass" type="button" data-close style="flex:1">Cancel</button><button class="btn btn-primary" type="button" id="yes" style="flex:1">Reset</button></div>',
+          function (el, close) { el.querySelector('#yes').addEventListener('click', function () { S.resetLesson(t, n).then(function () { close(); toast('Back to the original'); loadLessons(true).then(render); }, function (e) { toast(e.message); }); }); });
+      });
+    } };
+  }
+  function lessonEditor(m, t, n, d) {
+    var lines = function (a) { return esc((a || []).join('\n')); };
+    var point = function (l) { return '<div class="le-point"><input class="le-h" value="' + esc(l.h) + '" placeholder="Heading" aria-label="Point heading"><textarea class="le-p" rows="3" placeholder="Explanation" aria-label="Point text">' + esc(l.p) + '</textarea><button class="btn btn-quiet btn-sm le-del" type="button">Remove</button></div>'; };
+    var area = function (id, label, val, rows, hint) { return '<div class="field"><label for="' + id + '">' + label + '</label>' + (hint ? '<span class="small muted">' + hint + '</span>' : '') + '<textarea id="' + id + '" rows="' + (rows || 3) + '">' + esc(val || '') + '</textarea></div>'; };
+    var box = m.querySelector('#stepcard');
+    box.outerHTML = '<form class="glass card stack-lg lesson-editor" id="lform" novalidate>' +
+      '<div><h2>Edit step ' + n + '</h2><p class="small muted">Charts and tables stay as they are. Leave a box empty to hide that section.</p></div>' +
+      '<div class="field"><label for="le-title">Title</label><input id="le-title" value="' + esc(d.title) + '"></div>' +
+      '<div class="row wrap" style="gap:12px"><div class="field" style="flex:3;min-width:200px"><label for="le-summary">Short description</label><input id="le-summary" value="' + esc(d.summary) + '"></div>' +
+        '<div class="field" style="flex:1;min-width:100px"><label for="le-min">Minutes</label><input id="le-min" type="number" min="1" max="240" value="' + d.minutes + '"></div></div>' +
+      '<h3>Learn</h3>' + area('le-intro', 'In simple words', d.intro, 3) +
+      '<div class="field"><span class="small" style="font-weight:600">Step by step</span><div id="le-points" class="stack">' + (d.lesson || []).map(point).join('') + '</div><button class="btn btn-glass btn-sm" type="button" id="le-add" style="justify-self:start">+ Add a point</button></div>' +
+      area('le-mistakes', 'Common mistakes to avoid', (d.mistakes || []).join('\n'), 4, 'One per line.') +
+      '<h3>Example</h3>' + area('le-weak', 'Weak example', d.example && d.example.weak, 3) + area('le-strong', 'Strong example', d.example && d.example.strong, 3) + area('le-why', 'Why it works', d.example && d.example.why, 3) +
+      '<h3>Task</h3>' + area('le-prompt', 'Task instructions', d.task && d.task.prompt, 3) +
+      area('le-include', 'What to include', (d.include || []).join('\n'), 4, 'One per line.') + area('le-template', 'Template', d.template, 5, 'What students get when they tap “Use a template”.') +
+      '<p class="error" id="le-err" role="alert" hidden></p>' +
+      '<div class="row spread wrap lesson-save"><button class="btn btn-quiet" type="button" id="le-cancel">Cancel</button><button class="btn btn-primary" type="submit">Save changes</button></div>' +
+    '</form>';
+    var f = m.querySelector('#lform'), pts = f.querySelector('#le-points');
+    var bindDel = function (root) { root.querySelectorAll('.le-del').forEach(function (b) { b.onclick = function () { b.closest('.le-point').remove(); }; }); };
+    bindDel(f);
+    f.querySelector('#le-add').addEventListener('click', function () { pts.insertAdjacentHTML('beforeend', point({ h: '', p: '' })); bindDel(pts); pts.lastElementChild.querySelector('input').focus(); });
+    f.querySelector('#le-cancel').addEventListener('click', render);
+    f.scrollIntoView({ behavior: reduce ? 'instant' : 'smooth', block: 'start' });
+    f.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var v = function (id) { return f.querySelector('#' + id).value.trim(); }, list = function (id) { return v(id).split('\n').map(function (x) { return x.trim(); }).filter(Boolean); };
+      var err = f.querySelector('#le-err');
+      if (!v('le-title')) { err.textContent = 'The step needs a title.'; err.hidden = false; return; }
+      var data = {
+        title: v('le-title'), summary: v('le-summary'), minutes: +v('le-min') || d.minutes, intro: v('le-intro'),
+        lesson: [].slice.call(pts.querySelectorAll('.le-point')).map(function (p) { return { h: p.querySelector('.le-h').value.trim(), p: p.querySelector('.le-p').value.trim() }; }).filter(function (l) { return l.h || l.p; }),
+        mistakes: list('le-mistakes'), example: { weak: v('le-weak'), strong: v('le-strong'), why: v('le-why') },
+        task: { prompt: v('le-prompt') }, include: list('le-include'), template: f.querySelector('#le-template').value.replace(/\s+$/, '')
+      };
+      var btn = f.querySelector('[type=submit]'); btn.disabled = true; btn.textContent = 'Saving…';
+      S.saveLesson(t, n, data).then(function () { toast('Saved. Students see the new wording now.'); loadLessons(true).then(render); },
+        function (x) { err.textContent = x.message; err.hidden = false; btn.disabled = false; btn.textContent = 'Save changes'; });
+    });
   }
 
   /* ---------- owners: team & permissions ---------- */

@@ -154,7 +154,8 @@ const EXTRA_SCHEMA = [
   'CREATE TABLE IF NOT EXISTS trusted_devices (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, created_at TEXT NOT NULL, expires TEXT NOT NULL)',
   'CREATE INDEX IF NOT EXISTS trusted_devices_user ON trusted_devices (user_id)',
   'CREATE TABLE IF NOT EXISTS login_tickets (ticket_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, purpose TEXT NOT NULL, attempts INTEGER DEFAULT 0, expires TEXT NOT NULL)',
-  'CREATE TABLE IF NOT EXISTS user_prefs (user_id TEXT PRIMARY KEY, welcomed_at TEXT)'
+  'CREATE TABLE IF NOT EXISTS user_prefs (user_id TEXT PRIMARY KEY, welcomed_at TEXT)',
+  'CREATE TABLE IF NOT EXISTS lesson_edits (key TEXT PRIMARY KEY, data TEXT NOT NULL, updated_by TEXT, updated_at TEXT NOT NULL)'
 ];
 let schemaReady = null;
 function ensureSchema(env) {
@@ -470,6 +471,25 @@ function toApp(r) {
     goals: JSON.parse(r.goals || '[]'), why: r.why || '', createdAt: r.created_at, status: r.status, paid: !!r.paid, userId: r.user_id || null };
 }
 
+/* ---------- lesson edits ----------
+   Owners can proofread and reword any step. Only these text fields can change; the charts and the
+   step order stay as they are in public/assets/curriculum.js. Edits are layered on top of that file. */
+function cleanLesson(d) {
+  d = d || {};
+  const out = {}, list = (v, n, max) => (Array.isArray(v) ? v : []).map((x) => str(x, max)).filter(Boolean).slice(0, n);
+  if (typeof d.title === 'string' && str(d.title, 120)) out.title = str(d.title, 120);
+  if (typeof d.summary === 'string') out.summary = str(d.summary, 200);
+  if (d.minutes != null && +d.minutes >= 1) out.minutes = Math.min(240, Math.round(+d.minutes));
+  if (typeof d.intro === 'string') out.intro = str(d.intro, 2000);
+  if (Array.isArray(d.lesson)) out.lesson = d.lesson.map((l) => ({ h: str(l && l.h, 150), p: str(l && l.p, 2000) })).filter((l) => l.h || l.p).slice(0, 12);
+  if (d.example && typeof d.example === 'object') out.example = { weak: str(d.example.weak, 3000), strong: str(d.example.strong, 3000), why: str(d.example.why, 3000) };
+  if (Array.isArray(d.mistakes)) out.mistakes = list(d.mistakes, 12, 300);
+  if (Array.isArray(d.include)) out.include = list(d.include, 12, 300);
+  if (typeof d.template === 'string') out.template = str(d.template, 4000);
+  if (d.task && typeof d.task === 'object' && typeof d.task.prompt === 'string') out.task = { prompt: str(d.task.prompt, 3000) };
+  return out;
+}
+
 /* ---------- routes ---------- */
 async function route(request, env, url, ctx) {
   const path = url.pathname.replace(/\/+$/, ''), method = request.method, DB = env.DB;
@@ -624,6 +644,16 @@ async function route(request, env, url, ctx) {
     return json({ id }, 201);
   }
 
+  /* lessons: everyone signed in gets the owners' edits, layered over the built-in curriculum */
+  if (path === '/api/lessons' && method === 'GET') {
+    await requireUser(request, env);
+    await ensureSchema(env);
+    const { results } = await DB.prepare('SELECT l.key, l.data, l.updated_at, u.name AS by_name FROM lesson_edits l LEFT JOIN users u ON u.id = l.updated_by').all();
+    const out = {};
+    results.forEach((r) => { try { out[r.key] = { data: JSON.parse(r.data), by: r.by_name || '', at: r.updated_at }; } catch {} });
+    return json(out);
+  }
+
   /* chat: members talk to their mentors */
   if (path === '/api/chat' && method === 'GET') {
     const u = await requireUser(request, env);
@@ -724,6 +754,24 @@ async function route(request, env, url, ctx) {
       return json(msg, 201);
     }
   }
+  if ((m = path.match(/^\/api\/admin\/lesson\/([a-z]+)\/(\d+)$/)) && (method === 'POST' || method === 'DELETE')) {
+    needOwner(admin);
+    const track = m[1], n = +m[2];
+    if (!TRACK_STEPS[track] || n < 1 || n > TRACK_STEPS[track]) throw new HttpError(404, 'That step doesn’t exist.');
+    const key = track + ':' + n, label = trackName(track) + ', Step ' + n;
+    if (method === 'DELETE') {
+      await DB.prepare('DELETE FROM lesson_edits WHERE key = ?').bind(key).run();
+      record(env, ctx, 'lesson.reset', admin.name + ' reset ' + label + ' to the original', [['Step', label]], 'lesson-' + track + '-' + n, admin.id);
+      return json({ ok: true });
+    }
+    const data = cleanLesson((await body(request)).data);
+    if (!Object.keys(data).length) throw bad('Nothing to save.');
+    await DB.prepare('INSERT INTO lesson_edits (key, data, updated_by, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT (key) DO UPDATE SET data = excluded.data, updated_by = excluded.updated_by, updated_at = excluded.updated_at')
+      .bind(key, JSON.stringify(data), admin.id, now()).run();
+    record(env, ctx, 'lesson.edited', admin.name + ' edited ' + label, [['Step', label], ['Fields', Object.keys(data).join(', ')]], 'lesson-' + track + '-' + n, admin.id);
+    return json({ ok: true, data });
+  }
+
   /* team: only owners add, change and remove mentors */
   if (path === '/api/admin/team' && method === 'GET') {
     needOwner(admin);

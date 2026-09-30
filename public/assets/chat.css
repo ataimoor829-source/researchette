@@ -1,0 +1,95 @@
+/* Landing-page chat: a small launcher in the corner, a greeting bubble that pops up once, and a chat panel with
+   instant answers to common questions. Messages are handed to WhatsApp (assets/chat.js). */
+.rc { position: fixed; z-index: 60; right: max(18px, env(safe-area-inset-right, 0px)); bottom: max(18px, calc(env(safe-area-inset-bottom, 0px) + 12px)); display: grid; justify-items: end; gap: 12px; pointer-events: none; font-family: var(--f-body); }
+.rc > * { pointer-events: auto; }
+
+/* launcher */
+.rc-btn { position: relative; width: 58px; height: 58px; border-radius: 50%; border: 0; cursor: pointer; display: grid; place-items: center; color: #fff;
+  background: linear-gradient(145deg, #4B5CF0, #2A38B8); box-shadow: 0 14px 30px -12px rgba(40, 52, 190, .7), inset 0 1px 0 rgba(255,255,255,.35);
+  -webkit-tap-highlight-color: transparent; transition: transform .35s var(--spring, cubic-bezier(.2,.9,.25,1)), box-shadow .3s; }
+.rc-btn:hover { transform: translateY(-2px) scale(1.04); }
+.rc-btn:active { transform: scale(.92); transition-duration: .1s; }
+.rc-btn:focus-visible { outline: 3px solid var(--pen); outline-offset: 3px; }
+.rc-btn svg { width: 26px; height: 26px; transition: transform .35s var(--spring, ease), opacity .2s; }
+.rc-btn .x { position: absolute; opacity: 0; transform: rotate(-90deg) scale(.6); }
+.rc.open .rc-btn .chat { opacity: 0; transform: rotate(90deg) scale(.6); }
+.rc.open .rc-btn .x { opacity: 1; transform: none; }
+.rc-dot { position: absolute; top: 3px; right: 3px; width: 14px; height: 14px; border-radius: 50%; background: #2BD17E; box-shadow: 0 0 0 3px var(--paper, #fff); }
+.rc-badge { position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 99px; background: #E5484D; color: #fff; font: 700 .72rem/20px var(--f-body); text-align: center; box-shadow: 0 0 0 3px var(--paper, #fff); transform: scale(0); transition: transform .4s var(--spring, ease); }
+.rc.unread .rc-badge { transform: scale(1); }
+.rc.unread .rc-dot { opacity: 0; }
+
+/* greeting bubble */
+.rc-hello { position: relative; max-width: min(300px, calc(100vw - 36px)); padding: 14px 16px 14px 14px; border-radius: 20px 20px 6px 20px; display: grid; grid-template-columns: 38px 1fr; gap: 10px; align-items: start; text-align: left;
+  background: var(--glass-strong, rgba(255,255,255,.92)); color: var(--ink); border: 1px solid var(--glass-edge, rgba(255,255,255,.9)); cursor: pointer; font: inherit;
+  -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%); box-shadow: 0 18px 44px -18px rgba(20, 28, 70, .45), inset 0 1px 0 var(--glass-hi, #fff);
+  transform-origin: 100% 100%; animation: rc-pop .55s var(--spring, cubic-bezier(.2,.9,.25,1)) both; }
+.rc-hello[hidden] { display: none; }
+.rc-hello.out { animation: rc-popout .22s ease-in both; }
+.rc-hello:active { transform: scale(.98); }
+.rc-av { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: linear-gradient(145deg, #4B5CF0, #0B9E8C); color: #fff; }
+.rc-av svg { width: 22px; height: 22px; }
+.rc-hello b { display: block; font-size: .95rem; }
+.rc-hello div span { display: block; color: var(--muted); font-size: .86rem; line-height: 1.45; margin-top: 2px; }
+.rc-close { position: absolute; top: -8px; left: -8px; width: 24px; height: 24px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer; background: var(--ink); color: var(--paper); font: 700 .8rem/1 var(--f-body); box-shadow: 0 4px 10px -4px rgba(0,0,0,.4); }
+@keyframes rc-pop { from { opacity: 0; transform: translateY(12px) scale(.7); } }
+@keyframes rc-popout { to { opacity: 0; transform: translateY(8px) scale(.85); } }
+
+/* panel */
+.rc-panel { width: min(370px, calc(100vw - 36px)); height: min(560px, calc(100dvh - 120px)); border-radius: 26px; overflow: hidden; display: grid; grid-template-rows: auto 1fr auto;
+  background: var(--paper, #fff); border: 1px solid var(--line, rgba(0,0,0,.08));
+  box-shadow: 0 30px 70px -24px rgba(20, 28, 70, .55), inset 0 1px 0 var(--glass-hi, #fff);
+  transform-origin: 100% 100%; animation: rc-open .45s var(--spring, cubic-bezier(.2,.9,.25,1)) both; }
+.rc-panel[hidden] { display: none; }
+.rc-panel.out { animation: rc-close .22s ease-in both; }
+@keyframes rc-open { from { opacity: 0; transform: translateY(16px) scale(.92); } }
+@keyframes rc-close { to { opacity: 0; transform: translateY(12px) scale(.94); } }
+.rc-head { display: grid; grid-template-columns: 40px 1fr auto; gap: 11px; align-items: center; padding: 14px 14px 14px 16px; color: #fff; background: linear-gradient(135deg, #3448D8, #1E2766 70%, #0F6F66); }
+.rc-head .rc-av { width: 40px; height: 40px; background: rgba(255,255,255,.16); }
+.rc-head b { display: block; font-size: 1rem; }
+.rc-head small { display: flex; align-items: center; gap: 6px; font-size: .78rem; opacity: .85; }
+.rc-head small::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #2BD17E; }
+.rc-mute { width: 34px; height: 34px; border-radius: 50%; border: 0; cursor: pointer; display: grid; place-items: center; color: #fff; background: rgba(255,255,255,.14); }
+.rc-mute svg { width: 17px; height: 17px; }
+.rc-body { overflow-y: auto; overscroll-behavior: contain; padding: 16px 14px 8px; display: flex; flex-direction: column; gap: 8px; }
+.rc-msg { max-width: 86%; padding: 10px 13px; border-radius: 18px; font-size: .92rem; line-height: 1.5; white-space: pre-line; animation: rc-msg .35s var(--spring, ease) both; }
+.rc-msg.bot { align-self: flex-start; background: var(--pen-soft, rgba(52,72,216,.09)); color: var(--ink); border-bottom-left-radius: 6px; }
+.rc-msg.me { align-self: flex-end; background: linear-gradient(145deg, #4B5CF0, #3448D8); color: #fff; border-bottom-right-radius: 6px; }
+.rc-msg a { color: inherit; font-weight: 600; }
+@keyframes rc-msg { from { opacity: 0; transform: translateY(8px) scale(.96); } }
+.rc-typing { align-self: flex-start; display: inline-flex; gap: 4px; padding: 13px 14px; border-radius: 18px 18px 18px 6px; background: var(--pen-soft, rgba(52,72,216,.09)); }
+.rc-typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--pen, #3448D8); opacity: .35; animation: rc-dot 1s ease-in-out infinite; }
+.rc-typing i:nth-child(2) { animation-delay: .15s; } .rc-typing i:nth-child(3) { animation-delay: .3s; }
+@keyframes rc-dot { 40% { opacity: 1; transform: translateY(-3px); } }
+.rc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.rc-chips button { font: 600 .82rem var(--f-body); padding: .5em .9em; border-radius: 99px; border: 1px solid color-mix(in srgb, var(--pen, #3448D8) 35%, transparent); background: transparent; color: var(--pen, #3448D8); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background-color .2s, transform .1s; animation: rc-msg .35s var(--spring, ease) both; }
+.rc-chips button:hover { background: var(--pen-soft); }
+.rc-chips button:active { transform: scale(.95); }
+.rc-cta { display: grid; gap: 6px; align-self: stretch; animation: rc-msg .35s var(--spring, ease) both; }
+.rc-cta a { display: flex; align-items: center; justify-content: center; gap: 8px; padding: .8em 1em; border-radius: 14px; font-weight: 600; font-size: .92rem; text-decoration: none; }
+.rc-cta .wa { background: #1FAF5A; color: #fff; box-shadow: 0 10px 22px -12px rgba(31, 175, 90, .8); }
+.rc-cta .wa svg { width: 18px; height: 18px; }
+.rc-cta .em { color: var(--muted); font-size: .84rem; padding: .3em; }
+.rc-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; padding: 10px 12px 12px; border-top: 1px solid var(--line); }
+.rc-form textarea { resize: none; min-height: 42px; max-height: 110px; padding: 10px 14px; border-radius: 21px; border: 1px solid var(--line); background: var(--paper, #fff); color: var(--ink); font: .92rem/1.4 var(--f-body); outline: none; }
+.rc-form textarea:focus { border-color: var(--pen); box-shadow: 0 0 0 3px var(--pen-soft); }
+.rc-send { width: 42px; height: 42px; border-radius: 50%; border: 0; cursor: pointer; display: grid; place-items: center; color: #fff; background: linear-gradient(145deg, #4B5CF0, #3448D8); transition: transform .1s, opacity .2s; }
+.rc-send:disabled { opacity: .4; cursor: default; }
+.rc-send:not(:disabled):active { transform: scale(.9); }
+.rc-send svg { width: 18px; height: 18px; }
+
+/* the greeting and panel sit above the launcher; on phones the panel fills most of the screen width */
+@media (max-width: 520px) {
+  .rc { right: 14px; bottom: max(14px, calc(env(safe-area-inset-bottom, 0px) + 10px)); }
+  .rc-btn { width: 54px; height: 54px; }
+  .rc-panel { width: calc(100vw - 28px); height: min(560px, calc(100dvh - 100px)); }
+}
+/* keep out of the way of the phone menu */
+html.menu-open .rc { opacity: 0; pointer-events: none; }
+.rc { transition: opacity .2s; }
+@media (prefers-reduced-motion: reduce) {
+  .rc-hello, .rc-panel, .rc-msg, .rc-chips button, .rc-cta { animation: rc-fade .2s ease both; }
+  .rc-hello.out, .rc-panel.out { animation: rc-fade .15s ease reverse both; }
+  .rc-typing i { animation: none; opacity: .6; }
+}
+@keyframes rc-fade { from { opacity: 0; } }

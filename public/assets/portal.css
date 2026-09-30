@@ -491,6 +491,13 @@ details[open] > summary .chev.down { transform: rotate(-90deg); }
 .tour-slide h2 { font-size: clamp(1.45rem, 1.2rem + 1vw, 1.8rem); letter-spacing: -.02em; }
 .tour-slide p { color: var(--muted); max-width: 34ch; line-height: 1.55; }
 .tour-slide p b { color: var(--ink); font-weight: 600; }
+.tour-steps { margin: 2px 0 4px; padding: 0 0 0 1.4em; display: grid; gap: 8px; text-align: left; max-width: 34ch; color: var(--muted); font-size: .95rem; line-height: 1.45; }
+.tour-steps li::marker { color: var(--pen); font-weight: 700; }
+.tour-steps b { color: var(--ink); font-weight: 600; }
+.tour-initials { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 5px; border-radius: 50%; font: 700 .7rem var(--f-display); color: #fff !important; background: linear-gradient(135deg, #DD4460, #F2A65A); vertical-align: middle; }
+.tour-initials.admin { background: linear-gradient(135deg, #3448D8, #0B9E8C); }
+.tour-slide #tour-pw { margin-top: 6px; }
+.tour-slide #tour-pw svg { width: 16px; height: 16px; }
 .tour-slide .hand { font-size: 1.35rem; margin-top: 4px; color: var(--redpen); transform: rotate(-3deg); }
 .tour-art { position: relative; width: 104px; height: 104px; border-radius: 34px; display: grid; place-items: center; margin-bottom: 4px; }
 .tour-art svg { width: 46px; height: 46px; }

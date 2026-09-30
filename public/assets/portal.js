@@ -386,8 +386,13 @@
      the account menu. Friendly, short slides; swipe or tap Next. */
   function tourSlides() {
     var fn = first(me.name);
+    // everyone starts with a temporary password from their welcome message, so this comes first
+    var pwSlide = { icon: 'lock', tone: 'amber', hand: 'takes 30 seconds', title: 'First, make your own password', action: 'password',
+      text: 'Your login came with a <b>temporary password</b>. Swap it for one only you know:',
+      steps: ['Tap your initials <b class="tour-initials' + (me.role === 'admin' ? ' admin' : '') + '">' + initials(me.name) + '</b> at the top right.', 'Tap <b>Change password</b>.', 'Type the temporary password as <b>Current password</b>, then your new one twice (at least 8 characters).'] };
     if (me.role === 'member') return [
       { icon: 'sparkle', tone: 'pen', hand: 'so glad you’re here!', title: 'Welcome, ' + fn + '!', text: 'This is your research home. Together we’ll go from an idea in your head to a published paper, one small step at a time. No rush, no stress.' },
+      pwSlide,
       { icon: 'today', tone: 'teal', hand: 'one cup of chai', title: 'One small task a day', text: 'Open <b>Today</b> and your step is waiting: a short lesson, an example and a task. Most take 20 to 40 minutes.' },
       { icon: 'pen', tone: 'amber', hand: 'drafts save by themselves', title: 'Learn, peek, write', text: 'Read <b>Learn</b>, peek at the <b>Example</b> to see what good looks like, then write your answer in <b>Task</b>. Stop any time; your draft is kept.' },
       { icon: 'send', tone: 'pen', hand: 'you’re never on your own', title: 'Your mentor reads it all', text: 'Tap <b>Send to mentor</b>. You’ll hear back within about 48 hours. <b>Approved</b>? The next step unlocks. <b>Needs changes</b>? Totally normal. Every researcher rewrites. Fix it and send again.' },
@@ -397,6 +402,7 @@
     ].filter(Boolean);
     return [
       { icon: 'sparkle', tone: 'pen', hand: 'welcome aboard!', title: 'Hi, ' + fn + '!', text: 'This is your mentor desk. Here’s a 30-second tour of where everything lives.' },
+      pwSlide,
       can('review') ? { icon: 'inbox', tone: 'teal', hand: 'oldest first', title: 'Reviews', text: 'Your students’ submissions land in <b>Reviews</b>. Read, write kind and clear feedback, then <b>Approve</b> (the next step unlocks) or <b>Request changes</b>. Try to reply within 48 hours.' } : null,
       can('chat') ? { icon: 'msgs', tone: 'amber', hand: 'the badge shows what’s new', title: 'Messages', text: 'Questions from your students arrive in <b>Messages</b>. After a review you can also let them know on WhatsApp in one tap.' } : null,
       { icon: 'users', tone: 'pen', hand: 'everything in one place', title: seesAll() ? 'Members' : 'Your students', text: 'Open a student to see every step they’ve done, their feedback history, and buttons to chat or WhatsApp them.' },
@@ -420,7 +426,12 @@
           var x = slides[at], lastOne = at === slides.length - 1;
           stage.innerHTML = '<div class="tour-slide ' + (dir < 0 ? 'from-left' : 'from-right') + '">' +
             '<div class="tour-art ' + x.tone + '">' + ic(x.icon) + '<i class="d1"></i><i class="d2"></i><i class="d3"></i></div>' +
-            '<span class="hand">' + x.hand + '</span><h2>' + x.title + '</h2><p>' + x.text + '</p></div>';
+            '<span class="hand">' + x.hand + '</span><h2>' + x.title + '</h2><p>' + x.text + '</p>' +
+            (x.steps ? '<ol class="tour-steps">' + x.steps.map(function (st) { return '<li>' + st + '</li>'; }).join('') + '</ol>' : '') +
+            (x.action === 'password' ? '<button class="btn btn-glass btn-sm" type="button" id="tour-pw">' + ic('lock') + 'Change it now</button><span class="small muted">or do it later, any time</span>' : '') +
+            '</div>';
+          var pwb = stage.querySelector('#tour-pw');
+          if (pwb) pwb.addEventListener('click', function () { close(); setTimeout(passwordSheet, 350); });
           el.querySelectorAll('.tour-dots button').forEach(function (d, j) { d.classList.toggle('on', j === at); d.setAttribute('aria-selected', j === at); });
           prev.style.visibility = at ? 'visible' : 'hidden';
           next.textContent = lastOne ? (x.last || 'Done') : 'Next';

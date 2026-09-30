@@ -30,6 +30,7 @@
     sparkle: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 3v4M21 5h-4M5 17v3M6.5 18.5h-3"/>',
     phone: '<rect x="7" y="2" width="10" height="20" rx="3"/><path d="M11 18h2"/>',
     pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+    book: '<path d="M4 19.5V5a2 2 0 0 1 2-2h13v16H6.5a2.5 2.5 0 0 0 0 5H19"/><path d="M8 7h7M8 11h5"/>',
     paper: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>'
   };
   function ic(n, cls) { return '<svg class="' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + P[n] + '</svg>'; }
@@ -210,7 +211,7 @@
 
   /* ---------- shell ---------- */
   var TABS = {
-    member: [{ id: 'today', label: 'Today', icon: 'today' }, { id: 'roadmap', label: 'Roadmap', icon: 'map' }, { id: 'feedback', label: 'Feedback', icon: 'chat' }, { id: 'chat', label: 'Chat', icon: 'msgs', badge: 'unread' }],
+    member: [{ id: 'today', label: 'Today', icon: 'today' }, { id: 'roadmap', label: 'Roadmap', icon: 'map' }, { id: 'basics', label: 'Writing', icon: 'book' }, { id: 'feedback', label: 'Feedback', icon: 'chat' }, { id: 'chat', label: 'Chat', icon: 'msgs', badge: 'unread' }],
     admin: [{ id: 'overview', label: 'Overview', icon: 'home' }, { id: 'reviews', label: 'Reviews', icon: 'inbox', badge: 'pending' }, { id: 'messages', label: 'Messages', icon: 'msgs', badge: 'unreadChats' }, { id: 'members', label: 'Members', icon: 'users' }, { id: 'applications', label: 'Applications', icon: 'mail', badge: 'applications' }]
   };
   function myTabs() {
@@ -256,6 +257,18 @@
     });
   }
   addEventListener('resize', function () { if (me) setTabs(currentTab); });
+  /* phones, members: the top bar slides away while you scroll down and comes back as soon as you scroll up */
+  (function () {
+    var phone = matchMedia('(max-width: 760px)'), lastY = scrollY, hidden = false, ticking = false, root = document.documentElement;
+    function set(h) { if (h !== hidden) { hidden = h; root.classList.toggle('bar-hide', h); } }
+    function check() {
+      ticking = false;
+      var y = Math.max(0, scrollY), d = y - lastY;
+      if (!me || me.role !== 'member' || !phone.matches || y < 80) { set(false); lastY = y; return; }
+      if (d > 6) { set(true); lastY = y; } else if (d < -6) { set(false); lastY = y; }
+    }
+    addEventListener('scroll', function () { if (!ticking) { ticking = true; requestAnimationFrame(check); } }, { passive: true });
+  })();
   var currentTab = null;
 
   function accountSheet() {
@@ -266,7 +279,7 @@
       (me.role === 'member' && can('chat') ? '<button class="btn btn-primary btn-block" type="button" id="to-chat">' + ic('msgs') + 'Message your mentor</button>' : '') +
       (isOwner() ? '<button class="btn btn-glass btn-block" type="button" id="team-btn">Team & permissions</button>' : '') +
       (me.role === 'admin' && canViewLessons() ? '<button class="btn btn-glass btn-block" type="button" id="lessons-btn">' + (can('edit_lessons') ? 'Edit lessons' : 'Lessons') + '</button>' : '') +
-      (me.role === 'admin' ? '<button class="btn btn-glass btn-block" type="button" id="apps">Connected apps</button>' : '') +
+      (isOwner() ? '<button class="btn btn-glass btn-block" type="button" id="apps">Connected apps</button>' : '') +
       '<button class="btn btn-glass btn-block" type="button" id="tour-btn">' + ic('sparkle') + 'How Researchette works</button>' +
       '<button class="btn btn-glass btn-block" type="button" id="chpw">Change password</button>' +
       '<button class="btn btn-glass btn-block" type="button" id="logout">Log out</button>' +
@@ -376,6 +389,8 @@
       if (sm) { view = vStep(sm[1], +sm[2]); tab = 'roadmap'; }
       else if (r === 'roadmap') { view = vRoadmap(); tab = r; }
       else if (r === 'feedback') { view = vFeedback(); tab = r; }
+      else if (r === 'basics') { view = vBasics(); tab = r; }
+      else if (/^basics-/.test(r)) { view = vBasic(r.slice(7)); tab = 'basics'; }
       else if (r === 'chat' && can('chat')) { view = vMemberChat(); tab = r; }
       else { view = vToday(); tab = 'today'; if (r !== 'today') setHash('today'); }
     }
@@ -465,7 +480,7 @@
       { icon: 'pen', tone: 'amber', hand: 'drafts save by themselves', title: 'Learn, peek, write', text: 'Read <b>Learn</b>, peek at the <b>Example</b> to see what good looks like, then write your answer in <b>Task</b>. Stop any time; your draft is kept.' },
       { icon: 'send', tone: 'pen', hand: 'you’re never on your own', title: 'Your mentor reads it all', text: 'Tap <b>Send to mentor</b>. You’ll hear back within about 48 hours. <b>Approved</b>? The next step unlocks. <b>Needs changes</b>? Totally normal. Every researcher rewrites. Fix it and send again.' },
       can('chat') ? { icon: 'msgs', tone: 'teal', hand: 'no silly questions', title: 'Stuck? Just ask', text: 'Tap <b>Chat</b>, or <b>Ask your mentor</b> under today’s task. Your mentor sees which step you’re on.' } : null,
-      { icon: 'map', tone: 'amber', hand: 'watch it fill up', title: 'See how far you’ve come', text: '<b>Roadmap</b> shows every step, and <b>Feedback</b> keeps all your mentor’s comments in one place.' },
+      { icon: 'map', tone: 'amber', hand: 'watch it fill up', title: 'See how far you’ve come', text: '<b>Roadmap</b> shows every step, <b>Writing</b> teaches how to write each part of a paper, and <b>Feedback</b> keeps all your mentor’s comments in one place.' },
       { icon: 'phone', tone: 'pen', hand: 'one tap away', title: 'Keep it on your phone', text: 'Add Researchette to your home screen and it opens like an app. On iPhone: tap <b>Share</b>, then <b>Add to Home Screen</b>.', last: 'Let’s begin' }
     ].filter(Boolean);
     return [
@@ -935,6 +950,33 @@
     var html = '<section class="page-head"><span class="eyebrow">Roadmap</span><h1>' + esc(T(t).name) + '</h1><div class="row"><div class="bar" style="flex:1"><i style="width:' + Math.round(done / total * 100) + '%"></i></div><span class="small muted">' + done + ' of ' + total + '</span></div></section>' +
       progSwitch(t) + roadmapList(t, st, function (x) { return x.status === 'locked' ? '' : '#step-' + t + '-' + x.step; });
     return { html: html, mount: bindProg };
+  }
+
+  /* ---------- member: writing basics (assets/writing.js) ---------- */
+  var W = window.RT_WRITING || [];
+  function vBasics() {
+    var html = '<section class="page-head"><span class="eyebrow">Writing basics</span><h1>How to write each part</h1><p class="muted">The pattern for every part of a research paper, with sentence starters, a template to fill in and an example. Start with the first one.</p></section>' +
+      '<div class="glass list">' + W.map(function (w, i) {
+        return '<a class="li" href="#basics-' + w.id + '"><span class="sicon current">' + (i === 0 ? ic('sparkle') : i) + '</span><div class="li-main"><span class="li-title">' + esc(w.title) + '</span><span class="li-sub">' + esc(w.short) + ' · ' + esc(w.length) + '</span></div><div class="li-end">' + ic('chev', 'chev') + '</div></a>';
+      }).join('') + '</div>';
+    return { html: html };
+  }
+  function vBasic(id) {
+    var i = W.map(function (w) { return w.id; }).indexOf(id);
+    if (i < 0) { setHash('basics'); return vBasics(); }
+    var w = W[i], prev = W[i - 1], next = W[i + 1];
+    var html = '<a class="back" href="#basics">' + ic('back', 'chev') + 'Writing basics</a>' +
+      '<section class="page-head"><span class="eyebrow">' + (i ? 'Part ' + i + ' of ' + (W.length - 1) : 'Start here') + ' · ' + esc(w.length) + '</span><h1>' + esc(w.title) + '</h1></section>' +
+      '<article class="glass card stack-lg">' +
+        '<div class="note simple"><span class="eyebrow">In simple words</span><p>' + esc(w.what) + '</p></div>' +
+        '<div class="stack"><span class="eyebrow">The pattern</span><ol class="lesson">' + w.pattern.map(function (s, k) { return '<li><span class="n">' + (k + 1) + '</span><div><b>' + esc(s.h) + '</b><p>' + esc(s.p) + '</p></div></li>'; }).join('') + '</ol></div>' +
+        (w.starters ? '<div class="stack"><span class="eyebrow">' + (i ? 'Sentence starters' : 'Tips') + '</span><ul class="starters">' + w.starters.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul></div>' : '') +
+        (w.example ? '<div class="stack"><span class="eyebrow">Example</span><div class="ex-box ex-weak"><span class="lbl">Weak</span><p>' + esc(w.example.weak) + '</p></div><div class="ex-box ex-strong"><span class="lbl">Strong</span><p>' + esc(w.example.strong) + '</p></div></div>' : '') +
+        '<div class="stack"><div class="row spread wrap"><span class="eyebrow">' + (i ? 'Template to fill in' : 'The order') + '</span><button class="btn btn-quiet btn-sm" type="button" id="cp-tpl">Copy</button></div><div class="paper" id="tpl">' + esc(w.template) + '</div></div>' +
+        '<div class="note mistakes"><span class="eyebrow">Common mistakes to avoid</span><ul>' + w.mistakes.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul></div>' +
+      '</article>' +
+      '<div class="row spread wrap basics-nav">' + (prev ? '<a class="btn btn-glass" href="#basics-' + prev.id + '">' + ic('back') + esc(prev.title) + '</a>' : '<span></span>') + (next ? '<a class="btn btn-primary" href="#basics-' + next.id + '">Next: ' + esc(next.title) + ' →</a>' : '<a class="btn btn-primary" href="#today">Back to today’s step</a>') + '</div>';
+    return { html: html, mount: function (m) { m.querySelector('#cp-tpl').addEventListener('click', function () { copy(w.template, m.querySelector('#tpl')); }); } };
   }
 
   /* ---------- member: feedback ---------- */

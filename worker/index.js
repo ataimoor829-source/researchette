@@ -764,6 +764,7 @@ async function route(request, env, url, ctx) {
   }
   if (path === '/api/admin/connections' && method === 'GET') {
     await ensureSchema(env);
+    if (!admin.owner) throw new HttpError(403, 'Connected apps are for owners only.');
     const { results } = await DB.prepare("SELECT t.client_id, c.name, MIN(t.created_at) AS since, MAX(t.created_at) AS last FROM oauth_tokens t LEFT JOIN oauth_clients c ON c.client_id = t.client_id WHERE t.user_id = ? AND t.kind = 'refresh' AND t.expires > ? GROUP BY t.client_id, c.name ORDER BY last DESC")
       .bind(admin.id, now()).all();
     return json(results.map((r) => ({ clientId: r.client_id, name: r.name || 'Connected app', since: r.since, lastUsed: r.last })));

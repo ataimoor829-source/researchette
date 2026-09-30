@@ -397,6 +397,7 @@
     scrollTo({ top: 0, behavior: 'instant' });
     if (v.mount) v.mount(main);
     placeInstall();
+    if (main.querySelector('[data-prog]')) { if (window.requestIdleCallback) requestIdleCallback(preloadProgress, { timeout: 1500 }); else setTimeout(preloadProgress, 600); }
     if (me.welcome && !tourShown) { tourShown = true; setTimeout(function () { tour(true); }, 450); }
   }
   addEventListener('hashchange', render);
@@ -603,23 +604,38 @@
   function bindProg(root) { root.querySelectorAll('[data-prog]').forEach(function (b) { b.addEventListener('click', programmeSheet); }); }
 
   /* members choose (or start) a programme; mentors can also assign them */
-  async function programmeSheet() {
-    var prog = await S.progress(me.id);
+  /* programme picker: opens at once from what the page already knows; progress numbers fill in when they
+     arrive (usually already loaded in the background, see preloadProgress) */
+  var progCache = null, progAt = 0;
+  function preloadProgress() {
+    if (me && me.role === 'member' && Date.now() - progAt > 20000) { progAt = Date.now(); S.progress(me.id).then(function (p) { progCache = p; }, function () { progAt = 0; }); }
+  }
+  function programmeSheet() {
+    var list = C.tracks.filter(function (t) { return can('choose_programme') || (me.tracks || []).indexOf(t.id) > -1; });
+    function row(t, prog) {
+      var p = prog && prog[t.id], on = t.id === me.activeTrack;
+      var sub = !prog ? t.steps.length + ' steps' : p ? p.done + ' of ' + p.total + ' steps approved' : t.steps.length + ' steps · not started';
+      return '<span class="sicon ' + (on ? 'current' : p ? 'approved' : 'locked') + '">' + (on ? ic('check') : t.steps.length) + '</span>' +
+        '<div class="li-main"><span class="li-title">' + esc(t.name) + '</span><span class="li-sub">' + esc(sub) + '</span></div>' +
+        '<div class="li-end">' + (on ? '<span class="pill approved">Current</span>' : '<span class="pill">' + (!prog || p ? 'Switch' : 'Start') + '</span>') + '</div>';
+    }
     sheet('<h2>Choose a programme</h2><p class="muted small">Each programme has its own step-by-step roadmap. Your progress in each one is saved.</p>' +
       (can('choose_programme') ? '' : '<p class="small muted">Your mentor chooses which programmes you can follow.</p>') +
-      '<div class="glass list">' + C.tracks.filter(function (t) { return can('choose_programme') || (me.tracks || []).indexOf(t.id) > -1; }).map(function (t) {
-        var p = prog[t.id], on = t.id === me.activeTrack;
-        var sub = p ? p.done + ' of ' + p.total + ' steps approved' : t.steps.length + ' steps · not started';
-        return '<button class="li li-btn" type="button" data-t="' + t.id + '"><span class="sicon ' + (on ? 'current' : p ? 'approved' : 'locked') + '">' + (on ? ic('check') : t.steps.length) + '</span>' +
-          '<div class="li-main"><span class="li-title">' + esc(t.name) + '</span><span class="li-sub">' + esc(sub) + '</span></div>' +
-          '<div class="li-end">' + (on ? '<span class="pill approved">Current</span>' : '<span class="pill">' + (p ? 'Switch' : 'Start') + '</span>') + '</div></button>';
-      }).join('') + '</div><button class="btn btn-quiet btn-block btn-sm" type="button" data-close>Close</button>',
+      '<div class="glass list" id="prog-list">' + list.map(function (t) { return '<button class="li li-btn" type="button" data-t="' + t.id + '">' + row(t, progCache) + '</button>'; }).join('') +
+      '</div><button class="btn btn-quiet btn-block btn-sm" type="button" data-close>Close</button>',
       function (el, close) {
+        var busy = false;
+        function fill(prog) { el.querySelectorAll('[data-t]').forEach(function (b) { if (!b.classList.contains('busy')) b.innerHTML = row(T(b.dataset.t), prog); }); }
+        // refresh the numbers in the background (instant when they were preloaded)
+        S.progress(me.id).then(function (p) { progCache = p; progAt = Date.now(); if (el.isConnected) fill(p); }, function () {});
         el.querySelectorAll('[data-t]').forEach(function (b) {
           b.addEventListener('click', function () {
             var id = b.dataset.t;
             if (id === me.activeTrack) { close(); return; }
-            S.setActiveTrack(me.id, id).then(function (u) { rememberMe(u); close(); toast('Now on: ' + T(id).name); go('today'); });
+            if (busy) return; busy = true;
+            b.classList.add('busy'); var pill = b.querySelector('.li-end'); if (pill) pill.innerHTML = '<span class="pill review">Switching…</span>';
+            S.setActiveTrack(me.id, id).then(function (u) { rememberMe(u); progAt = 0; close(); toast('Now on: ' + T(id).name); go('today'); },
+              function (e) { busy = false; b.classList.remove('busy'); fill(progCache); toast(e.message); });
           });
         });
       });

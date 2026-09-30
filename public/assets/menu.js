@@ -1,0 +1,77 @@
+/* Phone menu for the public pages: a menu button in the top bar opens a panel with every page and
+   section of the site. Shown at 860px and below, where the top-bar links don't fit. */
+(function () {
+  var links = document.querySelector('.nav .nav-links');
+  if (!links) return;
+  // the host may serve pages with or without ".html" (/research or /research.html)
+  var page = function (u) { return (u.split('#')[0].split('/').pop() || 'index').replace(/\.html$/, ''); };
+  var here = page(location.pathname), home = here === 'index';
+  var at = function (hash) { return (home ? '' : 'index.html') + hash; };
+  var I = {
+    home: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
+    book: '<path d="M4 19V5a2 2 0 0 1 2-2h14v16H6a2 2 0 0 0-2 2z"/><path d="M20 19v2H6"/>',
+    map: '<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>',
+    gift: '<rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M12 8S10 3 7.5 4.5 9 8 12 8zm0 0s2-5 4.5-3.5S15 8 12 8z"/>',
+    users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/>',
+    paper: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',
+    star: '<path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/>'
+  };
+  var ic = function (n) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + I[n] + '</svg>'; };
+  var ITEMS = [
+    ['Home', home ? '#top' : 'index.html', 'home'],
+    ['Programmes', at('#tracks'), 'book'],
+    ['Roadmap', at('#roadmap'), 'map'],
+    ['Free guides', at('#guides'), 'gift'],
+    ['Mentors', at('#mentors'), 'users'],
+    ['Student publications', 'research.html', 'paper', 'pub'],
+    ['Reviews', 'reviews.html', 'star']
+  ];
+
+  var btn = document.createElement('button');
+  btn.type = 'button'; btn.className = 'menu-btn'; btn.setAttribute('aria-label', 'Menu');
+  btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-controls', 'site-menu');
+  btn.innerHTML = '<span aria-hidden="true"></span><span aria-hidden="true"></span>';
+  links.appendChild(btn);
+
+  var bg = document.createElement('div'); bg.className = 'menu-bg'; bg.hidden = true;
+  var panel = document.createElement('nav'); panel.className = 'menu-panel'; panel.id = 'site-menu'; panel.hidden = true; panel.setAttribute('aria-label', 'Site menu');
+  panel.innerHTML = '<ul>' + ITEMS.map(function (x) {
+    var cur = (home && x[0] === 'Home') || (x[1].indexOf('#') < 0 && page(x[1]) === here);
+    return '<li><a class="' + (x[3] || '') + '" href="' + x[1] + '"' + (cur ? ' aria-current="page"' : '') + '><span class="mi">' + ic(x[2]) + '</span>' + x[0] +
+      '<svg class="mc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a></li>';
+  }).join('') + '</ul>' +
+    '<div class="menu-ctas"><a class="btn btn-glass" href="portal.html">Log in</a><a class="btn btn-primary" href="' + at('#join') + '">Join us today</a></div>';
+  document.body.appendChild(bg); document.body.appendChild(panel);
+
+  var open = false, timer = 0, reduce = matchMedia('(prefers-reduced-motion: reduce)');
+  function place() { var n = document.querySelector('.nav'); panel.style.top = Math.round(n.getBoundingClientRect().bottom + 8) + 'px'; }
+  function show() {
+    clearTimeout(timer); open = true; place();
+    bg.hidden = panel.hidden = false;
+    requestAnimationFrame(function () { requestAnimationFrame(function () { document.documentElement.classList.add('menu-open'); }); });
+    btn.setAttribute('aria-expanded', 'true'); btn.setAttribute('aria-label', 'Close menu');
+    document.addEventListener('keydown', key);
+    var first = panel.querySelector('a'); if (first) first.focus({ preventScroll: true });
+  }
+  /* closes back along the path it opened on */
+  function hide(focusBtn) {
+    if (!open) return; open = false;
+    document.documentElement.classList.remove('menu-open');
+    btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-label', 'Menu');
+    document.removeEventListener('keydown', key);
+    timer = setTimeout(function () { bg.hidden = panel.hidden = true; }, reduce.matches ? 0 : 260);
+    if (focusBtn) btn.focus({ preventScroll: true });
+  }
+  function key(e) {
+    if (e.key === 'Escape') hide(true);
+    if (e.key === 'Tab') { /* keep focus inside the menu while it's open */
+      var f = [btn].concat([].slice.call(panel.querySelectorAll('a'))), i = f.indexOf(document.activeElement);
+      if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+      else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
+    }
+  }
+  btn.addEventListener('click', function () { open ? hide() : show(); });
+  bg.addEventListener('click', function () { hide(); });
+  panel.addEventListener('click', function (e) { if (e.target.closest('a')) hide(); });
+  addEventListener('resize', function () { if (open) { if (innerWidth > 860) hide(); else place(); } });
+})();

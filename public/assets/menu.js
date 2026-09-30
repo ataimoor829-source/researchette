@@ -21,7 +21,7 @@
     ['Home', home ? '#top' : 'index.html', 'home'],
     ['Programmes', at('#tracks'), 'book'],
     ['Roadmap', at('#roadmap'), 'map'],
-    ['Free guides', at('#guides'), 'gift'],
+    ['Free guides', 'guides.html', 'gift'],
     ['Mentors', at('#mentors'), 'users'],
     ['Student publications', 'research.html', 'paper', 'pub'],
     ['Reviews', 'reviews.html', 'star']

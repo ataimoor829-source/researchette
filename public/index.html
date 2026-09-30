@@ -319,6 +319,14 @@ section { padding-block: var(--gap-section) 0; }
 .list code { font-family: var(--f-mono); font-size: .78rem; background: var(--pen-soft); color: var(--ink); padding: .12em .4em; border-radius: 5px; overflow-wrap: anywhere; }
 .formula { font-family: var(--f-mono); font-size: .78rem; color: var(--ink); background: var(--glass-strong); border-radius: 12px; padding: 10px 12px; overflow-wrap: anywhere; }
 .narrow { max-width: 780px; margin-inline: auto; }
+.new-tag { display: inline-block; vertical-align: 2px; margin-left: 8px; font: 500 .6rem var(--f-mono); letter-spacing: .08em; text-transform: uppercase; padding: .3em .6em; border-radius: 99px; background: var(--teal-soft); color: var(--teal); }
+.guides-more { margin-top: 14px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 20px; padding: 18px clamp(18px, 3vw, 28px); border-radius: var(--r); text-decoration: none; color: inherit; transition: transform .45s var(--ease); }
+.guides-more:hover { transform: translateY(-2px); }
+.guides-more:active { transform: scale(.99); transition-duration: .1s; }
+.guides-more > div { flex: 1 1 320px; }
+.guides-more b { display: block; font-weight: 700; font-size: 1.05rem; }
+.guides-more small { display: block; color: var(--muted); font-size: .88rem; margin-top: 2px; }
+@media (max-width: 560px) { .guides-more .btn { width: 100%; justify-content: center; } }
 
 /* ---------- mentors ---------- */
 .mentors { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -696,45 +704,74 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
       <h2>Start learning today, free.</h2>
     </div>
     <div class="list glass reveal">
-      <details>
+      <details data-cat="start">
+        <summary><div><b>How to find a research gap<span class="new-tag">New</span></b><small>Where new, publishable topics come from</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
+        <div class="content">
+        <p>A research gap is a question that published studies haven’t answered yet, or haven’t answered <b>for your place or your group of people</b>. Journals publish studies that fill a gap.</p>
+        <p><b>6 places to find one</b></p>
+        <ol><li><b>“Limitations” and “future research”</b> at the end of recent papers. Authors often write exactly what still needs to be studied.</li>
+        <li><b>No local data.</b> Well studied abroad, but not in Pakistan, your city or your hospital.</li>
+        <li><b>Old data.</b> The last local study is more than 5–10 years old, and things have changed since.</li>
+        <li><b>A different group.</b> Studied in doctors but not students, in adults but not children, in cities but not villages.</li>
+        <li><b>Results that disagree.</b> Some studies say yes and others say no, so a new, careful study helps.</li>
+        <li><b>Something new.</b> A new guideline, medicine, test or habit (like online classes) that hasn’t been studied much yet.</li></ol>
+        <p><b>Quick 5-minute check:</b> search PubMed for your topic plus <code>Pakistan</code> and tick “5 years”. Very few results means you may have found a gap.</p>
+        <p class="formula">Write it like this: Although [what is known], little is known about [the gap] in [your group or place].</p>
+        <p><b>Example:</b> Although skipping breakfast is common among university students worldwide, little is known about it among MBBS students in Lahore.</p>
+        </div>
+      </details>
+      <details data-cat="start">
         <summary><div><b>Choose a research topic with PICO</b><small>The starting point of every study</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
         <div class="content">
-          <p class="formula">Who (P) · What you look at (I) · Compared with whom (C) · What you count (O)</p>
-          <p>Example: How many MBBS students (P) at our college skip breakfast (O)? Then check it with FINER: can you finish it (Feasible), do people want to know (Interesting), is it new here (Novel), is it safe and fair (Ethical), and is it useful (Relevant)?</p>
+        <p class="formula">Who (P) · What you look at (I) · Compared with whom (C) · What you count (O)</p>
+        <p><b>Example:</b> How many MBBS students (P) at our college skip breakfast (O)? There’s no comparison group here, and that’s fine.</p>
+        <p>Then check it with <b>FINER</b>: can you finish it (Feasible), do people want to know (Interesting), is it new here (Novel), is it safe and fair (Ethical), and is it useful (Relevant)? If any answer is “no”, make the topic smaller or change the group or place.</p>
         </div>
       </details>
-      <details>
+      <details data-cat="papers">
         <summary><div><b>Your first PubMed search</b><small>Key words joined with AND and OR</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
         <div class="content">
-          <ul><li>Use key words, not a sentence: <code>breakfast</code>, <code>"medical students"</code></li><li>OR joins words that mean the same, AND joins different ideas: <code>(breakfast OR "morning meal") AND "medical students"</code></li><li>Tick the “5 years” filter so papers are recent.</li></ul>
+        <ul><li>Use key words, not a sentence: <code>breakfast</code>, <code>"medical students"</code></li>
+        <li>OR joins words that mean the same, AND joins different ideas: <code>(breakfast OR "morning meal") AND "medical students"</code></li>
+        <li>Tick the “5 years” filter so papers are recent.</li>
+        <li>Too many results? Add another AND word. Too few? Add more OR words.</li></ul>
         </div>
       </details>
-      <details>
-        <summary><div><b>Vancouver referencing</b><small>The style most medical journals use</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
+      <details data-cat="papers">
+        <summary><div><b>How to read a paper quickly<span class="new-tag">New</span></b><small>You don’t have to read every word</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
         <div class="content">
-          <p><b>Example:</b> Khan A, Ali S. Title of article. J Pak Med Assoc. 2023;73(4):812-6.</p>
-          <p>Number references in the order you cite them. List up to 6 authors, then “et al.”</p>
+        <p>Don’t read a paper from start to end. Read it in this order, and stop as soon as you know whether it’s useful:</p>
+        <ol><li><b>Title and abstract</b> (2 minutes): is it about your topic?</li>
+        <li><b>Tables and figures:</b> the main results are here.</li>
+        <li><b>Last paragraph of the introduction:</b> the aim of the study.</li>
+        <li><b>Conclusion:</b> what the authors think it means.</li>
+        <li><b>Methods</b>, only for papers you will use: who, where, how many people, and how things were measured.</li></ol>
+        <p><b>For each useful paper, write down:</b> author and year, place, number of people, main finding, and one weak point. These notes become your introduction and discussion later.</p>
         </div>
       </details>
-      <details>
-        <summary><div><b>Case report structure</b><small>Based on the CARE guidelines</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
+      <details data-cat="publishing">
+        <summary><div><b>Spot a fake (predatory) journal<span class="new-tag">New</span></b><small>Protect your paper and your money</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
         <div class="content">
-          <ol><li>Title, abstract and keywords</li><li>Introduction</li><li>Patient information and findings</li><li>Timeline</li><li>Diagnosis, treatment and outcome</li><li>Discussion and learning points</li><li>Patient consent</li></ol>
+        <p>Predatory journals take a fee and publish almost anything, without real review. A paper there can hurt your CV.</p>
+        <p><b>Warning signs</b></p>
+        <ul><li>Emails full of praise inviting you to submit.</li>
+        <li>“Guaranteed acceptance”, or publishing within a few days.</li>
+        <li>A made-up “impact factor”, or a website full of mistakes.</li>
+        <li>Not listed in MEDLINE (PubMed), Scopus or DOAJ.</li></ul>
+        <p><b>Before you submit:</b> look the journal up in the HEC Journal Recognition System (HJRS), Scopus and DOAJ, and ask your mentor.</p>
         </div>
       </details>
-      <details>
-        <summary><div><b>Letter to the editor</b><small>A realistic first publication</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
+      <details data-cat="writing">
+        <summary><div><b>Avoid plagiarism, and use AI safely<span class="new-tag">New</span></b><small>The mistakes that get papers rejected</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
         <div class="content">
-          <ol><li>Cite the article you are responding to.</li><li>Make one or two clear points.</li><li>Support them with references.</li><li>Keep it within 300–600 words.</li></ol>
-        </div>
-      </details>
-      <details>
-        <summary><div><b>Meta-analysis in 6 steps</b><small>What a PRISMA review involves</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
-        <div class="content">
-          <ol><li>Write a protocol and register it on PROSPERO.</li><li>Search at least 3 databases.</li><li>Screen studies with two reviewers.</li><li>Extract data.</li><li>Assess risk of bias.</li><li>Pool results in RevMan and report with PRISMA.</li></ol>
+        <ul><li>Never copy sentences. Read, close the paper, then write the idea in your own words and add the reference number.</li>
+        <li>Check your similarity score before submitting (your university can run Turnitin). HEC generally accepts up to 19%.</li>
+        <li>AI tools can help fix grammar, but they often <b>invent references that don’t exist</b>. Check every reference on PubMed yourself.</li>
+        <li>Never let AI write your results or make up data, and follow your journal’s rules on saying whether you used AI.</li></ul>
         </div>
       </details>
     </div>
+    <a class="guides-more glass reveal" href="guides.html"><div><b>See all 18 free guides</b><small>Research gaps, reading papers, writing, statistics, journals, reviewers and more.</small></div><span class="btn btn-primary btn-sm">Open guides <span class="btn-arrow" aria-hidden="true">→</span></span></a>
   </div>
 </section>
 

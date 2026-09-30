@@ -212,8 +212,8 @@ html.menu-open .menu-panel { opacity: 1; transform: none; }
 .menu-panel a.pub { color: var(--pen); background: var(--pen-soft); margin-block: 4px; }
 .menu-panel a.pub .mi { background: var(--pen); color: #fff; }
 .menu-panel li:has(a.pub), .menu-panel li:has(a.pub) + li { border-top-color: transparent; }
-.menu-panel a[aria-current="page"]::after { content: "You’re here"; font: 500 .62rem var(--f-mono, monospace); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-left: auto; }
-.menu-panel a[aria-current="page"] .mc { display: none; }
+.menu-panel a[aria-current]::after { content: "You’re here"; font: 500 .62rem var(--f-mono, monospace); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-left: auto; }
+.menu-panel a[aria-current] .mc { display: none; }
 .menu-ctas { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px 2px 2px; }
 .menu-ctas .btn { padding: .8em 1em; font-size: .95rem; }
 @media (min-width: 861px) { .menu-bg, .menu-panel { display: none !important; } }

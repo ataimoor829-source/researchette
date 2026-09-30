@@ -333,6 +333,9 @@ a.stat:hover { transform: translateY(-3px); }
 details[open] > summary .chev.down { transform: rotate(-90deg); }
 .li-btn { width: 100%; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
 .li-btn:hover .li-title { color: var(--pen); }
+.li-btn { transition: transform .12s ease-out, opacity .2s; -webkit-tap-highlight-color: transparent; }
+.li-btn:active { transform: scale(.985); }
+.li-btn.busy { opacity: .7; }
 .chips.pick label { position: relative; font-weight: 500; font-size: .86rem; border: 1px solid var(--glass-edge); border-radius: 99px; padding: .45em .9em; cursor: pointer; background: var(--glass-strong); transition: background-color .25s, color .25s, border-color .25s, transform .3s var(--ease); }
 .chips.pick label:active { transform: scale(.95); }
 .chips.pick input { position: absolute; opacity: 0; width: 1px; height: 1px; }

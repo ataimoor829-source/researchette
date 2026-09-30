@@ -965,7 +965,7 @@
   }
   function miniGauge(v, total, color) {
     var k = total ? Math.min(1, v / total) : 0, c = Math.PI * 26;
-    return '<svg class="mini gauge" viewBox="0 0 64 36" aria-hidden="true"><path d="M6 32a26 26 0 0 1 52 0" fill="none" stroke="rgba(24,32,61,.1)" stroke-width="7" stroke-linecap="round"/><path d="M6 32a26 26 0 0 1 52 0" fill="none" stroke="' + color + '" stroke-width="7" stroke-linecap="round" stroke-dasharray="' + (c * k).toFixed(1) + ' ' + c.toFixed(1) + '"/></svg>';
+    return '<svg class="mini gauge" viewBox="0 0 64 36" aria-hidden="true"><path class="gt" d="M6 32a26 26 0 0 1 52 0" fill="none" stroke-width="7" stroke-linecap="round"/><path d="M6 32a26 26 0 0 1 52 0" fill="none" stroke="' + color + '" stroke-width="7" stroke-linecap="round" stroke-dasharray="' + (c * k).toFixed(1) + ' ' + c.toFixed(1) + '"/></svg>';
   }
   function smooth(p) { // Catmull-Rom through the points, as cubic curves
     if (p.length < 2) return '';

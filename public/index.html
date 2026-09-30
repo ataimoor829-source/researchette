@@ -149,8 +149,13 @@ section { padding-block: var(--gap-section) 0; }
 :root[data-theme="dark"] .theme-btn .moon { display: block; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .theme-btn .sun { display: none; } :root:not([data-theme="light"]) .theme-btn .moon { display: block; } }
 .nav .wrap { max-width: none; padding-inline: clamp(16px, 3vw, 44px); }
+@media (max-width: 1200px) { .nav-links a[href="#roadmap"], .nav-links a[href="#guides"] { display: none; } }
+@media (max-width: 1000px) { .nav-links a[href="#tracks"] { display: none; } }
 @media (max-width: 860px) { .nav-links a:not(.btn):not(.login-link) { display: none; } }
 .login-link { white-space: nowrap; }
+.nav-links a.nav-pub { display: inline-flex; align-items: center; gap: 6px; color: var(--pen); background: var(--pen-soft); font-weight: 600; white-space: nowrap; }
+.nav-links a.nav-pub:hover { color: var(--pen); background: color-mix(in srgb, var(--pen) 16%, transparent); }
+.nav-links a.nav-pub svg { width: 15px; height: 15px; flex: none; }
 @media (max-width: 400px) { .nav-links a.login-link { padding-inline: .5em; } .nav-links { gap: 2px; } .nav .logo { font-size: 1.1rem; } .nav .theme-btn { width: 36px; height: 36px; } .nav-links .btn { padding: .55em .9em; } }
 
 /* ---------- hero ---------- */
@@ -326,8 +331,26 @@ section { padding-block: var(--gap-section) 0; }
 .reviews-cta .stars svg { width: 18px; height: 18px; }
 .reviews-cta h3 { margin-top: 8px; }
 .reviews-cta.after-research { margin-top: 14px; }
-.research-cta .doc-ic { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: var(--pen-soft); color: var(--pen); }
-.research-cta .doc-ic svg { width: 19px; height: 19px; }
+/* student publications: the one dark, bold band in this section so it's the first thing people see */
+.pubs-band { margin-top: clamp(28px, 4vw, 40px); position: relative; overflow: hidden; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px clamp(20px, 3vw, 32px); padding: clamp(26px, 4vw, 40px); border-radius: var(--r); text-decoration: none; color: var(--on-deep); background: linear-gradient(150deg, var(--deep), color-mix(in srgb, var(--deep) 60%, #3448D8)); box-shadow: var(--shadow); transition: transform .5s var(--ease); }
+.pubs-band:hover { transform: translateY(-3px); }
+.pubs-band:active { transform: scale(.99); transition-duration: .1s; }
+.pubs-band::before { content: ""; position: absolute; width: 300px; height: 300px; border-radius: 50%; background: #0B9E8C; filter: blur(90px); opacity: .45; right: -80px; bottom: -120px; }
+.pubs-band > * { position: relative; }
+.pubs-band .hand { position: absolute; top: 16px; right: 28px; color: #FFE27A; font-size: 1.45rem; transform: rotate(5deg); }
+.pb-ic { width: 64px; height: 64px; border-radius: 20px; display: grid; place-items: center; background: rgba(255,255,255,.12); color: #fff; }
+.pb-ic svg { width: 30px; height: 30px; }
+.pb-text { display: grid; gap: 8px; min-width: 0; }
+.pubs-band .eyebrow { color: #5CF2D8; }
+.pubs-band .eyebrow::before { box-shadow: 0 0 0 4px rgba(92,242,216,.2); }
+.pubs-band h3 { font-size: clamp(1.5rem, 1.1rem + 1.5vw, 2.1rem); font-weight: 800; letter-spacing: -.03em; line-height: 1.1; color: #fff; }
+.pubs-band p { opacity: .8; max-width: 52ch; }
+.pb-stats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.pb-stats span { font-size: .85rem; padding: .35em .8em; border-radius: 99px; background: rgba(255,255,255,.12); }
+.pb-stats b { font-weight: 700; }
+.pb-btn { background: #fff; color: var(--deep); white-space: nowrap; box-shadow: 0 10px 26px -12px rgba(0,0,0,.5); }
+.pubs-band:hover .pb-btn .btn-arrow { transform: translateX(3px); }
+@media (max-width: 760px) { .pubs-band { grid-template-columns: 1fr; } .pb-ic { width: 52px; height: 52px; border-radius: 16px; } .pb-ic svg { width: 24px; height: 24px; } .pb-btn { justify-self: stretch; justify-content: center; } }
 .reviews-cta p { color: var(--muted); font-size: .95rem; margin-top: 4px; }
 .mentor { padding: clamp(24px, 3.5vw, 34px); display: grid; gap: 18px; align-content: start; min-width: 0; transition: transform .5s var(--ease); }
 .mentor:hover { transform: translateY(-5px); }
@@ -442,7 +465,7 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
         <a href="#roadmap">Roadmap</a>
         <a href="#guides">Free guides</a>
         <a href="#mentors">Mentors</a>
-        <a href="research.html">Research</a>
+        <a class="nav-pub" href="research.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>Student publications</a>
         <a href="reviews.html">Reviews</a>
         <a class="login-link" href="portal.html">Log in</a>
         <button class="theme-btn" id="theme-btn" type="button" aria-label="Switch between light and dark mode">
@@ -748,11 +771,17 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
         <a class="btn btn-glass btn-sm msg-btn" href="mentors.html#alina" aria-label="Read Dr Alina’s message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Read message <span class="btn-arrow" aria-hidden="true">→</span></a>
       </article>
     </div>
-    <div class="reviews-cta research-cta glass reveal">
-      <div><span class="doc-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg></span>
-        <h3>Published research</h3><p>Papers our students researched, wrote and published with us.</p></div>
-      <a class="btn btn-primary" href="research.html">See their research <span class="btn-arrow" aria-hidden="true">→</span></a>
-    </div>
+    <a class="pubs-band reveal" href="research.html">
+      <span class="hand" aria-hidden="true">real papers!</span>
+      <span class="pb-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg></span>
+      <div class="pb-text">
+        <span class="eyebrow">Student publications</span>
+        <h3>Published by our students.</h3>
+        <p>See the papers our students researched, wrote and published in journals with our mentors beside them.</p>
+        <div class="pb-stats" id="pb-stats" hidden></div>
+      </div>
+      <span class="btn pb-btn">See student publications <span class="btn-arrow" aria-hidden="true">→</span></span>
+    </a>
     <div class="reviews-cta after-research glass reveal">
       <div><span class="stars" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/></svg></span>
         <h3>Student reviews</h3><p>Read what our students say, or share your own experience.</p></div>
@@ -1019,6 +1048,16 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
     });
   });
 })();
+</script>
+<script>
+/* live count on the Student publications band; stays hidden until there's at least one paper */
+fetch('/api/research', { headers: { accept: 'application/json' } }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+  var list = (d && d.research) || [], el = document.getElementById('pb-stats');
+  if (!list.length || !el) return;
+  var j = {}; list.forEach(function (p) { j[String(p.journal).toLowerCase()] = 1; }); var nj = Object.keys(j).length;
+  el.innerHTML = '<span><b>' + list.length + '</b> paper' + (list.length === 1 ? '' : 's') + ' published</span><span><b>' + nj + '</b> journal' + (nj === 1 ? '' : 's') + '</span>';
+  el.hidden = false;
+}).catch(function () {});
 </script>
 <script src="assets/store.js"></script>
 <script src="assets/fx.js"></script>

@@ -1204,11 +1204,20 @@
       return '<label><input type="checkbox" name="' + name + '" value="' + t.id + '"' + (selected.indexOf(t.id) > -1 ? ' checked' : '') + '><span>' + esc(t.name) + '</span></label>';
     }).join('') + '</div>';
   }
-  function welcomeMessage(u, pw) {
-    return 'Welcome to Researchette, ' + short(u.name) + '!\n\nYour member portal login:\nEmail: ' + u.email + '\nPassword: ' + pw + '\n\nLog in here: ' + location.href.split('#')[0] + '\nYour first task is waiting.';
+  /* the message sent with login details: a warm welcome for new mentors, a welcome for new
+     students, and a plain note for password resets */
+  function welcomeMessage(u, pw, reset) {
+    var link = location.href.split('#')[0], mentor = u.role === 'admin';
+    var login = 'Email: ' + u.email + '\nPassword: ' + pw + '\n\nLog in here: ' + link;
+    var change = 'Please change this temporary password after you log in: tap your initials at the top right, then Change password.';
+    if (reset) return 'Hi ' + short(u.name) + ', your Researchette password has been reset.\n\n' + (mentor ? 'Your mentor portal login:\n' : 'Your portal login:\n') + login + '\n\n' + change;
+    if (mentor) return 'Welcome to the Researchette team, ' + short(u.name) + '!\n\n' +
+      'Thank you so much for joining us as a mentor. Your experience and guidance will make a real difference to our students, and we’re truly grateful to have you with us.\n\n' +
+      'Your mentor portal login:\n' + login + '\n\n' + change + '\n\nA short tour will show you around when you first log in. If you need anything at all, just message us. Welcome aboard!';
+    return 'Welcome to Researchette, ' + short(u.name) + '!\n\nYour member portal login:\n' + login + '\n\n' + change + '\n\nYour first task is waiting.';
   }
   function credentialsSheet(u, pw, title, note) {
-    var msg = welcomeMessage(u, pw), num = waNumber(u.phone);
+    var msg = welcomeMessage(u, pw, /password/i.test(title)), num = waNumber(u.phone);
     sheet('<span class="stamp">' + esc(title) + '</span><h2>Login details for ' + esc(u.name) + '</h2><p class="muted">' + esc(note) + ' For security, the password is only shown once.</p>' +
       '<div class="cred"><span>Email</span><b>' + esc(u.email) + '</b></div><div class="cred"><span>Password</span><b>' + esc(pw) + '</b></div>' +
       '<pre class="paper small" id="msg" style="margin:0;font-family:var(--f-body)">' + esc(msg) + '</pre>' +

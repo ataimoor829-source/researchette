@@ -177,7 +177,7 @@ async function seedOwners(env) {
    the members assigned to them, plus whatever the owners switch on below. Members' abilities can be
    switched off one by one too. */
 const PERMS = {
-  admin: { review: true, chat: true, edit_members: true, see_all: false, applications: false, add_members: false, passwords: false },
+  admin: { review: true, chat: true, edit_members: true, see_all: false, applications: false, add_members: false, passwords: false, view_lessons: false, edit_lessons: false },
   member: { chat: true, choose_programme: true }
 };
 async function withAccess(env, u) {
@@ -755,7 +755,7 @@ async function route(request, env, url, ctx) {
     }
   }
   if ((m = path.match(/^\/api\/admin\/lesson\/([a-z]+)\/(\d+)$/)) && (method === 'POST' || method === 'DELETE')) {
-    needOwner(admin);
+    needPerm(admin, 'edit_lessons');
     const track = m[1], n = +m[2];
     if (!TRACK_STEPS[track] || n < 1 || n > TRACK_STEPS[track]) throw new HttpError(404, 'That step doesn’t exist.');
     const key = track + ':' + n, label = trackName(track) + ', Step ' + n;

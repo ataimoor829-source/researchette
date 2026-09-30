@@ -61,12 +61,12 @@ Code: `worker/connector.js`. Its tables are created automatically on first use.
 
 ## Editing lessons (owners)
 
-Owners open **Lessons** (Overview, or the account menu) to read any step exactly as students see it and edit its wording: title, short description, minutes, “In simple words”, the step-by-step points, common mistakes, the weak/strong example, task instructions, what to include and the template. Edits are saved in the database (`lesson_edits`) and layered over `public/assets/curriculum.js`, so students see them straight away and any step can be reset to the original. Charts and tables, and the order of steps, still come from `curriculum.js`.
+Owners, and mentors with the **View lessons** or **Edit lessons** permission, open **Lessons** (Overview, or the account menu) to read any step exactly as students see it and edit its wording: title, short description, minutes, “In simple words”, the step-by-step points, common mistakes, the weak/strong example, task instructions, what to include and the template. Edits are saved in the database (`lesson_edits`) and layered over `public/assets/curriculum.js`, so students see them straight away and any step can be reset to the original. Charts and tables, and the order of steps, still come from `curriculum.js`.
 
 ## Owners, mentors and permissions
 
 - **Owners** (Zain and Taimoor) see and do everything: every student, submission, chat and activity, including other mentors'. Only owners open **Team & permissions** (Overview, or the account menu), where they add, pause or remove mentors, reset mentors' passwords, make someone an owner, and switch each mentor's permissions on or off. There is always at least one owner.
-- **Mentors** see only the students assigned to them. By default they can review their students' tasks, chat with them and edit their programmes and WhatsApp numbers. Owners can also let a mentor see all students, handle applications, add and remove students, or reset students' passwords, and can switch any of the defaults off.
+- **Mentors** see only the students assigned to them. By default they can review their students' tasks, chat with them and edit their programmes and WhatsApp numbers. Owners can also let a mentor see all students, handle applications, add and remove students, reset students' passwords, or view or edit lessons, and can switch any of the defaults off.
 - **Students**: owners can switch off a student's chat or their ability to choose their own programmes, or pause their account, from the student's page.
 - **Chat routing:** a student's messages go to their assigned mentor. Students with no mentor go to the owners. Owners can read every conversation (Messages → Everyone).
 - Only owners assign students to mentors. Removing a mentor leaves their students unassigned, so the owners pick them up.

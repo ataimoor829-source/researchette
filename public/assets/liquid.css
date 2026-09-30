@@ -39,7 +39,13 @@ body { animation: lg-pagein .4s var(--ease-out) both; letter-spacing: 0; transit
 
 /* Motion is kept for things that respond to you. The background colour stays still, and nothing
    loops slowly in the corner of your eye (slow drifting and pulsing can cause motion sickness). */
-.aura { transform: none !important; bottom: -20vh; }
+.aura { transform: none !important; bottom: auto; height: 120vh; height: 120lvh; }
+/* The colour blobs are soft-edged with a gradient mask instead of a blur filter, and the layer has a fixed
+   height. A blurred layer that changes size (it did every time a phone's address bar slid in or out) has
+   to be redrawn from scratch, which made scrolling stutter. Same look, drawn once. */
+.aura i { filter: none !important; -webkit-mask-image: radial-gradient(closest-side, #000 15%, transparent 100%); mask-image: radial-gradient(closest-side, #000 15%, transparent 100%); }
+/* things that appear as you scroll use opacity and movement only (animating a blur is slow on phones) */
+.js .reveal { filter: none !important; transition: opacity .8s var(--ease), transform .8s var(--ease); transition-delay: var(--d, 0s); }
 .aura i, .manuscript, .chip, .eyebrow::before, .price::before, .sicon.current, .btn-primary::after { animation: none !important; }
 .btn-primary::after { display: none; }
 
@@ -78,6 +84,8 @@ small, .small, .muted small { letter-spacing: .01em; }
   opacity: 0; transition: opacity .6s var(--ease-out);
 }
 .glass:hover::after { opacity: 1; }
+/* touch screens have no pointer to follow, so the spotlight layer isn't drawn at all */
+@media (hover: none) { .glass::after { display: none; } }
 
 /* floating layers keep real frosted glass. Bigger surfaces use a thicker material so what's
    behind them never competes with the text on top. */
@@ -87,8 +95,6 @@ small, .small, .muted small { letter-spacing: .01em; }
   backdrop-filter: blur(var(--lg-blur)) saturate(180%);
 }
 
-/* pause what still moves (the ticker and the heart trace) while the page scrolls (class set by fx.js) */
-html.is-scrolling .ticker-track, html.is-scrolling .ecg-path { animation-play-state: paused; }
 
 /* top bars and the phone tab bar */
 .nav, .topbar {

@@ -2,16 +2,12 @@
    Scrolling is left to the browser (native scrolling is the smoothest on every device).
    Mouse/trackpad only; phones and reduced-motion users get the static design. */
 (function () {
-  /* mark the page while it scrolls so CSS can pause decorative animations (all devices) */
-  var root = document.documentElement, idle = 0;
-  /* once content slides under the top bar, a soft edge shadow fades in (see liquid.css) */
-  var edge = function () { root.classList.toggle('scrolled', scrollY > 4); };
+  /* once content slides under the top bar, a soft edge shadow fades in (see liquid.css). The class only
+     changes when crossing the top of the page, so scrolling doesn't restyle the whole page. */
+  var root = document.documentElement, on = null;
+  var edge = function () { var s = scrollY > 4; if (s !== on) { on = s; root.classList.toggle('scrolled', s); } };
   edge();
-  addEventListener('scroll', function () {
-    edge();
-    if (!root.classList.contains('is-scrolling')) root.classList.add('is-scrolling');
-    clearTimeout(idle); idle = setTimeout(function () { root.classList.remove('is-scrolling'); }, 180);
-  }, { passive: true });
+  addEventListener('scroll', edge, { passive: true });
   /* lets iOS Safari show :active press states the instant a finger lands */
   document.addEventListener('touchstart', function () {}, { passive: true });
 })();

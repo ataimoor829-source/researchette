@@ -156,6 +156,7 @@ const EXTRA_SCHEMA = [
   'CREATE TABLE IF NOT EXISTS login_tickets (ticket_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, purpose TEXT NOT NULL, attempts INTEGER DEFAULT 0, expires TEXT NOT NULL)',
   'CREATE TABLE IF NOT EXISTS user_prefs (user_id TEXT PRIMARY KEY, welcomed_at TEXT)',
   'CREATE TABLE IF NOT EXISTS lesson_edits (key TEXT PRIMARY KEY, data TEXT NOT NULL, updated_by TEXT, updated_at TEXT NOT NULL)',
+  'CREATE TABLE IF NOT EXISTS step_unlocks (user_id TEXT NOT NULL, track TEXT NOT NULL, step INTEGER NOT NULL, unlocked_by TEXT, created_at TEXT NOT NULL, PRIMARY KEY (user_id, track, step))',
   "CREATE TABLE IF NOT EXISTS research (id TEXT PRIMARY KEY, student TEXT NOT NULL, title TEXT NOT NULL, journal TEXT NOT NULL, year INTEGER, kind TEXT DEFAULT '', link TEXT DEFAULT '', created_by TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)"
 ];
 let schemaReady = null;
@@ -392,25 +393,30 @@ async function adminNames(env) {
   const { results } = await env.DB.prepare("SELECT id, name FROM users WHERE role = 'admin'").all();
   const m = {}; results.forEach((r) => { m[r.id] = r.name; }); return m;
 }
+// A step is open once the step before it is approved, or when a mentor has unlocked it (step_unlocks).
+// Unlocks travel with the submissions list (subs.unlocks, loaded by userSubs).
 function computeStates(subs, track) {
-  const out = []; let open = true;
+  const out = [], un = (subs.unlocks && subs.unlocks[track]) || null;
   for (let n = 1; n <= (TRACK_STEPS[track] || 0); n++) {
     const latest = subs.filter((s) => s.track === track && s.step === n).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))[0] || null;
-    let st;
-    if (latest && latest.status === 'approved') st = 'approved';
-    else if (open) { st = latest ? latest.status : 'current'; open = false; }
-    else st = 'locked';
-    out.push({ step: n, status: st, submission: latest });
+    const unlocked = !!(un && un.has(n)), open = n === 1 || out[n - 2].status === 'approved' || unlocked;
+    const st = latest ? latest.status : open ? 'current' : 'locked';
+    out.push({ step: n, status: st, submission: latest, unlocked });
   }
   return out;
 }
 async function userSubs(env, userId, reviewers) {
   // reviewers may be a name map, `true` (look the names up in parallel) or empty
-  const [res, names] = await Promise.all([
+  await ensureSchema(env);
+  const [res, names, un] = await Promise.all([
     env.DB.prepare('SELECT * FROM submissions WHERE user_id = ? ORDER BY created_at DESC').bind(userId).all(),
-    reviewers === true ? adminNames(env) : reviewers
+    reviewers === true ? adminNames(env) : reviewers,
+    env.DB.prepare('SELECT track, step FROM step_unlocks WHERE user_id = ?').bind(userId).all()
   ]);
-  return res.results.map((r) => toSub(r, names));
+  const list = res.results.map((r) => toSub(r, names));
+  list.unlocks = {};
+  un.results.forEach((r) => { (list.unlocks[r.track] = list.unlocks[r.track] || new Set()).add(r.step); });
+  return list;
 }
 function progressOf(u, subs) {
   const p = {};
@@ -968,6 +974,23 @@ async function route(request, env, url, ctx) {
     record(env, ctx, 'member.added', admin.name + ' added ' + res.user.name, [['Member', res.user.name], ['Email', res.user.email]], 'member-' + res.user.id, admin.id, res.user.id);
     return json(res, 201);
   }
+  /* open any step for a member without the earlier ones being approved (or close it again) */
+  if ((m = path.match(/^\/api\/admin\/member\/([\w-]+)\/unlock$/)) && method === 'POST') {
+    needPerm(admin, 'edit_members');
+    const u = await memberFor(env, admin, m[1]), b = await body(request), track = str(b.track, 20), step = Math.round(Number(b.step));
+    if (!TRACK_STEPS[track] || !pub(u).tracks.includes(track)) throw bad('This member isn’t following that programme.');
+    if (!(step >= 1 && step <= TRACK_STEPS[track])) throw bad('That step doesn’t exist.');
+    await ensureSchema(env);
+    const label = trackName(track) + ', Step ' + step;
+    if (b.unlock === false) {
+      await DB.prepare('DELETE FROM step_unlocks WHERE user_id = ? AND track = ? AND step = ?').bind(u.id, track, step).run();
+      record(env, ctx, 'member.step_locked', admin.name + ' locked ' + label + ' again for ' + u.name, [['Member', u.name], ['Step', label]], 'member-' + u.id, admin.id, u.id);
+    } else {
+      await DB.prepare('INSERT OR IGNORE INTO step_unlocks (user_id, track, step, unlocked_by, created_at) VALUES (?, ?, ?, ?, ?)').bind(u.id, track, step, admin.id, now()).run();
+      record(env, ctx, 'member.step_unlocked', admin.name + ' unlocked ' + label + ' for ' + u.name, [['Member', u.name], ['Step', label]], 'member-' + u.id, admin.id, u.id);
+    }
+    return json({ states: computeStates(await userSubs(env, u.id, true), track) });
+  }
   if ((m = path.match(/^\/api\/admin\/member\/([\w-]+)$/))) {
     const u = await memberFor(env, admin, m[1]);
     if (method === 'GET') {
@@ -978,6 +1001,7 @@ async function route(request, env, url, ctx) {
     }
     if (method === 'DELETE') {
       needPerm(admin, 'add_members');
+      await ensureSchema(env);
       await DB.batch([
         DB.prepare('DELETE FROM sessions WHERE user_id = ?').bind(u.id),
         DB.prepare('DELETE FROM submissions WHERE user_id = ?').bind(u.id),
@@ -986,6 +1010,7 @@ async function route(request, env, url, ctx) {
         DB.prepare('UPDATE applications SET user_id = NULL WHERE user_id = ?').bind(u.id),
         DB.prepare('DELETE FROM user_perms WHERE user_id = ?').bind(u.id),
         DB.prepare('DELETE FROM user_prefs WHERE user_id = ?').bind(u.id),
+        DB.prepare('DELETE FROM step_unlocks WHERE user_id = ?').bind(u.id),
         DB.prepare('DELETE FROM users WHERE id = ?').bind(u.id)
       ]);
       record(env, ctx, 'member.removed', admin.name + ' removed ' + u.name, [['Member', u.name], ['Email', u.email]], '', admin.id, u.id);

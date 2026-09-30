@@ -651,3 +651,9 @@ a.li:active { transform: scale(.985); }
 @media (prefers-reduced-motion: reduce) {
   .view-enter .list > *, .view-enter .rise > *, .panel.from-right, .panel.from-left, .lesson li.pop .n, .btn.nudge, .ex-pick.chosen, .btn.sent svg { animation: none; }
 }
+
+/* unlocking steps (mentor's member page) */
+.unlock-btn svg { width: 14px; height: 14px; }
+.li-end .btn-sm { padding: .45em .8em; font-size: .8rem; }
+.unlocked-note { display: flex; align-items: center; gap: 6px; margin-top: 6px; color: var(--teal); font-weight: 600; }
+.unlocked-note svg { width: 15px; height: 15px; flex: none; }

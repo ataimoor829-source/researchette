@@ -340,10 +340,12 @@ section { padding-block: var(--gap-section) 0; }
 .reviews-cta h3 { margin-top: 8px; }
 .reviews-cta.after-research { margin-top: 14px; }
 /* student publications: the one dark, bold band in this section so it's the first thing people see */
-.pubs-band { margin-top: clamp(28px, 4vw, 40px); position: relative; overflow: hidden; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px clamp(20px, 3vw, 32px); padding: clamp(26px, 4vw, 40px); border-radius: var(--r); text-decoration: none; color: var(--on-deep); background: linear-gradient(150deg, var(--deep), color-mix(in srgb, var(--deep) 60%, #3448D8)); box-shadow: var(--shadow); transition: transform .5s var(--ease); }
+.pubs-band { margin-top: clamp(28px, 4vw, 40px); position: relative; overflow: hidden; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px clamp(20px, 3vw, 32px); padding: clamp(26px, 4vw, 40px); border-radius: var(--r); text-decoration: none; color: var(--on-deep); isolation: isolate; -webkit-tap-highlight-color: transparent;
+  /* the teal glow is painted as a gradient, not a blurred layer: Safari redraws blurred layers badly behind the button while the band animates */
+  background: radial-gradient(420px circle at calc(100% + 40px) calc(100% + 60px), rgba(11, 158, 140, .5), rgba(11, 158, 140, .18) 45%, transparent 70%), linear-gradient(150deg, var(--deep), color-mix(in srgb, var(--deep) 60%, #3448D8));
+  box-shadow: var(--shadow); transition: transform .5s var(--ease); }
 .pubs-band:hover { transform: translateY(-3px); }
 .pubs-band:active { transform: scale(.99); transition-duration: .1s; }
-.pubs-band::before { content: ""; position: absolute; width: 300px; height: 300px; border-radius: 50%; background: #0B9E8C; filter: blur(90px); opacity: .45; right: -80px; bottom: -120px; }
 .pubs-band > * { position: relative; }
 .pubs-band .hand { position: absolute; top: 16px; right: 28px; color: #FFE27A; font-size: 1.45rem; transform: rotate(5deg); }
 .pb-ic { width: 64px; height: 64px; border-radius: 20px; display: grid; place-items: center; background: rgba(255,255,255,.12); color: #fff; }
@@ -356,7 +358,7 @@ section { padding-block: var(--gap-section) 0; }
 .pb-stats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
 .pb-stats span { font-size: .85rem; padding: .35em .8em; border-radius: 99px; background: rgba(255,255,255,.12); }
 .pb-stats b { font-weight: 700; }
-.pb-btn { background: #fff; color: var(--deep); white-space: nowrap; box-shadow: 0 10px 26px -12px rgba(0,0,0,.5); }
+.pb-btn { background: #fff; background-image: none; color: var(--deep); white-space: nowrap; box-shadow: 0 10px 26px -12px rgba(0,0,0,.5); }
 .pubs-band:hover .pb-btn .btn-arrow { transform: translateX(3px); }
 @media (max-width: 760px) { .pubs-band { grid-template-columns: 1fr; } .pb-ic { width: 52px; height: 52px; border-radius: 16px; } .pb-ic svg { width: 24px; height: 24px; } .pb-btn { justify-self: stretch; justify-content: center; } }
 .reviews-cta p { color: var(--muted); font-size: .95rem; margin-top: 4px; }

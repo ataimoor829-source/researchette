@@ -325,6 +325,9 @@ section { padding-block: var(--gap-section) 0; }
 .reviews-cta .stars { display: inline-flex; gap: 2px; color: #F2B43A; }
 .reviews-cta .stars svg { width: 18px; height: 18px; }
 .reviews-cta h3 { margin-top: 8px; }
+.reviews-cta.after-research { margin-top: 14px; }
+.research-cta .doc-ic { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: var(--pen-soft); color: var(--pen); }
+.research-cta .doc-ic svg { width: 19px; height: 19px; }
 .reviews-cta p { color: var(--muted); font-size: .95rem; margin-top: 4px; }
 .mentor { padding: clamp(24px, 3.5vw, 34px); display: grid; gap: 18px; align-content: start; min-width: 0; transition: transform .5s var(--ease); }
 .mentor:hover { transform: translateY(-5px); }
@@ -439,6 +442,7 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
         <a href="#roadmap">Roadmap</a>
         <a href="#guides">Free guides</a>
         <a href="#mentors">Mentors</a>
+        <a href="research.html">Research</a>
         <a href="reviews.html">Reviews</a>
         <a class="login-link" href="portal.html">Log in</a>
         <button class="theme-btn" id="theme-btn" type="button" aria-label="Switch between light and dark mode">
@@ -744,7 +748,12 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
         <a class="btn btn-glass btn-sm msg-btn" href="mentors.html#alina" aria-label="Read Dr Alina’s message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Read message <span class="btn-arrow" aria-hidden="true">→</span></a>
       </article>
     </div>
-    <div class="reviews-cta glass reveal">
+    <div class="reviews-cta research-cta glass reveal">
+      <div><span class="doc-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg></span>
+        <h3>Published research</h3><p>Papers our students researched, wrote and published with us.</p></div>
+      <a class="btn btn-primary" href="research.html">See their research <span class="btn-arrow" aria-hidden="true">→</span></a>
+    </div>
+    <div class="reviews-cta after-research glass reveal">
       <div><span class="stars" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/></svg></span>
         <h3>Student reviews</h3><p>Read what our students say, or share your own experience.</p></div>
       <a class="btn btn-primary" href="reviews.html">See reviews <span class="btn-arrow" aria-hidden="true">→</span></a>

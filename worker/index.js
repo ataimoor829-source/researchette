@@ -155,7 +155,8 @@ const EXTRA_SCHEMA = [
   'CREATE INDEX IF NOT EXISTS trusted_devices_user ON trusted_devices (user_id)',
   'CREATE TABLE IF NOT EXISTS login_tickets (ticket_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, purpose TEXT NOT NULL, attempts INTEGER DEFAULT 0, expires TEXT NOT NULL)',
   'CREATE TABLE IF NOT EXISTS user_prefs (user_id TEXT PRIMARY KEY, welcomed_at TEXT)',
-  'CREATE TABLE IF NOT EXISTS lesson_edits (key TEXT PRIMARY KEY, data TEXT NOT NULL, updated_by TEXT, updated_at TEXT NOT NULL)'
+  'CREATE TABLE IF NOT EXISTS lesson_edits (key TEXT PRIMARY KEY, data TEXT NOT NULL, updated_by TEXT, updated_at TEXT NOT NULL)',
+  "CREATE TABLE IF NOT EXISTS research (id TEXT PRIMARY KEY, student TEXT NOT NULL, title TEXT NOT NULL, journal TEXT NOT NULL, year INTEGER, kind TEXT DEFAULT '', link TEXT DEFAULT '', created_by TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)"
 ];
 let schemaReady = null;
 function ensureSchema(env) {
@@ -490,6 +491,32 @@ function cleanLesson(d) {
   return out;
 }
 
+/* ---------- published research ----------
+   Papers our students published with us, shown on research.html. Owners add and remove them. */
+const RESEARCH_KINDS = ['Original article', 'Systematic review', 'Meta-analysis', 'Case report', 'Letter to the editor', 'Narrative review', 'Thesis', 'Conference abstract', 'Other'];
+function cleanResearch(b) {
+  const out = { student: str(b.student, 120), title: str(b.title, 400), journal: str(b.journal, 200), kind: RESEARCH_KINDS.includes(b.kind) ? b.kind : '' };
+  if (!out.student) throw bad('Enter the student’s name.');
+  if (!out.title) throw bad('Enter the paper’s title.');
+  if (!out.journal) throw bad('Enter the journal.');
+  const y = str(b.year, 4);
+  out.year = y ? Math.round(+y) : null;
+  if (y && !(out.year >= 1950 && out.year <= new Date().getFullYear() + 1)) throw bad('Enter the year it was published, like 2026.');
+  let link = str(b.link, 500);
+  if (/^10\.\d{4,}\//.test(link)) link = 'https://doi.org/' + link; // a bare DOI
+  else if (/^doi:\s*/i.test(link)) link = 'https://doi.org/' + link.replace(/^doi:\s*/i, '');
+  else if (link && !/^https?:\/\//i.test(link)) link = 'https://' + link;
+  if (link) { try { const u = new URL(link); if (!/^https?:$/.test(u.protocol) || !u.hostname.includes('.')) throw 0; link = u.href; } catch { throw bad('That link doesn’t look right. Paste the DOI or the paper’s web address.'); } }
+  out.link = link;
+  return out;
+}
+function pubResearch(r) { return { id: r.id, student: r.student, title: r.title, journal: r.journal, year: r.year || null, kind: r.kind || '', link: r.link || '', createdAt: r.created_at }; }
+async function listResearch(env) {
+  await ensureSchema(env);
+  const { results } = await env.DB.prepare('SELECT * FROM research ORDER BY COALESCE(year, 0) DESC, created_at DESC').all();
+  return results.map(pubResearch);
+}
+
 /* ---------- routes ---------- */
 async function route(request, env, url, ctx) {
   const path = url.pathname.replace(/\/+$/, ''), method = request.method, DB = env.DB;
@@ -644,6 +671,9 @@ async function route(request, env, url, ctx) {
     return json({ id }, 201);
   }
 
+  /* published research: public, for research.html */
+  if (path === '/api/research' && method === 'GET') return json({ research: await listResearch(env) });
+
   /* lessons: everyone signed in gets the owners' edits, layered over the built-in curriculum */
   if (path === '/api/lessons' && method === 'GET') {
     await requireUser(request, env);
@@ -770,6 +800,33 @@ async function route(request, env, url, ctx) {
       .bind(key, JSON.stringify(data), admin.id, now()).run();
     record(env, ctx, 'lesson.edited', admin.name + ' edited ' + label, [['Step', label], ['Fields', Object.keys(data).join(', ')]], 'lesson-' + track + '-' + n, admin.id);
     return json({ ok: true, data });
+  }
+
+  /* published research: only owners add, change and remove papers */
+  if (path === '/api/admin/research' && method === 'POST') {
+    needOwner(admin);
+    await ensureSchema(env);
+    const r = cleanResearch(await body(request)), id = randomId('p'), t = now();
+    await DB.prepare('INSERT INTO research (id, student, title, journal, year, kind, link, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(id, r.student, r.title, r.journal, r.year, r.kind, r.link, admin.id, t, t).run();
+    record(env, ctx, 'research.added', admin.name + ' added a published paper by ' + r.student, [['Student', r.student], ['Title', r.title], ['Journal', r.journal]], 'research', admin.id);
+    return json(pubResearch(await DB.prepare('SELECT * FROM research WHERE id = ?').bind(id).first()), 201);
+  }
+  if ((m = path.match(/^\/api\/admin\/research\/([\w-]+)$/)) && (method === 'POST' || method === 'DELETE')) {
+    needOwner(admin);
+    await ensureSchema(env);
+    const old = await DB.prepare('SELECT * FROM research WHERE id = ?').bind(m[1]).first();
+    if (!old) throw new HttpError(404, 'That paper isn’t on the list any more.');
+    if (method === 'DELETE') {
+      await DB.prepare('DELETE FROM research WHERE id = ?').bind(old.id).run();
+      record(env, ctx, 'research.removed', admin.name + ' removed the paper by ' + old.student, [['Student', old.student], ['Title', old.title]], 'research', admin.id);
+      return json({ ok: true });
+    }
+    const r = cleanResearch(await body(request));
+    await DB.prepare('UPDATE research SET student = ?, title = ?, journal = ?, year = ?, kind = ?, link = ?, updated_at = ? WHERE id = ?')
+      .bind(r.student, r.title, r.journal, r.year, r.kind, r.link, now(), old.id).run();
+    record(env, ctx, 'research.edited', admin.name + ' edited the paper by ' + r.student, [['Student', r.student], ['Title', r.title]], 'research', admin.id);
+    return json(pubResearch(await DB.prepare('SELECT * FROM research WHERE id = ?').bind(old.id).first()));
   }
 
   /* team: only owners add, change and remove mentors */

@@ -1214,7 +1214,12 @@
     if (mentor) return 'Welcome to the Researchette team, ' + short(u.name) + '!\n\n' +
       'Thank you so much for joining us as a mentor. Your experience and guidance will make a real difference to our students, and we’re truly grateful to have you with us.\n\n' +
       'Your mentor portal login:\n' + login + '\n\n' + change + '\n\nA short tour will show you around when you first log in. If you need anything at all, just message us. Welcome aboard!';
-    return 'Welcome to Researchette, ' + short(u.name) + '!\n\nYour member portal login:\n' + login + '\n\n' + change + '\n\nYour first task is waiting.';
+    return 'Welcome to Researchette, ' + short(u.name) + '! 🎉\n\n' +
+      'We’re so happy you’re here. This is the start of your research journey, and we’ll be with you every step of the way, from your very first idea to a published paper. 📄✨\n\n' +
+      'Your portal login 🔐\n' + login + '\n\n' +
+      'First things first: please change this temporary password after you log in (tap your initials at the top right, then Change password).\n\n' +
+      'Your first small task is already waiting for you. Take it one step a day and don’t worry about getting it perfect. That’s what your mentor is here for. 💙\n\n' +
+      'See you inside!\nTeam Researchette';
   }
   function credentialsSheet(u, pw, title, note) {
     var msg = welcomeMessage(u, pw, /password/i.test(title)), num = waNumber(u.phone);

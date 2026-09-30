@@ -107,8 +107,10 @@ section { padding-block: var(--gap-section) 0; }
 .aura i:nth-child(4) { background: var(--aura-4); top: 40vh; left: -16vmax; width: 30vmax; height: 30vmax; opacity: .35; animation-duration: 38s; }
 @keyframes drift { 0% { transform: translate(0,0) scale(1); } 50% { transform: translate(6vmax, 4vmax) scale(1.1); } 100% { transform: translate(-4vmax, 8vmax) scale(.95); } }
 
-.progress-bar { position: fixed; top: 0; left: 0; right: 0; padding-top: env(safe-area-inset-top, 0px); z-index: 50; pointer-events: none; }
-.progress-bar span { display: block; height: 3px; background: linear-gradient(90deg, var(--teal), var(--pen), var(--redpen)); transform-origin: left; transform: scaleX(0); border-radius: 0 3px 3px 0; }
+.progress-bar { position: fixed; top: 0; left: 0; right: 0; padding-top: env(safe-area-inset-top, 0px); z-index: 50; pointer-events: none; overflow: hidden; }
+/* the bar slides in from the left rather than being stretched: a stretched layer is redrawn at every new size
+   while you scroll, a sliding one is drawn once and only moved */
+.progress-bar span { display: block; height: 3px; background: linear-gradient(90deg, var(--teal), var(--pen), var(--redpen)); transform: translate3d(-100%, 0, 0); border-radius: 0 3px 3px 0; will-change: transform; }
 
 /* ---------- glass ---------- */
 .glass {
@@ -183,6 +185,9 @@ section { padding-block: var(--gap-section) 0; }
 .monitor { border-radius: 14px; background: var(--deep); color: var(--on-deep); padding: 10px 14px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 14px; overflow: hidden; }
 .monitor svg { width: 100%; height: 40px; display: block; }
 .ecg-path { fill: none; stroke: #5CF2D8; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 90 510; animation: trace 2.6s linear infinite; filter: drop-shadow(0 0 4px #5CF2D8); }
+@media (max-width: 760px) { .ecg-path { filter: none; stroke-width: 2.4; } }
+/* loops stop while they are off screen (class set by the script below) */
+.off .ecg-path, .off .ticker-track { animation-play-state: paused; }
 .ecg-base { fill: none; stroke: rgba(92, 242, 216, .18); stroke-width: 1.5; }
 @keyframes trace { from { stroke-dashoffset: 600; } to { stroke-dashoffset: 0; } }
 .vitals { font-family: var(--f-mono); font-size: .62rem; line-height: 1.3; text-align: right; letter-spacing: .08em; opacity: .85; }
@@ -255,11 +260,10 @@ section { padding-block: var(--gap-section) 0; }
 /* ---------- roadmap: stacking phase cards ---------- */
 .phases { display: grid; gap: 22px; }
 .phase { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 92px + var(--i) * 18px); }
-/* all three cards are the same size (height set by the script below), so they close into a neat stack with
-   every edge lined up. Nothing is moved or scaled while scrolling (that makes sticky cards stutter on phones);
-   only the text of a covered card fades out, so just its clean top edge peeks out above the next card. */
+/* all three cards are the same size (height set once by the script below), so they close into a neat stack with
+   every edge lined up, and only the empty top padding of a covered card peeks out above the next one.
+   Nothing runs while you scroll: the browser does the stacking on its own. */
 .phase-inner { min-height: var(--ph, auto); }
-.phase-inner > * { opacity: clamp(0, calc((1 - var(--p, 0)) * 4), 1); }
 .phase-inner { padding: clamp(24px, 4vw, 44px); display: grid; grid-template-columns: .8fr 1.2fr; gap: 24px 48px; transform-origin: top center; }
 .phase-num { font-family: var(--f-mono); font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--teal); }
 .phase h3 { font-size: clamp(1.5rem, 1.2rem + 1.4vw, 2.2rem); letter-spacing: -.03em; margin-top: 10px; }
@@ -982,21 +986,10 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
     var hmax = Math.max.apply(null, inners.map(function (x) { return x.offsetHeight; }));
     inners.forEach(function (x) { x.style.setProperty('--ph', hmax + 'px'); });
   }
-  /* how far the next card has slid over each card (0 to 1); a covered card's text fades out */
-  var lastP = [];
-  function stack() {
-    phases.forEach(function (p, i) {
-      var nx = phases[i + 1], v = 0;
-      if (nx) { var r = p.getBoundingClientRect(); v = Math.max(0, Math.min(1, (r.bottom - nx.getBoundingClientRect().top) / r.height)); }
-      v = Math.round(v * 50) / 50; // only touch the page when the value really changes
-      if (v !== lastP[i]) { lastP[i] = v; inners[i].style.setProperty('--p', v); }
-    });
-  }
   function update() {
     ticking = false;
     var h = root.scrollHeight - innerHeight;
-    bar.style.transform = 'scaleX(' + (h > 0 ? scrollY / h : 0) + ')';
-    stack();
+    bar.style.transform = 'translate3d(' + ((h > 0 ? Math.min(1, scrollY / h) : 0) * 100 - 100).toFixed(2) + '%, 0, 0)';
   }
   function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
   addEventListener('scroll', onScroll, { passive: true });
@@ -1028,7 +1021,7 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
         e.target.querySelectorAll('[data-count]').forEach(countUp);
         io.unobserve(e.target);
       });
-    }, { threshold: .1, rootMargin: '0px 0px -5% 0px' });
+    }, { threshold: 0, rootMargin: '0px 0px -40px 0px' });
     items.forEach(function (el) { io.observe(el); });
   } else {
     items.forEach(function (el) { el.classList.add('in'); });
@@ -1046,7 +1039,12 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
   }
 
   var hr = document.getElementById('hr');
-  if (!reduce) setInterval(function () { hr.textContent = 70 + Math.round(Math.random() * 5); }, 2600);
+  if (!reduce) setInterval(function () { if (!hv.classList.contains('off')) hr.textContent = 70 + Math.round(Math.random() * 5); }, 2600);
+  /* pause the heart trace and the ticker while they are off screen, so scrolling has less to draw */
+  if ('IntersectionObserver' in window) {
+    var loopIO = new IntersectionObserver(function (es) { es.forEach(function (e) { e.target.classList.toggle('off', !e.isIntersecting); }); });
+    [hv, document.querySelector('.ticker')].forEach(function (el) { if (el) loopIO.observe(el); });
+  }
 
   /* three-step membership form */
   var form = document.getElementById('join-form'), err = document.getElementById('form-error');

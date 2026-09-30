@@ -657,3 +657,9 @@ a.li:active { transform: scale(.985); }
 .li-end .btn-sm { padding: .45em .8em; font-size: .8rem; }
 .unlocked-note { display: flex; align-items: center; gap: 6px; margin-top: 6px; color: var(--teal); font-weight: 600; }
 .unlocked-note svg { width: 15px; height: 15px; flex: none; }
+
+/* programme picker: programmes the member can ask to unlock */
+.locked-prog .li-title { color: var(--muted); }
+.pill.ask { gap: 5px; background: var(--teal-soft); color: var(--teal); }
+.pill.ask::before { display: none; }
+.pill.ask svg { width: 12px; height: 12px; }

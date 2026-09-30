@@ -421,6 +421,13 @@ textarea { min-height: 120px; resize: vertical; }
 input::placeholder, textarea::placeholder { color: var(--muted); opacity: .7; }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--pen); box-shadow: 0 0 0 4px var(--pen-soft); }
 [aria-invalid="true"] { border-color: var(--redpen) !important; animation: shake .4s; }
+.tel-row { display: grid; grid-template-columns: auto 1fr; gap: 8px; }
+.cc { position: relative; display: grid; }
+.cc-show { display: flex; align-items: center; gap: 6px; height: 100%; padding: 0 30px 0 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--glass-strong); font-weight: 600; white-space: nowrap; pointer-events: none; }
+.cc-show::after { content: ""; position: absolute; right: 12px; top: 50%; width: 7px; height: 7px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: translateY(-70%) rotate(45deg); }
+.cc select { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; font-size: 16px; }
+.cc:focus-within .cc-show { outline: 3px solid var(--pen); outline-offset: 1px; }
+.f-hint { color: var(--muted); font-size: .82rem; line-height: 1.45; }
 .f-err { color: var(--redpen); font-size: .82rem; letter-spacing: .01em; line-height: 1.4; animation: fadeup .3s var(--ease) both; }
 @keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -866,7 +873,13 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
         <legend>Apply for membership</legend>
         <div class="field"><label for="f-name">Full name</label><input id="f-name" name="name" autocomplete="name" required placeholder="Eeman Dar"></div>
         <div class="field"><label for="f-email">Email</label><input id="f-email" name="email" type="email" autocomplete="email" required placeholder="eeman@example.com"></div>
-        <div class="field"><label for="f-phone">WhatsApp number</label><input id="f-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="0339 5888444"></div>
+        <div class="field"><label for="f-phone">WhatsApp number</label>
+          <div class="tel-row">
+            <div class="cc"><span class="cc-show" id="f-cc-show" aria-hidden="true">🇵🇰 +92</span><select id="f-cc" name="cc" aria-label="Country code"><option value="PK" data-flag="🇵🇰" data-code="92" selected>Pakistan (+92)</option><option value="IN" data-flag="🇮🇳" data-code="91">India (+91)</option><option value="BD" data-flag="🇧🇩" data-code="880">Bangladesh (+880)</option><option value="AF" data-flag="🇦🇫" data-code="93">Afghanistan (+93)</option><option value="AE" data-flag="🇦🇪" data-code="971">United Arab Emirates (+971)</option><option value="SA" data-flag="🇸🇦" data-code="966">Saudi Arabia (+966)</option><option value="QA" data-flag="🇶🇦" data-code="974">Qatar (+974)</option><option value="OM" data-flag="🇴🇲" data-code="968">Oman (+968)</option><option value="KW" data-flag="🇰🇼" data-code="965">Kuwait (+965)</option><option value="BH" data-flag="🇧🇭" data-code="973">Bahrain (+973)</option><option value="GB" data-flag="🇬🇧" data-code="44">United Kingdom (+44)</option><option value="IE" data-flag="🇮🇪" data-code="353">Ireland (+353)</option><option value="US" data-flag="🇺🇸" data-code="1">United States / Canada (+1)</option><option value="AU" data-flag="🇦🇺" data-code="61">Australia (+61)</option><option value="NZ" data-flag="🇳🇿" data-code="64">New Zealand (+64)</option><option value="MY" data-flag="🇲🇾" data-code="60">Malaysia (+60)</option><option value="CN" data-flag="🇨🇳" data-code="86">China (+86)</option><option value="KG" data-flag="🇰🇬" data-code="996">Kyrgyzstan (+996)</option><option value="KZ" data-flag="🇰🇿" data-code="7">Kazakhstan (+7)</option><option value="UZ" data-flag="🇺🇿" data-code="998">Uzbekistan (+998)</option><option value="TJ" data-flag="🇹🇯" data-code="992">Tajikistan (+992)</option><option value="RU" data-flag="🇷🇺" data-code="7">Russia (+7)</option><option value="TR" data-flag="🇹🇷" data-code="90">Turkey (+90)</option><option value="IR" data-flag="🇮🇷" data-code="98">Iran (+98)</option><option value="EG" data-flag="🇪🇬" data-code="20">Egypt (+20)</option><option value="NG" data-flag="🇳🇬" data-code="234">Nigeria (+234)</option><option value="DE" data-flag="🇩🇪" data-code="49">Germany (+49)</option><option value="NP" data-flag="🇳🇵" data-code="977">Nepal (+977)</option><option value="LK" data-flag="🇱🇰" data-code="94">Sri Lanka (+94)</option></select></div>
+            <input id="f-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel-national" required placeholder="339 5888444" aria-describedby="f-phone-hint">
+          </div>
+          <p class="f-hint" id="f-phone-hint">📱 Add your active WhatsApp number. Your login ID and password will be sent to you there.</p>
+        </div>
       </fieldset>
 
       <fieldset class="fstep" data-step="2">
@@ -1064,9 +1077,25 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
     err.hidden = true;
   }
   /* inline validation: each field explains itself right beneath it, and clears as soon as it's fixed */
-  var hints = { email: 'Enter an email like eeman@example.com', tel: 'Enter your full WhatsApp number, like 0339 5888444' };
+  var hints = { email: 'Enter an email like eeman@example.com', tel: 'Enter your WhatsApp number, like 339 5888444 (choose your country first)' };
   // 10–15 digits covers 0339 5888444, 3395888444, +92 339 5888444 and numbers from other countries
-  var phoneOk = function (v) { var d = v.replace(/\D/g, ''); return d.length >= 10 && d.length <= 15; };
+  /* phone: the country code comes from the picker; a leading 0 (as in 0339…) is dropped. Anyone who types
+     a full international number (+44…, 0044…) keeps it as typed. */
+  var cc = document.getElementById('f-cc'), ccShow = document.getElementById('f-cc-show');
+  var ccOpt = function () { return cc.options[cc.selectedIndex]; };
+  cc.addEventListener('change', function () { ccShow.textContent = ccOpt().dataset.flag + ' +' + ccOpt().dataset.code; document.getElementById('f-phone').focus(); });
+  function fullPhone(v) {
+    v = String(v || '').trim();
+    if (/^(\+|00)/.test(v)) return '+' + v.replace(/^00/, '').replace(/\D/g, '');
+    var local = v.replace(/\D/g, '').replace(/^0+/, ''), code = ccOpt().dataset.code;
+    if (local.indexOf(code) === 0 && local.length > 10) local = local.slice(code.length); // they typed the code again
+    return '+' + code + ' ' + local;
+  }
+  var phoneOk = function (v) {
+    var full = fullPhone(v), d = full.replace(/\D/g, ''), local = full.split(' ')[1] || '';
+    if (/^\+92 /.test(full) && !/^3\d{9}$/.test(local)) return false; // Pakistani mobiles: 3xx xxxxxxx
+    return d.length >= 10 && d.length <= 15 && (!local || local.length >= 6);
+  };
   function check(el, loud) {
     var v = el.value.trim(), ok = v !== '' && (el.type !== 'email' || /.+@.+\..+/.test(v)) && (el.type !== 'tel' || phoneOk(v));
     var f = el.closest('.field'), note = f.querySelector('.f-err');
@@ -1099,7 +1128,7 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
     var btn = document.getElementById('f-next');
     btn.disabled = true; btn.textContent = 'Sending…';
     Store.addApplication({
-      name: el.name.value.trim(), email: el.email.value.trim(), phone: el.phone.value.trim(),
+      name: el.name.value.trim(), email: el.email.value.trim(), phone: fullPhone(el.phone.value),
       college: el.university.value.trim(), level: el.level.value, experience: el.experience.value,
       goals: [].slice.call(form.querySelectorAll('input[name="goal"]:checked')).map(function (c) { return c.value; }),
       why: el.why.value.trim()

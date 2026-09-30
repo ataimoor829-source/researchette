@@ -180,7 +180,7 @@ async function seedOwners(env) {
    switched off one by one too. */
 const PERMS = {
   admin: { review: true, chat: true, edit_members: true, see_all: false, applications: false, add_members: false, passwords: false, view_lessons: false, edit_lessons: false },
-  member: { chat: true, choose_programme: true }
+  member: { chat: true, choose_programme: false }  // mentors choose the programmes; members ask for more in the chat
 };
 async function withAccess(env, u) {
   if (!u) return u;
@@ -596,7 +596,12 @@ async function route(request, env, url, ctx) {
     if (token) await DB.prepare('DELETE FROM sessions WHERE token_hash = ?').bind(await sha256(token)).run();
     return json({ ok: true }, 200, { 'set-cookie': `${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0` });
   }
-  if (path === '/api/me' && method === 'GET') return json(pub(await withWelcome(env, await currentUser(request, env))));
+  if (path === '/api/me' && method === 'GET') {
+    const u = pub(await withWelcome(env, await currentUser(request, env)));
+    // members see who to ask (for example to unlock another programme)
+    if (u && u.role === 'member' && u.mentorId) { const r = await DB.prepare('SELECT name FROM users WHERE id = ?').bind(u.mentorId).first(); if (r) u.mentorName = r.name; }
+    return json(u);
+  }
   if (path === '/api/me/welcomed' && method === 'POST') {
     const u = await requireUser(request, env);
     await ensureSchema(env);

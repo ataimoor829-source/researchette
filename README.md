@@ -78,7 +78,7 @@ Owners open **Student publications** from the portal Overview to add, edit or re
 
 - **Owners** (Zain and Taimoor) see and do everything: every student, submission, chat and activity, including other mentors'. Only owners open **Team & permissions** (Overview, or the account menu), where they add, pause or remove mentors, reset mentors' passwords, make someone an owner, and switch each mentor's permissions on or off. There is always at least one owner.
 - **Mentors** see only the students assigned to them. By default they can review their students' tasks, chat with them and edit their programmes and WhatsApp numbers. Owners can also let a mentor see all students, handle applications, add and remove students, reset students' passwords, or view or edit lessons, and can switch any of the defaults off.
-- **Students**: owners can switch off a student's chat or their ability to choose their own programmes, or pause their account, from the student's page.
+- **Students**: follow only the programmes their mentor ticks on their page. Locked programmes show in their programme menu with an *Ask [mentor] to unlock* button that opens the portal chat with the request written for them. Owners can let a student choose their own programmes, switch off their chat, or pause their account, from the student's page.
 - **Chat routing:** a student's messages go to their assigned mentor. Students with no mentor go to the owners. Owners can read every conversation (Messages → Everyone).
 - Only owners assign students to mentors. Removing a mentor leaves their students unassigned, so the owners pick them up.
 - The AI connector acts with exactly the same access as the person who connected it.

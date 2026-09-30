@@ -611,8 +611,11 @@
     if (me && me.role === 'member' && Date.now() - progAt > 20000) { progAt = Date.now(); S.progress(me.id).then(function (p) { progCache = p; }, function () { progAt = 0; }); }
   }
   function programmeSheet() {
-    var list = C.tracks.filter(function (t) { return can('choose_programme') || (me.tracks || []).indexOf(t.id) > -1; });
+    var allowed = function (t) { return can('choose_programme') || (me.tracks || []).indexOf(t.id) > -1; };
+    var list = C.tracks.filter(allowed).concat(C.tracks.filter(function (t) { return !allowed(t); }));
+    var who = me.mentorName ? short(me.mentorName) : 'Zain';
     function row(t, prog) {
+      if (!allowed(t)) return '<span class="sicon locked">' + ic('lock') + '</span><div class="li-main"><span class="li-title">' + esc(t.name) + '</span><span class="li-sub">' + t.steps.length + ' steps · ask ' + esc(who) + ' to unlock it</span></div><div class="li-end"><span class="pill ask">' + ic('msgs') + 'Ask ' + esc(who) + '</span></div>';
       var p = prog && prog[t.id], on = t.id === me.activeTrack;
       var sub = !prog ? t.steps.length + ' steps' : p ? p.done + ' of ' + p.total + ' steps approved' : t.steps.length + ' steps · not started';
       return '<span class="sicon ' + (on ? 'current' : p ? 'approved' : 'locked') + '">' + (on ? ic('check') : t.steps.length) + '</span>' +
@@ -620,14 +623,22 @@
         '<div class="li-end">' + (on ? '<span class="pill approved">Current</span>' : '<span class="pill">' + (!prog || p ? 'Switch' : 'Start') + '</span>') + '</div>';
     }
     sheet('<h2>Choose a programme</h2><p class="muted small">Each programme has its own step-by-step roadmap. Your progress in each one is saved.</p>' +
-      (can('choose_programme') ? '' : '<p class="small muted">Your mentor chooses which programmes you can follow.</p>') +
-      '<div class="glass list" id="prog-list">' + list.map(function (t) { return '<button class="li li-btn" type="button" data-t="' + t.id + '">' + row(t, progCache) + '</button>'; }).join('') +
+      (list.some(function (t) { return !allowed(t); }) ? '<p class="small muted">Want to do another one? Tap a locked programme to ask ' + esc(who) + ' to unlock it for you.</p>' : '') +
+      '<div class="glass list" id="prog-list">' + list.map(function (t) { return '<button class="li li-btn' + (allowed(t) ? '' : ' locked-prog') + '" type="button" ' + (allowed(t) ? 'data-t' : 'data-ask') + '="' + t.id + '">' + row(t, progCache) + '</button>'; }).join('') +
       '</div><button class="btn btn-quiet btn-block btn-sm" type="button" data-close>Close</button>',
       function (el, close) {
         var busy = false;
         function fill(prog) { el.querySelectorAll('[data-t]').forEach(function (b) { if (!b.classList.contains('busy')) b.innerHTML = row(T(b.dataset.t), prog); }); }
         // refresh the numbers in the background (instant when they were preloaded)
         S.progress(me.id).then(function (p) { progCache = p; progAt = Date.now(); if (el.isConnected) fill(p); }, function () {});
+        el.querySelectorAll('[data-ask]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            var name = T(b.dataset.ask).name, text = 'Hi ' + who + '! Could you please unlock the ' + name + ' programme for me? 😊';
+            close();
+            if (can('chat')) { chatContext = 'Unlock a programme: ' + name; chatDraft = text; go('chat'); }
+            else window.open(waLink('923395888444', text), '_blank', 'noopener');
+          });
+        });
         el.querySelectorAll('[data-t]').forEach(function (b) {
           b.addEventListener('click', function () {
             var id = b.dataset.t;
@@ -1023,7 +1034,7 @@
   /* ---------- chat ----------
      Members talk to all their mentors in one conversation; any mentor can reply. While a chat is
      open it checks for new messages every few seconds. */
-  var chatTimer = 0, chatContext = null;
+  var chatTimer = 0, chatContext = null, chatDraft = '';
   function stopChat() { clearInterval(chatTimer); chatTimer = 0; }
   function clock(iso) { return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }); }
   function dayLabel(iso) {
@@ -1080,6 +1091,7 @@
       inp.addEventListener('input', grow);
       m.querySelector('#ctx-x').addEventListener('click', function () { ctx = ''; m.querySelector('#ctx').hidden = true; inp.focus(); });
       m.querySelectorAll('[data-suggest]').forEach(function (b) { b.addEventListener('click', function () { inp.value = b.textContent; grow(); inp.focus(); }); });
+      if (o.draft) { inp.value = o.draft; grow(); inp.dispatchEvent(new Event('input')); }
       if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
         inp.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); f.requestSubmit(); } });
       }
@@ -1107,10 +1119,10 @@
   }
 
   async function vMemberChat() {
-    var r = await S.chat(), context = chatContext; chatContext = null;
+    var r = await S.chat(), context = chatContext, draft = chatDraft; chatContext = null; chatDraft = '';
     var suggest = ['I’m stuck on today’s step.', 'Can you check my research topic?', 'Which journal should I choose?'];
     return chatScreen({
-      messages: r.messages, context: context, placeholder: 'Message your mentor…',
+      messages: r.messages, context: context, draft: draft, placeholder: 'Message your mentor…',
       head: '<section class="page-head"><span class="eyebrow">Chat</span><h1>Ask your mentor</h1><p class="muted">Stuck on a step or unsure about something? Ask here. Your mentor usually replies within a day.</p></section>',
       empty: '<div class="chat-empty">' + ic('msgs') + '<b>No messages yet</b><span>Ask anything about your research. Try one of these:</span><div class="chips">' +
         suggest.map(function (x) { return '<button class="chip" type="button" data-suggest>' + esc(x) + '</button>'; }).join('') + '</div></div>',

@@ -62,6 +62,12 @@ window.Store = (function () {
     saveLesson: function (t, n, data) { return post('/api/admin/lesson/' + q(t) + '/' + q(n), { data: data }); },
     resetLesson: function (t, n) { cache = {}; return call('DELETE', '/api/admin/lesson/' + q(t) + '/' + q(n)); },
 
+    /* published research (everyone reads; owners add, edit and remove) */
+    research: function () { return call('GET', '/api/research'); },
+    addResearch: function (data) { return post('/api/admin/research', data); },
+    updateResearch: function (id, data) { return post('/api/admin/research/' + q(id), data); },
+    removeResearch: function (id) { cache = {}; return call('DELETE', '/api/admin/research/' + q(id)); },
+
     /* team and permissions (owners) */
     team: function () { return call('GET', '/api/admin/team'); },
     addMentor: function (data) { return post('/api/admin/team', data); },

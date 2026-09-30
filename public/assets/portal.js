@@ -1,7 +1,7 @@
 /* Researchette portal: login, member portal and admin (mentor) portal in one page.
    Routes live in the URL hash: #login, #today, #roadmap, #step-3, #feedback, #chat,
    #overview, #reviews, #review-<id>, #members, #member-<id>, #applications, #messages, #chat-<member id>,
-   #team, #admin-<id>, #lessons, #lesson-<track>-<n> (owners). */
+   #team, #admin-<id>, #lessons, #lesson-<track>-<n>, #research (owners). */
 (function () {
   var S = window.Store, C = window.CURRICULUM, app = document.getElementById('app');
   var me = null, reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -28,7 +28,8 @@
     send: '<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/>',
     sparkle: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 3v4M21 5h-4M5 17v3M6.5 18.5h-3"/>',
     phone: '<rect x="7" y="2" width="10" height="20" rx="3"/><path d="M11 18h2"/>',
-    pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'
+    pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+    paper: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>'
   };
   function ic(n, cls) { return '<svg class="' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + P[n] + '</svg>'; }
   var LOGO = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="7" fill="#3448D8"/><path d="M5 13h3l2-5 3 9 2-4h4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -326,11 +327,12 @@
     if (me.role === 'member') statsP = S.unread().then(function (x) { return { unread: x.unread }; }, function () { return null; });
     if (me.role === 'admin') {
       statsP = S.stats(me.id).catch(function () { return null; });
-      if ((r === 'applications' && !can('applications')) || ((r === 'messages' || /^chat-/.test(r)) && !can('chat')) || ((r === 'team' || /^admin-/.test(r)) && !isOwner()) || ((r === 'lessons' || /^lesson-/.test(r)) && !canViewLessons())) { r = 'overview'; setHash(r); }
+      if ((r === 'applications' && !can('applications')) || ((r === 'messages' || /^chat-/.test(r)) && !can('chat')) || ((r === 'team' || r === 'research' || /^admin-/.test(r)) && !isOwner()) || ((r === 'lessons' || /^lesson-/.test(r)) && !canViewLessons())) { r = 'overview'; setHash(r); }
       var lm = /^lesson-([a-z]+)-(\d+)$/.exec(r);
       if (/^review-/.test(r)) { view = vReview(r.slice(7)); tab = 'reviews'; }
       else if (r === 'team') { view = vTeam(); tab = 'overview'; }
       else if (r === 'lessons') { view = vLessons(); tab = 'overview'; }
+      else if (r === 'research') { view = vResearch(); tab = 'overview'; }
       else if (lm) { view = vLesson(lm[1], +lm[2]); tab = 'overview'; }
       else if (/^admin-/.test(r)) { view = vTeamMember(r.slice(6)); tab = 'overview'; }
       else if (/^member-/.test(r)) { view = vMember(r.slice(7)); tab = 'members'; }
@@ -764,7 +766,8 @@
       (stats.pending ? stats.pending + ' submission' + (stats.pending > 1 ? 's are' : ' is') + ' waiting for review' + (stats.pendingMine ? ', ' + stats.pendingMine + ' from your students.' : '.') : 'You’re all caught up.') + '</p></section>' +
       (canViewLessons() || isOwner() ? '<div class="owner-tools' + (canViewLessons() && isOwner() ? '' : ' one') + '">' +
         (canViewLessons() ? '<a class="glass card team-card" href="#lessons"><span class="ot-icon">' + ic(can('edit_lessons') ? 'pen' : 'today') + '</span><div class="li-main"><h3>' + (can('edit_lessons') ? 'Edit lessons' : 'Lessons') + '</h3><span class="small muted">' + (can('edit_lessons') ? 'Proofread any step as students see it and change the wording.' : 'Read any step exactly as students see it.') + '</span></div>' + ic('chev', 'chev') + '</a>' : '') +
-        (isOwner() ? '<a class="glass card team-card" href="#team"><span class="ot-icon">' + ic('users') + '</span><div class="li-main"><h3>Team & permissions</h3><span class="small muted">Mentors, what everyone can do, and all activity.</span></div>' + ic('chev', 'chev') + '</a>' : '') +
+        (isOwner() ? '<a class="glass card team-card" href="#team"><span class="ot-icon">' + ic('users') + '</span><div class="li-main"><h3>Team & permissions</h3><span class="small muted">Mentors, what everyone can do, and all activity.</span></div>' + ic('chev', 'chev') + '</a>' +
+          '<a class="glass card team-card" href="#research"><span class="ot-icon">' + ic('paper') + '</span><div class="li-main"><h3>Published research</h3><span class="small muted">Add or remove your students’ papers on the website.</span></div>' + ic('chev', 'chev') + '</a>' : '') +
       '</div>' : '') +
       '<div class="stats">' +
         '<a class="stat glass' + (stats.pending ? ' hot' : '') + '" href="#reviews"><b>' + stats.pending + '</b><span>Waiting for review</span></a>' +
@@ -1005,6 +1008,60 @@
   }
   function bindToggles(root, name, fn) {
     root.querySelectorAll('[data-' + name + ']').forEach(function (i) { i.addEventListener('change', function () { fn(i.getAttribute('data-' + name), i.checked, i); }); });
+  }
+
+  /* ---------- owners: published research (the website's Published research page) ---------- */
+  var RESEARCH_KINDS = ['Original article', 'Systematic review', 'Meta-analysis', 'Case report', 'Letter to the editor', 'Narrative review', 'Thesis', 'Conference abstract', 'Other'];
+  async function vResearch() {
+    var list = (await S.research()).research;
+    var rows = list.map(function (p) {
+      var sub = [p.journal, p.year, p.kind].filter(Boolean).map(esc).join(' · ');
+      return '<div class="li app"><div class="li-main"><span class="li-title">' + esc(p.title) + '</span><span class="li-sub"><b>' + esc(p.student) + '</b> · ' + sub + '</span>' +
+        (p.link ? '<a class="small rs-link" href="' + esc(p.link) + '" target="_blank" rel="noopener">' + esc(p.link.replace(/^https?:\/\//, '')) + '</a>' : '') + '</div>' +
+        '<div class="row rs-actions"><button class="btn btn-glass btn-sm" type="button" data-edit="' + esc(p.id) + '">Edit</button><button class="btn btn-danger btn-sm" type="button" data-del="' + esc(p.id) + '">Remove</button></div></div>';
+    }).join('');
+    return { html: '<a class="back" href="#overview">' + ic('back', 'chev') + 'Overview</a>' +
+      '<section class="page-head"><div class="row spread wrap"><div class="stack" style="gap:6px"><span class="eyebrow">Owners only</span><h1>Published research</h1></div><button class="btn btn-primary" type="button" id="add-paper">+ Add paper</button></div>' +
+      '<p class="muted">Papers your students published with you. They show on the website’s <a href="research.html" target="_blank" rel="noopener">Published research</a> page straight away, newest year first. Add a paper only with the student’s permission.</p></section>' +
+      (list.length ? '<div class="glass list">' + rows + '</div>' : '<div class="glass empty"><b>No papers yet</b><span>Tap Add paper to put your first student’s publication on the website.</span></div>'),
+      mount: function (m) {
+        m.querySelector('#add-paper').addEventListener('click', function () { researchSheet(null); });
+        m.querySelectorAll('[data-edit]').forEach(function (b) { b.addEventListener('click', function () { researchSheet(list.filter(function (p) { return p.id === b.dataset.edit; })[0]); }); });
+        m.querySelectorAll('[data-del]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            var p = list.filter(function (x) { return x.id === b.dataset.del; })[0];
+            sheet('<h2>Remove this paper?</h2><p class="muted">“' + esc(p.title) + '” by ' + esc(p.student) + ' comes off the website. You can add it again later.</p><div class="row"><button class="btn btn-glass" type="button" data-close style="flex:1">Cancel</button><button class="btn btn-danger" type="button" id="yes" style="flex:1">Remove</button></div>',
+              function (el, close) { el.querySelector('#yes').addEventListener('click', function () { S.removeResearch(p.id).then(function () { close(); toast('Paper removed'); render(); }, function (e) { toast(e.message); }); }); });
+          });
+        });
+      } };
+  }
+  function researchSheet(p) {
+    var e = p || {};
+    sheet('<h2>' + (p ? 'Edit paper' : 'Add a published paper') + '</h2><p class="muted small">This shows publicly on the website’s Published research page.</p>' +
+      '<form id="rs" class="stack" novalidate>' +
+        '<div class="field"><label for="rs-student">Student’s name</label><input id="rs-student" autocomplete="off" required placeholder="Eeman Dar" value="' + esc(e.student || '') + '"></div>' +
+        '<div class="field"><label for="rs-title">Research title</label><textarea id="rs-title" rows="2" required placeholder="Knowledge of hand hygiene among final-year medical students in Lahore">' + esc(e.title || '') + '</textarea></div>' +
+        '<div class="field"><label for="rs-journal">Journal</label><input id="rs-journal" autocomplete="off" required placeholder="Pakistan Journal of Medical Sciences" value="' + esc(e.journal || '') + '"></div>' +
+        '<div class="rs-two"><div class="field"><label for="rs-year">Year <span class="muted">(optional)</span></label><input id="rs-year" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="' + new Date().getFullYear() + '" value="' + esc(e.year || '') + '"></div>' +
+        '<div class="field"><label for="rs-kind">Type <span class="muted">(optional)</span></label><select id="rs-kind"><option value="">Choose</option>' + RESEARCH_KINDS.map(function (k) { return '<option' + (k === e.kind ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '</select></div></div>' +
+        '<div class="field"><label for="rs-link">DOI or link <span class="muted">(optional)</span></label><input id="rs-link" autocomplete="off" inputmode="url" placeholder="10.12669/pjms.40.1.1234" value="' + esc(e.link || '') + '"></div>' +
+        '<p class="error" id="rs-err" role="alert" hidden></p>' +
+        '<button class="btn btn-primary btn-block" type="submit">' + (p ? 'Save changes' : 'Add to website') + '</button><button class="btn btn-quiet btn-block btn-sm" type="button" data-close>Cancel</button>' +
+      '</form>',
+      function (el, close) {
+        var f = el.querySelector('#rs'), err = el.querySelector('#rs-err'), v = function (id) { return el.querySelector('#' + id).value.trim(); };
+        f.addEventListener('submit', function (ev) {
+          ev.preventDefault();
+          var show = function (msg) { err.textContent = msg; err.hidden = false; };
+          if (!v('rs-student')) return show('Enter the student’s name.');
+          if (!v('rs-title')) return show('Enter the research title.');
+          if (!v('rs-journal')) return show('Enter the journal.');
+          if (v('rs-year') && !/^\d{4}$/.test(v('rs-year'))) return show('Enter the year as four digits, like 2026.');
+          var data = { student: v('rs-student'), title: v('rs-title'), journal: v('rs-journal'), year: v('rs-year'), kind: v('rs-kind'), link: v('rs-link') };
+          (p ? S.updateResearch(p.id, data) : S.addResearch(data)).then(function () { close(); toast(p ? 'Paper updated' : 'Added to the website'); render(); }, function (x) { show(x.message); });
+        });
+      });
   }
 
   /* ---------- owners: lessons (proofread and edit) ---------- */

@@ -9,6 +9,7 @@ Medical research mentorship: daily tasks, step-by-step lessons and mentor feedba
   - `mentors.html`: each mentor's details and message, opened from “Read message” on the landing page.
   - `privacy.html`, `terms.html`: privacy policy and terms and conditions, linked from every footer and the portal login.
   - `reviews.html`: student reviews. Add real reviews to the `REVIEWS` list at the bottom of the file.
+  - `research.html`: students' published papers, loaded from the database. Owners add and remove them in the portal.
   - `portal.html`: login, member portal and mentor portal.
   - `assets/curriculum.js`: the programmes and all lesson content. Edit this to change the course.
   - `assets/store.js`: talks to the API. `assets/portal.js`, `portal.css`: portal screens.
@@ -62,6 +63,10 @@ Code: `worker/connector.js`. Its tables are created automatically on first use.
 ## Editing lessons (owners)
 
 Owners, and mentors with the **View lessons** or **Edit lessons** permission, open **Lessons** (Overview, or the account menu) to read any step exactly as students see it and edit its wording: title, short description, minutes, “In simple words”, the step-by-step points, common mistakes, the weak/strong example, task instructions, what to include and the template. Edits are saved in the database (`lesson_edits`) and layered over `public/assets/curriculum.js`, so students see them straight away and any step can be reset to the original. Charts and tables, and the order of steps, still come from `curriculum.js`.
+
+## Published research (owners)
+
+Owners open **Published research** from the portal Overview to add, edit or remove a student's paper: student name, research title, journal, and optionally the year, type and DOI or link (a bare DOI like `10.1234/abcd` becomes a doi.org link). Papers are saved in the database (`research`) and show on `research.html` straight away, newest year first; the landing page links there from the button above Reviews. The connector has matching tools (`list_research`, `add_research`, `update_research`, `remove_research`).
 
 ## Owners, mentors and permissions
 

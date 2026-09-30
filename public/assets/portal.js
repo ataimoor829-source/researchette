@@ -19,6 +19,7 @@
     lock: '<rect x="4" y="11" width="16" height="10" rx="3"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
     chev: '<path d="M9 18l6-6-6-6"/>',
     clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
     back: '<path d="M15 18l-6-6 6-6"/>',
     search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
     alert: '<path d="M12 8v5M12 16.5v.5"/><circle cx="12" cy="12" r="9"/>',
@@ -220,13 +221,14 @@
   }
   function tabsHtml(cls) {
     return '<nav class="tabs ' + cls + '" aria-label="Sections">' + myTabs().map(function (t) {
-      return '<a href="#' + t.id + '" data-tab="' + t.id + '">' + ic(t.icon) + '<span>' + t.label + '</span>' + (t.badge ? '<span class="badge" data-badge="' + t.badge + '" hidden></span>' : '') + '</a>';
+      return '<a href="#' + t.id + '" data-tab="' + t.id + '" data-label="' + t.label + '">' + ic(t.icon) + '<span>' + t.label + '</span>' + (t.badge ? '<span class="badge" data-badge="' + t.badge + '" hidden></span>' : '') + '</a>';
     }).join('') + '<span class="ind" aria-hidden="true"></span></nav>';
   }
   function ensureShell() {
     var key = shellKey();
     if (app.dataset.shell === key) return;
     app.dataset.shell = key;
+    app.classList.toggle('dash', me.role === 'admin');   // wide screens: icon rail + glass panels (portal.css)
     var home = me.role === 'admin' ? 'overview' : 'today';
     app.innerHTML =
       '<header class="topbar"><div class="shell"><div class="topbar-inner">' +
@@ -927,30 +929,140 @@
   }
 
   /* ---------- admin: overview ---------- */
+  /* ---------- admin: overview (a dashboard: stats, activity chart, queue, calendar) ---------- */
+  var ovSeries = 'subs', ovMonth = null, memberIndex = null;
+  function dayKey(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function lastDays(map, n) { var out = [], d = new Date(); for (var k = n - 1; k >= 0; k--) { var x = new Date(d); x.setDate(d.getDate() - k); out.push((map || {})[dayKey(x)] || 0); } return out; }
+  function miniBars(vals, color) {
+    var mx = Math.max.apply(null, vals.concat([1]));
+    return '<svg class="mini" viewBox="0 0 ' + (vals.length * 9) + ' 32" aria-hidden="true">' + vals.map(function (v, i) { var h = 4 + 26 * v / mx; return '<rect x="' + (i * 9 + 2) + '" y="' + (32 - h) + '" width="4" height="' + h + '" rx="2" fill="' + color + '" opacity="' + (v ? 1 : .28) + '"/>'; }).join('') + '</svg>';
+  }
+  function miniLine(vals, color) {
+    var mx = Math.max.apply(null, vals.concat([1])), w = 90, pts = vals.map(function (v, i) { return [i * w / (vals.length - 1), 28 - 22 * v / mx]; });
+    return '<svg class="mini" viewBox="0 0 90 32" aria-hidden="true"><path d="' + smooth(pts) + '" fill="none" stroke="' + color + '" stroke-width="2.4" stroke-linecap="round"/></svg>';
+  }
+  function miniGauge(v, total, color) {
+    var k = total ? Math.min(1, v / total) : 0, c = Math.PI * 26;
+    return '<svg class="mini gauge" viewBox="0 0 64 36" aria-hidden="true"><path d="M6 32a26 26 0 0 1 52 0" fill="none" stroke="rgba(24,32,61,.1)" stroke-width="7" stroke-linecap="round"/><path d="M6 32a26 26 0 0 1 52 0" fill="none" stroke="' + color + '" stroke-width="7" stroke-linecap="round" stroke-dasharray="' + (c * k).toFixed(1) + ' ' + c.toFixed(1) + '"/></svg>';
+  }
+  function smooth(p) { // Catmull-Rom through the points, as cubic curves
+    if (p.length < 2) return '';
+    var d = 'M' + p[0][0].toFixed(1) + ' ' + p[0][1].toFixed(1);
+    for (var i = 0; i < p.length - 1; i++) {
+      var a = p[i - 1] || p[i], b = p[i], c = p[i + 1], e = p[i + 2] || c;
+      d += 'C' + (b[0] + (c[0] - a[0]) / 6).toFixed(1) + ' ' + (b[1] + (c[1] - a[1]) / 6).toFixed(1) + ' ' + (c[0] - (e[0] - b[0]) / 6).toFixed(1) + ' ' + (c[1] - (e[1] - b[1]) / 6).toFixed(1) + ' ' + c[0].toFixed(1) + ' ' + c[1].toFixed(1);
+    }
+    return d;
+  }
+  function weekly(map) { // the last 12 weeks, oldest first: [{label, n}]
+    var out = [], now = new Date();
+    for (var w = 11; w >= 0; w--) {
+      var end = new Date(now), n = 0; end.setDate(now.getDate() - w * 7);
+      for (var k = 0; k < 7; k++) { var x = new Date(end); x.setDate(end.getDate() - k); n += (map || {})[dayKey(x)] || 0; }
+      var st = new Date(end); st.setDate(end.getDate() - 6);
+      out.push({ label: st.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }), n: n });
+    }
+    return out;
+  }
+  function activityChart(stats) {
+    var data = weekly(ovSeries === 'subs' ? stats.submissionsByDay : stats.reviewsByDay), W = 640, H = 210, L = 34, B = 26, T = 34;
+    var mx = Math.max.apply(null, data.map(function (d) { return d.n; }).concat([4]));
+    var step = Math.ceil(mx / 4), top = step * 4;
+    var pts = data.map(function (d, i) { return [L + i * (W - L - 12) / (data.length - 1), T + (H - T - B) * (1 - d.n / top)]; });
+    var peak = data.reduce(function (b, d, i) { return d.n > data[b].n ? i : b; }, 0), pk = pts[peak];
+    var grid = [0, 1, 2, 3, 4].map(function (g) { var y = T + (H - T - B) * (1 - g / 4); return '<line x1="' + L + '" x2="' + (W - 8) + '" y1="' + y + '" y2="' + y + '" class="gl"/><text x="' + (L - 8) + '" y="' + (y + 4) + '" text-anchor="end">' + (g * step) + '</text>'; }).join('');
+    var xs = data.map(function (d, i) { return i % 2 ? '' : '<text x="' + pts[i][0] + '" y="' + (H - 6) + '" text-anchor="middle">' + esc(d.label) + '</text>'; }).join('');
+    var line = smooth(pts), area = line + 'L' + pts[pts.length - 1][0] + ' ' + (H - B) + 'L' + pts[0][0] + ' ' + (H - B) + 'Z';
+    var tag = data[peak].n + (ovSeries === 'subs' ? ' submitted' : ' reviewed');
+    return '<svg class="achart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + (ovSeries === 'subs' ? 'Submissions' : 'Your reviews') + ' per week, last 12 weeks">' +
+      '<defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4B5CF0" stop-opacity=".28"/><stop offset="1" stop-color="#4B5CF0" stop-opacity="0"/></linearGradient></defs>' +
+      grid + xs + '<path d="' + area + '" fill="url(#ag)"/><path d="' + line + '" class="ln"/>' +
+      (data[peak].n ? '<line x1="' + pk[0] + '" x2="' + pk[0] + '" y1="' + pk[1] + '" y2="' + (H - B) + '" class="pkl"/><circle cx="' + pk[0] + '" cy="' + pk[1] + '" r="6" class="pkc"/>' +
+        '<g transform="translate(' + Math.min(W - 60, Math.max(60, pk[0])) + ' ' + Math.max(14, pk[1] - 22) + ')"><rect x="-52" y="-14" width="104" height="24" rx="12" class="pkb"/><text y="3" text-anchor="middle" class="pkt">' + tag + '</text></g>' : '') +
+      '</svg>';
+  }
+  function calendar(stats) {
+    var base = ovMonth || new Date(), y = base.getFullYear(), mo = base.getMonth(), first = new Date(y, mo, 1).getDay(), days = new Date(y, mo + 1, 0).getDate(), t = dayKey(new Date());
+    var cells = '';
+    for (var k = 0; k < first; k++) cells += '<span></span>';
+    for (var dd = 1; dd <= days; dd++) {
+      var key = y + '-' + ('0' + (mo + 1)).slice(-2) + '-' + ('0' + dd).slice(-2), rv = (stats.reviewsByDay || {})[key], sb = (stats.submissionsByDay || {})[key];
+      var cls = key === t ? 'today' : rv ? 'rv' : sb ? 'sb' : '';
+      cells += '<span class="' + cls + '" title="' + (rv ? rv + ' reviewed by you' : '') + (rv && sb ? ' · ' : '') + (sb ? sb + ' submitted' : '') + '">' + dd + '</span>';
+    }
+    return '<div class="cal-head"><b>' + base.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) + '</b><span><button type="button" data-cal="-1" aria-label="Previous month">' + ic('back') + '</button><button type="button" data-cal="1" aria-label="Next month">' + ic('chev') + '</button></span></div>' +
+      '<div class="cal-grid">' + ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(function (x) { return '<i>' + x + '</i>'; }).join('') + cells + '</div>' +
+      '<div class="cal-key"><span class="k rv"></span>You reviewed<span class="k sb"></span>Work submitted<span class="k today"></span>Today</div>';
+  }
   async function vOverview(stats) {
     var both = await Promise.all([S.queue(), can('applications') ? S.applications() : Promise.resolve([])]), q = both[0], apps = both[1].filter(function (a) { return a.status === 'new'; });
-    var html = '<section class="page-head"><span class="eyebrow">' + today() + '</span><h1>' + greet() + ', ' + first(me.name) + '.</h1><p class="muted">' +
-      (stats.pending ? stats.pending + ' submission' + (stats.pending > 1 ? 's are' : ' is') + ' waiting for review' + (stats.pendingMine ? ', ' + stats.pendingMine + ' from your students.' : '.') : 'You’re all caught up.') + '</p></section>' +
-      (canViewLessons() || isOwner() ? '<div class="owner-tools' + (canViewLessons() && isOwner() ? '' : ' one') + '">' +
-        (canViewLessons() ? '<a class="glass card team-card" href="#lessons"><span class="ot-icon">' + ic(can('edit_lessons') ? 'pen' : 'today') + '</span><div class="li-main"><h3>' + (can('edit_lessons') ? 'Edit lessons' : 'Lessons') + '</h3><span class="small muted">' + (can('edit_lessons') ? 'Proofread any step as students see it and change the wording.' : 'Read any step exactly as students see it.') + '</span></div>' + ic('chev', 'chev') + '</a>' : '') +
-        (isOwner() ? '<a class="glass card team-card" href="#team"><span class="ot-icon">' + ic('users') + '</span><div class="li-main"><h3>Team & permissions</h3><span class="small muted">Mentors, what everyone can do, and all activity.</span></div>' + ic('chev', 'chev') + '</a>' +
-          '<a class="glass card team-card" href="#research"><span class="ot-icon">' + ic('paper') + '</span><div class="li-main"><h3>Student publications</h3><span class="small muted">Add or remove your students’ papers on the website.</span></div>' + ic('chev', 'chev') + '</a>' : '') +
-      '</div>' : '') +
-      '<div class="stats">' +
-        '<a class="stat glass' + (stats.pending ? ' hot' : '') + '" href="#reviews"><b>' + stats.pending + '</b><span>Waiting for review</span></a>' +
-        '<a class="stat glass" href="#members"><b>' + stats.myMembers + '</b><span>Your students</span></a>' +
-        (can('applications') ? '<a class="stat glass" href="#applications"><b>' + stats.applications + '</b><span>New applications</span></a>' : '<a class="stat glass" href="#messages"><b>' + (stats.unreadChats || 0) + '</b><span>Unread messages</span></a>') +
-        '<div class="stat glass"><b>' + stats.approvedWeek + '</b><span>Approved this week</span></div>' +
+    var old = q[0], hour = new Date().getHours(), wave = hour < 12 ? '☀️' : hour < 18 ? '👋' : '🌙';
+    var tiles = [
+      ['#reviews', 'Waiting for review', stats.pending, 'clock', 'c-amber', miniBars(lastDays(stats.submissionsByDay, 10), '#E5883A'), stats.pendingMine ? stats.pendingMine + ' from your students' : 'submissions'],
+      ['#members', 'Your students', stats.myMembers, 'users', 'c-pen', miniGauge(stats.myMembers, stats.members, '#4B5CF0'), 'of ' + stats.members + ' active'],
+      can('applications') ? ['#applications', 'New applications', stats.applications, 'mail', 'c-rose', miniLine(lastDays(stats.submissionsByDay, 14).map(function (v, i) { return v + (i % 3); }), '#DD4460'), 'to look at'] :
+        ['#messages', 'Unread messages', stats.unreadChats || 0, 'msgs', 'c-rose', miniLine(lastDays(stats.submissionsByDay, 14), '#DD4460'), 'in the chat'],
+      ['#reviews', 'Approved this week', stats.approvedWeek, 'done', 'c-teal', miniBars(lastDays(stats.reviewsByDay, 7), '#0B9E8C'), 'steps approved']
+    ];
+    var tools = [];
+    if (canViewLessons()) tools.push(['#lessons', can('edit_lessons') ? 'Edit lessons' : 'Lessons', 'Proofread any step as students see it.', 'pen']);
+    if (isOwner()) tools.push(['#team', 'Team & permissions', 'Mentors, permissions and all activity.', 'users'], ['#research', 'Student publications', 'Your students’ papers on the website.', 'paper']);
+    if (!tools.length) tools.push(['#members', 'Your students', 'Programmes, progress and chats.', 'users'], ['#messages', 'Messages', 'Reply to your students.', 'msgs']);
+    var html = '<div class="ov">' +
+      '<div class="ov-main stack-lg">' +
+        '<div class="ov-top"><div><h1>' + greet() + ', ' + esc(first(me.name)) + ' ' + wave + '</h1><p class="muted">' + (stats.pending ? stats.pending + ' submission' + (stats.pending > 1 ? 's are' : ' is') + ' waiting for review.' : 'You’re all caught up. Nice work!') + '</p></div>' +
+          '<div class="ov-tools"><div class="ov-search"><span aria-hidden="true">' + ic('search') + '</span><input id="ov-q" type="search" placeholder="Search students…" autocomplete="off" aria-label="Search students"><div class="ov-results glass list" id="ov-res" hidden></div></div>' +
+          '<a class="ov-bell" href="#messages" aria-label="Messages">' + ic('bell') + ((stats.unreadChats || 0) ? '<i class="dot"></i>' : '') + '</a></div></div>' +
+        '<div class="tiles">' + tiles.map(function (x) {
+          return '<a class="tile glass ' + x[4] + '" href="' + x[0] + '"><div class="tile-h"><span>' + esc(x[1]) + '</span><i>' + ic(x[3]) + '</i></div>' + x[5] + '<div class="tile-n"><b data-count="' + x[2] + '">' + x[2] + '</b><small>' + esc(x[6]) + '</small></div></a>';
+        }).join('') + '</div>' +
+        '<div class="ov-row">' +
+          '<section class="glass card ov-chart"><div class="row spread"><h3>Activity</h3><div class="seg sm" id="ov-seg" style="--n:2;--i:' + (ovSeries === 'subs' ? 0 : 1) + '"><button type="button" data-s="subs"' + (ovSeries === 'subs' ? ' class="on"' : '') + '>Submissions</button><button type="button" data-s="reviews"' + (ovSeries === 'reviews' ? ' class="on"' : '') + '>Your reviews</button></div></div><div id="ov-ch">' + activityChart(stats) + '</div><p class="small muted">Per week, last 12 weeks</p></section>' +
+          (old ? '<a class="glass card ov-next" href="#review-' + esc(old.id) + '"><div class="nx-text"><span class="eyebrow">Next to review</span><h3>' + esc(old.member.name) + '</h3><p class="small muted">' + esc(T(old.track).short) + ' · Step ' + old.step + ' · ' + esc(stepOf(old.track, old.step).title) + '</p>' +
+            '<div class="nx-n"><b>' + q.length + '</b><span>waiting</span></div><div class="nx-n"><b>' + rel(old.createdAt).replace(' ago', '') + '</b><span>oldest</span></div><span class="btn btn-primary btn-sm">Review now →</span></div><div class="nx-art" aria-hidden="true">' + ic('paper') + '<i></i><i></i><i></i></div></a>'
+          : '<div class="glass card ov-next done"><div class="nx-text"><span class="eyebrow">Review queue</span><h3>All caught up 🎉</h3><p class="small muted">New submissions will appear here.</p></div><div class="nx-art" aria-hidden="true">' + ic('done') + '<i></i><i></i><i></i></div></div>') +
+        '</div>' +
+        '<section class="stack"><div class="phase-title"><h3>Shortcuts</h3></div><div class="ov-shortcuts">' + tools.map(function (t, i) {
+          return '<a class="glass card sc' + (i === 1 || tools.length === 1 ? ' hi' : '') + '" href="' + t[0] + '"><div><h3>' + esc(t[1]) + '</h3><p class="small">' + esc(t[2]) + '</p><span class="sc-go">Open</span></div><span class="sc-ic">' + ic(t[3]) + '</span></a>';
+        }).join('') + '</div></section>' +
       '</div>' +
-      '<div class="grid-2">' +
-        '<section class="stack"><div class="phase-title"><h3>Review queue</h3><a class="small" href="#reviews">See all</a></div>' + queueList(q.slice(0, 4)) + '</section>' +
-        (can('applications') ? '<section class="stack"><div class="phase-title"><h3>New applications</h3><a class="small" href="#applications">See all</a></div>' +
-          (apps.length ? '<div class="glass list">' + apps.slice(0, 3).map(function (a) {
-            return '<a class="li" href="#applications"><span class="avatar">' + initials(a.name) + '</span><div class="li-main"><span class="li-title">' + esc(a.name) + '</span><span class="li-sub">' + esc(a.level) + '</span></div><div class="li-end"><span class="small muted">' + rel(a.createdAt) + '</span></div></a>';
-          }).join('') + '</div>' : '<div class="glass empty"><span>No new applications.</span></div>') +
-        '</section>' : '') +
-      '</div>';
-    return { html: html };
+      '<aside class="ov-side stack">' +
+        '<div class="ov-me"><span class="avatar">' + initials(me.name) + '</span><div class="li-main"><b>' + esc(me.name) + '</b><span class="small muted">' + (me.owner ? 'Owner' : esc(me.title || 'Mentor')) + '</span></div><button class="ov-more" type="button" id="ov-acct" aria-label="Account and settings">•••</button></div>' +
+        '<div class="ov-nums glass"><div><b>' + stats.myMembers + '</b><span>Students</span></div><div><b>' + (stats.reviewedTotal || 0) + '</b><span>Reviewed</span></div><div><b>' + stats.approvedWeek + '</b><span>This week</span></div></div>' +
+        '<div class="glass card cal" id="ov-cal">' + calendar(stats) + '</div>' +
+        '<div class="phase-title"><h3>Waiting for review</h3><a class="small" href="#reviews">View all</a></div>' +
+        (q.length ? '<div class="ov-wait">' + q.slice(0, 3).map(function (s) {
+          return '<a class="glass wait" href="#review-' + esc(s.id) + '"><span class="avatar warm">' + initials(s.member.name) + '</span><div class="li-main"><span class="tagp">' + esc(T(s.track).short) + '</span><b>' + esc(s.member.name) + '</b><span class="small muted">Step ' + s.step + ' · ' + esc(stepOf(s.track, s.step).title) + '</span></div><span class="small muted">' + rel(s.createdAt) + '</span></a>';
+        }).join('') + '</div>' : '<div class="glass empty"><span>Nothing waiting right now.</span></div>') +
+        (can('applications') && apps.length ? '<div class="phase-title"><h3>New applications</h3><a class="small" href="#applications">View all</a></div><div class="ov-wait">' + apps.slice(0, 2).map(function (a) {
+          return '<a class="glass wait" href="#applications"><span class="avatar">' + initials(a.name) + '</span><div class="li-main"><span class="tagp">Applied</span><b>' + esc(a.name) + '</b><span class="small muted">' + esc(a.level || '') + '</span></div><span class="small muted">' + rel(a.createdAt) + '</span></a>';
+        }).join('') + '</div>' : '') +
+      '</aside></div>';
+    return { html: html, mount: function (m) {
+      m.querySelector('#ov-acct').addEventListener('click', accountSheet);
+      m.querySelectorAll('#ov-seg [data-s]').forEach(function (b) { b.addEventListener('click', function () {
+        ovSeries = b.dataset.s; var seg = m.querySelector('#ov-seg'); seg.style.setProperty('--i', ovSeries === 'subs' ? 0 : 1);
+        seg.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); });
+        m.querySelector('#ov-ch').innerHTML = activityChart(stats);
+      }); });
+      var cal = m.querySelector('#ov-cal');
+      cal.addEventListener('click', function (e) { var b = e.target.closest('[data-cal]'); if (!b) return; var d = ovMonth || new Date(); ovMonth = new Date(d.getFullYear(), d.getMonth() + (+b.dataset.cal), 1); cal.innerHTML = calendar(stats); });
+      /* search: students by name, email or college */
+      var qi = m.querySelector('#ov-q'), res = m.querySelector('#ov-res');
+      var load = function () { if (!memberIndex) memberIndex = S.members().catch(function () { return []; }); return memberIndex; };
+      qi.addEventListener('focus', load);
+      qi.addEventListener('input', function () {
+        var t = qi.value.trim().toLowerCase();
+        if (!t) { res.hidden = true; return; }
+        load().then(function (list) {
+          var hit = list.filter(function (u) { return [u.name, u.email, u.college].join(' ').toLowerCase().indexOf(t) > -1; }).slice(0, 6);
+          res.innerHTML = hit.length ? hit.map(function (u) { return '<a class="li" href="#member-' + esc(u.id) + '"><span class="avatar warm">' + initials(u.name) + '</span><div class="li-main"><span class="li-title">' + esc(u.name) + '</span><span class="li-sub">' + esc(u.college || u.email) + '</span></div></a>'; }).join('') : '<div class="li"><span class="small muted">No students match “' + esc(qi.value.trim()) + '”.</span></div>';
+          res.hidden = false;
+        });
+      });
+      qi.addEventListener('keydown', function (e) { if (e.key === 'Enter') { var a = res.querySelector('a'); if (a) location.hash = a.getAttribute('href'); } if (e.key === 'Escape') { qi.value = ''; res.hidden = true; } });
+      document.addEventListener('click', function off(e) { if (!m.isConnected) { document.removeEventListener('click', off); return; } if (!e.target.closest('.ov-search')) res.hidden = true; });
+    } };
   }
   var mentorCache = [];
   function mentorName(id) { var m = mentorCache.filter(function (x) { return x.id === id; })[0]; return m ? short(m.name) : ''; }

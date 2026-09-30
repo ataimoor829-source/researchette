@@ -598,3 +598,53 @@ details[open] > summary .chev.down { transform: rotate(-90deg); }
 .rs-link { color: var(--pen); overflow-wrap: anywhere; }
 .rs-actions { flex: none; gap: 8px; }
 @media (max-width: 560px) { .li.app:has(.rs-actions) { grid-template-columns: 1fr; } .rs-actions { width: 100%; } .rs-actions .btn { flex: 1; } }
+
+/* ---------- motion and interactivity ---------- */
+/* lists arrive row by row when a screen opens (index set by portal.js) */
+.view-enter .list > *, .view-enter .rise > * { animation: viewin .42s var(--ease) backwards; animation-delay: calc(var(--si, 0) * 38ms + .06s); }
+a.li, .li[data-pt] { transition: transform .12s ease-out, background-color .2s; }
+a.li:active { transform: scale(.985); }
+/* Learn / Example / Task: the new panel slides in from the side you moved towards */
+.panel.from-right { animation: slide-r .42s var(--spring, var(--ease)) both; }
+.panel.from-left { animation: slide-l .42s var(--spring, var(--ease)) both; }
+@keyframes slide-r { from { opacity: 0; transform: translateX(26px); } }
+@keyframes slide-l { from { opacity: 0; transform: translateX(-26px); } }
+/* lesson points you tick off */
+.pt-hint { margin-top: -8px; }
+.pt-count { font-weight: 600; }
+.lesson.ticks li { cursor: pointer; border-radius: 14px; margin-inline: -8px; padding-inline: 8px; -webkit-tap-highlight-color: transparent; user-select: none; transition: transform .12s ease-out, background-color .2s; }
+.lesson.ticks li:hover { background: var(--pen-soft); }
+.lesson.ticks li:active { transform: scale(.985); }
+.lesson.ticks li:focus-visible { outline: 3px solid var(--pen); outline-offset: 1px; }
+.lesson.ticks .n { transition: background-color .25s, color .25s; }
+.lesson.ticks .n svg { width: 16px; height: 16px; }
+.lesson li.done .n { background: var(--teal); color: #fff; }
+.lesson li.done b { color: var(--muted); }
+.lesson li.pop .n { animation: tick-pop .45s var(--spring, var(--ease)); }
+@keyframes tick-pop { 40% { transform: scale(1.25); } }
+.btn.nudge { animation: nudge .6s var(--spring, var(--ease)); }
+@keyframes nudge { 30% { transform: translateX(6px); } 60% { transform: translateX(-3px); } }
+/* "which one is stronger?" */
+.quiz-q { font-size: 1rem; }
+.ex-pick { width: 100%; text-align: left; font: inherit; color: inherit; border: 2px solid var(--line); background: var(--paper); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .12s ease-out, border-color .2s, background-color .3s; }
+.ex-pick:not(:disabled):hover { border-color: var(--pen); }
+.ex-pick:not(:disabled):active { transform: scale(.98); }
+.ex-pick:disabled { cursor: default; }
+.ex-pick .lbl:empty { display: none; }
+.ex-pick.ex-strong, .ex-pick.ex-weak { border-color: transparent; }
+.ex-pick.chosen.right { border-color: var(--teal); animation: tick-pop .5s var(--spring, var(--ease)); }
+.ex-pick.chosen.wrong { border-color: var(--redpen); animation: shake .45s ease; }
+@keyframes shake { 20% { transform: translateX(-7px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(2px); } }
+.quiz-msg { font-weight: 600; min-height: 1.4em; }
+.quiz-msg.ok { color: var(--teal); } .quiz-msg.no { color: var(--redpen); }
+.quiz-after { display: grid; gap: 12px; animation: viewin .4s var(--ease) both; }
+.quiz-after[hidden] { display: none; }
+/* a sent task */
+.btn.sent { background: var(--teal); color: #fff; }
+.btn.sent svg { width: 18px; height: 18px; animation: tick-pop .45s var(--spring, var(--ease)); }
+/* confetti (portal.js) */
+.confetti { position: fixed; inset: 0; pointer-events: none; z-index: 90; overflow: hidden; }
+.confetti i { position: absolute; width: 8px; height: 12px; border-radius: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  .view-enter .list > *, .view-enter .rise > *, .panel.from-right, .panel.from-left, .lesson li.pop .n, .btn.nudge, .ex-pick.chosen, .btn.sent svg { animation: none; }
+}

@@ -219,3 +219,8 @@ html.menu-open .menu-panel { opacity: 1; transform: none; }
 @media (min-width: 861px) { .menu-bg, .menu-panel { display: none !important; } }
 @media (prefers-reduced-motion: reduce) { .menu-panel, .menu-bg, .menu-btn span { transition: none; } .menu-panel { transform: none; } }
 @media (prefers-reduced-transparency: reduce) { .menu-panel { background: var(--paper); -webkit-backdrop-filter: none; backdrop-filter: none; } }
+
+/* ---------- staggered entrances: children of .stagger arrive one after another (index set by fx.js) ---------- */
+.js .stagger > * { opacity: 0; transform: translateY(14px); transition: opacity .6s var(--ease, ease), transform .7s var(--spring, var(--ease, ease)); transition-delay: calc(var(--si, 0) * 60ms + .12s); }
+.js .in .stagger > *, .js .stagger.in > * { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .js .stagger > * { opacity: 1; transform: none; transition: none; } }

@@ -11,7 +11,7 @@ Medical research mentorship: daily tasks, step-by-step lessons and mentor feedba
   - `reviews.html`: student reviews. Add real reviews to the `REVIEWS` list at the bottom of the file.
   - `research.html`: students' published papers, loaded from the database. Owners add and remove them in the portal.
   - `portal.html`: login, member portal and mentor portal.
-  - `assets/curriculum.js`: the programmes and all lesson content. Edit this to change the course.
+  - `assets/curriculum.js`: the programmes and all lesson content, written for complete beginners. Edit this to change the course. Lessons can include pictures drawn by `portal.js`: tables, flows, decision charts, the evidence pyramid, formulas, letter cards (PICO, FINER, SMART), funnels, AND/OR/NOT circles, a drawing of the PubMed screen, spreadsheets and a forest plot (the types are listed at the top of the extra-guidance section).
   - `assets/store.js`: talks to the API. `assets/portal.js`, `portal.css`: portal screens.
   - `assets/liquid.css`, `assets/fx.js`: shared glass look and pointer effects.
   - `assets/menu.js`: the phone menu (menu button in the top bar at 860px and below) on every public page.
@@ -65,9 +65,9 @@ Code: `worker/connector.js`. Its tables are created automatically on first use.
 
 Owners, and mentors with the **View lessons** or **Edit lessons** permission, open **Lessons** (Overview, or the account menu) to read any step exactly as students see it and edit its wording: title, short description, minutes, “In simple words”, the step-by-step points, common mistakes, the weak/strong example, task instructions, what to include and the template. Edits are saved in the database (`lesson_edits`) and layered over `public/assets/curriculum.js`, so students see them straight away and any step can be reset to the original. Charts and tables, and the order of steps, still come from `curriculum.js`.
 
-## Student publications (owners)
+## Results & publications (owners)
 
-Owners open **Student publications** from the portal Overview to add, edit or remove a student's paper: student name, research title, journal, and optionally the year, type and DOI or link (a bare DOI like `10.1234/abcd` becomes a doi.org link). Papers are saved in the database (`research`) and show on `research.html` straight away, newest year first; the landing page links there from the top bar and the bold band above Reviews. The connector has matching tools (`list_research`, `add_research`, `update_research`, `remove_research`).
+Owners open **Results & publications** from the portal Overview to add, edit or remove a student's paper: student name, research title, journal, and optionally the year, type and DOI or link (a bare DOI like `10.1234/abcd` becomes a doi.org link). Papers are saved in the database (`research`) and show on `research.html` straight away, newest year first; the landing page links there from the top bar and the bold band above Reviews. The connector has matching tools (`list_research`, `add_research`, `update_research`, `remove_research`).
 
 ## Owners, mentors and permissions
 

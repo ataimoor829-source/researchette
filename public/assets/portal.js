@@ -644,9 +644,68 @@
     } else if (v.type === 'formula') {
       body = '<div class="viz-formula"><div class="expr">' + esc(v.expr) + '</div><dl>' + v.legend.map(function (x) { return '<div><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>' +
         (v.worked ? '<p class="worked"><b>Worked example:</b> ' + esc(v.worked) + '</p>' : '') + '</div>';
+    } else if (v.type === 'letters') {
+      /* one card per letter of a memory aid (PICO, FINER): letter, word, the plain question, a good and a bad example */
+      body = '<div class="viz-letters">' + v.items.map(function (x) {
+        return '<div class="lt"><span class="lt-l" aria-hidden="true">' + esc(x[0]) + '</span><div class="lt-t"><b>' + esc(x[1]) + '</b><span>' + esc(x[2]) + '</span>' +
+          (x[3] ? '<small class="ok">' + esc(x[3]) + '</small>' : '') + (x[4] ? '<small class="no">' + esc(x[4]) + '</small>' : '') + '</div></div>';
+      }).join('') + '</div>';
+    } else if (v.type === 'funnel') {
+      /* a big idea narrowing down to a small one (or any shape, when each level gives its own width) */
+      var fl = v.levels.length;
+      body = '<div class="viz-funnel">' + v.levels.map(function (x, i) {
+        var w = x[2] || Math.round(100 - (45 * i) / Math.max(1, fl - 1));
+        return '<div class="fl' + (i === fl - 1 && !x[2] ? ' last' : '') + '" style="--w:' + w + '%;--k:' + (i / Math.max(1, fl - 1)).toFixed(2) + '"><b>' + esc(x[0]) + '</b><span>' + esc(x[1]) + '</span></div>';
+      }).join('') + '</div>';
+    } else if (v.type === 'venn') {
+      /* what AND, OR and NOT do, drawn as two overlapping circles */
+      body = '<div class="viz-venn">' + v.items.map(function (x) {
+        var id = 'vn' + (++vennId), A = '<circle cx="62" cy="50" r="36"/>', B = '<circle cx="98" cy="50" r="36"/>', fill;
+        if (x.op === 'OR') fill = '<g class="on">' + A + B + '</g>';
+        else if (x.op === 'AND') fill = '<clipPath id="' + id + '">' + A + '</clipPath><g class="on" clip-path="url(#' + id + ')">' + B + '</g>';
+        else fill = '<mask id="' + id + '"><rect width="160" height="100" fill="#fff"/><circle cx="98" cy="50" r="36" fill="#000"/></mask><g class="on" mask="url(#' + id + ')">' + A + '</g>';
+        return '<div class="vn"><svg viewBox="0 0 160 100" role="img" aria-label="' + esc(x.a + ' ' + x.op + ' ' + x.b + ': ' + x.note) + '">' + fill +
+          '<g class="ring">' + A + B + '</g></svg><div class="vn-l"><span>' + esc(x.a) + '</span><span>' + esc(x.b) + '</span></div>' +
+          '<b class="vn-op">' + esc(x.op) + '</b><code>' + esc(x.a + ' ' + x.op + ' ' + x.b) + '</code><small>' + esc(x.note) + '</small></div>';
+      }).join('') + '</div>';
+    } else if (v.type === 'screen') {
+      /* a drawing of a website (e.g. PubMed) with numbered spots explained below it */
+      var mk = {}; (v.notes || []).forEach(function (x, i) { mk[x[0]] = i + 1; });
+      var m = function (k) { return mk[k] ? '<b class="mk" aria-hidden="true">' + mk[k] + '</b>' : ''; };
+      body = '<div class="viz-screen" aria-hidden="true"><div class="sc-bar"><i></i><i></i><i></i><span>' + esc(v.url) + '</span></div><div class="sc-body">' +
+        '<div class="sc-search"><span class="sc-box">' + esc(v.query) + m('box') + '</span><span class="sc-btn">Search' + m('button') + '</span></div>' +
+        '<div class="sc-main">' + (v.filters ? '<div class="sc-filters">' + m('filters') + '<b>Filters</b>' + v.filters.map(function (f) { return '<span class="' + (f[1] ? 'on' : '') + '">' + esc(f[0]) + '</span>'; }).join('') + '</div>' : '') +
+        '<div class="sc-results"><div class="sc-count">' + esc(v.count || '') + m('count') + '</div>' + (v.results || []).map(function (r, i) {
+          return '<div class="sc-r">' + (i === 0 ? m('result') : '') + '<span class="sc-t">' + esc(r) + '</span><span class="sc-a">Cite · Share · Save</span></div>';
+        }).join('') + '</div></div></div></div>' +
+        (v.notes ? '<ol class="sc-notes">' + v.notes.map(function (x, i) { return '<li><b class="mk">' + (i + 1) + '</b><span>' + esc(x[1]) + '</span></li>'; }).join('') + '</ol>' : '');
+    } else if (v.type === 'sheet') {
+      /* a small spreadsheet: one row per person, one column per question */
+      var L = 'ABCDEFGHIJ';
+      body = '<div class="viz-scroll"><table class="viz-sheet"><thead><tr><th></th>' + v.cols.map(function (c, i) { return '<th>' + L[i] + '</th>'; }).join('') + '</tr></thead><tbody>' +
+        '<tr class="hd"><th>1</th>' + v.cols.map(function (c) { return '<td>' + esc(c) + '</td>'; }).join('') + '</tr>' +
+        v.rows.map(function (r, i) { return '<tr><th>' + (i + 2) + '</th>' + r.map(function (c) { return '<td>' + esc(c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>' +
+        (v.note ? '<p class="small muted">' + esc(v.note) + '</p>' : '');
+    } else if (v.type === 'forest') {
+      /* a forest plot: each study's result as a square with a line (its range), the combined result as a diamond */
+      var lo = v.min || 0.1, hi = v.max || 10, W = 300, X0 = 82, X1 = 290, rowH = 26, top = 26, n2 = v.rows.length;
+      var x = function (r) { return X0 + (Math.log(r) - Math.log(lo)) / (Math.log(hi) - Math.log(lo)) * (X1 - X0); };
+      var H = top + (n2 + 1) * rowH + 30, one = x(1).toFixed(1), svg = '';
+      svg += '<line class="axis" x1="' + one + '" y1="' + (top - 8) + '" x2="' + one + '" y2="' + (H - 26) + '"/>';
+      svg += '<text class="hd" x="4" y="14">' + esc(v.label || 'Study') + '</text><text class="hd" x="' + ((X0 + X1) / 2) + '" y="14" text-anchor="middle">' + esc(v.measure || 'Risk ratio') + '</text>';
+      v.rows.forEach(function (r, i) {
+        var y = top + i * rowH + 12, sz = 5 + (r[4] || 1) * 2;
+        svg += '<text x="4" y="' + (y + 4) + '">' + esc(r[0]) + '</text><line class="ci" x1="' + x(r[2]).toFixed(1) + '" y1="' + y + '" x2="' + x(r[3]).toFixed(1) + '" y2="' + y + '"/>' +
+          '<rect class="pt" x="' + (x(r[1]) - sz / 2).toFixed(1) + '" y="' + (y - sz / 2) + '" width="' + sz + '" height="' + sz + '"/>';
+      });
+      var py = top + n2 * rowH + 12, pl = v.pooled;
+      svg += '<text class="b" x="4" y="' + (py + 4) + '">' + esc(v.pooledLabel || 'All studies') + '</text><polygon class="dm" points="' + [[x(pl[1]), py], [x(pl[0]), py - 7], [x(pl[2]), py], [x(pl[0]), py + 7]].map(function (q) { return q[0].toFixed(1) + ',' + q[1]; }).join(' ') + '"/>';
+      svg += '<text class="lg" x="' + (x(1) - 6).toFixed(1) + '" y="' + (H - 8) + '" text-anchor="end">' + esc(v.left || '← Treatment better') + '</text><text class="lg" x="' + (x(1) + 6).toFixed(1) + '" y="' + (H - 8) + '">' + esc(v.right || 'Control better →') + '</text>';
+      body = '<svg class="viz-forest" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(v.title) + '">' + svg + '</svg>' + (v.note ? '<p class="small muted">' + esc(v.note) + '</p>' : '');
     }
     return '<figure class="viz"><figcaption>' + esc(v.title) + '</figcaption>' + body + '</figure>';
   }
+  var vennId = 0;
 
   function stepCard(t, n, st, preview) {
     var x = st[n - 1], d = stepOf(t, n), ph = phaseOf(t, n), sub = x.submission, total = st.length;
@@ -767,7 +826,7 @@
       (canViewLessons() || isOwner() ? '<div class="owner-tools' + (canViewLessons() && isOwner() ? '' : ' one') + '">' +
         (canViewLessons() ? '<a class="glass card team-card" href="#lessons"><span class="ot-icon">' + ic(can('edit_lessons') ? 'pen' : 'today') + '</span><div class="li-main"><h3>' + (can('edit_lessons') ? 'Edit lessons' : 'Lessons') + '</h3><span class="small muted">' + (can('edit_lessons') ? 'Proofread any step as students see it and change the wording.' : 'Read any step exactly as students see it.') + '</span></div>' + ic('chev', 'chev') + '</a>' : '') +
         (isOwner() ? '<a class="glass card team-card" href="#team"><span class="ot-icon">' + ic('users') + '</span><div class="li-main"><h3>Team & permissions</h3><span class="small muted">Mentors, what everyone can do, and all activity.</span></div>' + ic('chev', 'chev') + '</a>' +
-          '<a class="glass card team-card" href="#research"><span class="ot-icon">' + ic('paper') + '</span><div class="li-main"><h3>Student publications</h3><span class="small muted">Add or remove your students’ papers on the website.</span></div>' + ic('chev', 'chev') + '</a>' : '') +
+          '<a class="glass card team-card" href="#research"><span class="ot-icon">' + ic('paper') + '</span><div class="li-main"><h3>Results & publications</h3><span class="small muted">Add or remove your students’ papers on the website.</span></div>' + ic('chev', 'chev') + '</a>' : '') +
       '</div>' : '') +
       '<div class="stats">' +
         '<a class="stat glass' + (stats.pending ? ' hot' : '') + '" href="#reviews"><b>' + stats.pending + '</b><span>Waiting for review</span></a>' +
@@ -952,7 +1011,7 @@
 
   async function vMemberChat() {
     var r = await S.chat(), context = chatContext; chatContext = null;
-    var suggest = ['I’m stuck on today’s step.', 'Can you check my research question?', 'Which journal should I choose?'];
+    var suggest = ['I’m stuck on today’s step.', 'Can you check my research topic?', 'Which journal should I choose?'];
     return chatScreen({
       messages: r.messages, context: context, placeholder: 'Message your mentor…',
       head: '<section class="page-head"><span class="eyebrow">Chat</span><h1>Ask your mentor</h1><p class="muted">Stuck on a step or unsure about something? Ask here. Your mentor usually replies within a day.</p></section>',
@@ -1021,8 +1080,8 @@
         '<div class="row rs-actions"><button class="btn btn-glass btn-sm" type="button" data-edit="' + esc(p.id) + '">Edit</button><button class="btn btn-danger btn-sm" type="button" data-del="' + esc(p.id) + '">Remove</button></div></div>';
     }).join('');
     return { html: '<a class="back" href="#overview">' + ic('back', 'chev') + 'Overview</a>' +
-      '<section class="page-head"><div class="row spread wrap"><div class="stack" style="gap:6px"><span class="eyebrow">Owners only</span><h1>Student publications</h1></div><button class="btn btn-primary" type="button" id="add-paper">+ Add paper</button></div>' +
-      '<p class="muted">Papers your students published with you. They show on the website’s <a href="research.html" target="_blank" rel="noopener">Student publications</a> page straight away, newest year first. Add a paper only with the student’s permission.</p></section>' +
+      '<section class="page-head"><div class="row spread wrap"><div class="stack" style="gap:6px"><span class="eyebrow">Owners only</span><h1>Results & publications</h1></div><button class="btn btn-primary" type="button" id="add-paper">+ Add paper</button></div>' +
+      '<p class="muted">Papers your students published with you. They show on the website’s <a href="research.html" target="_blank" rel="noopener">Results & publications</a> page straight away, newest year first. Add a paper only with the student’s permission.</p></section>' +
       (list.length ? '<div class="glass list">' + rows + '</div>' : '<div class="glass empty"><b>No papers yet</b><span>Tap Add paper to put your first student’s publication on the website.</span></div>'),
       mount: function (m) {
         m.querySelector('#add-paper').addEventListener('click', function () { researchSheet(null); });
@@ -1038,7 +1097,7 @@
   }
   function researchSheet(p) {
     var e = p || {};
-    sheet('<h2>' + (p ? 'Edit paper' : 'Add a published paper') + '</h2><p class="muted small">This shows publicly on the website’s Student publications page.</p>' +
+    sheet('<h2>' + (p ? 'Edit paper' : 'Add a published paper') + '</h2><p class="muted small">This shows publicly on the website’s Results & publications page.</p>' +
       '<form id="rs" class="stack" novalidate>' +
         '<div class="field"><label for="rs-student">Student’s name</label><input id="rs-student" autocomplete="off" required placeholder="Eeman Dar" value="' + esc(e.student || '') + '"></div>' +
         '<div class="field"><label for="rs-title">Research title</label><textarea id="rs-title" rows="2" required placeholder="Knowledge of hand hygiene among final-year medical students in Lahore">' + esc(e.title || '') + '</textarea></div>' +

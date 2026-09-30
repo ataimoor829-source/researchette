@@ -23,7 +23,7 @@
     ['Roadmap', at('#roadmap'), 'map'],
     ['Free guides', at('#guides'), 'gift'],
     ['Mentors', at('#mentors'), 'users'],
-    ['Student publications', 'research.html', 'paper', 'pub'],
+    ['Results & publications', 'research.html', 'paper', 'pub'],
     ['Reviews', 'reviews.html', 'star']
   ];
 

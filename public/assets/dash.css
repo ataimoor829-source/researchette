@@ -173,10 +173,19 @@ body:has(#app.dash) { background: var(--d-bg); }
     box-shadow: var(--d-bar-shadow); }
   .dash .topbar::after { display: none; }
   .dash .topbar > .shell { padding-inline: 14px; }
+  .dash .topbar { transition: transform .38s var(--spring, ease), opacity .25s ease; }
   .dash .tabs.top { background: var(--d-hover); }
   .dash .tabs.bottom { background: var(--d-bar); border: 1px solid var(--d-bar-edge); -webkit-backdrop-filter: blur(24px) saturate(150%); backdrop-filter: blur(24px) saturate(150%);
     box-shadow: var(--d-bar-shadow); }
   .dash .tabs.bottom .ind { border-radius: 999px; }
+}
+/* phones (members): the top bar hides while scrolling down, see portal.js */
+@media (max-width: 760px) {
+  html.bar-hide .dash .topbar { transform: translateY(calc(-100% - 12px - env(safe-area-inset-top, 0px))); opacity: 0; pointer-events: none; }
+}
+@media (max-width: 760px) and (prefers-reduced-motion: reduce) {
+  .dash .topbar { transition: opacity .2s ease; }
+  html.bar-hide .dash .topbar { transform: none; }
 }
 /* tablets: icons only, except the page you're on, so the tabs fit in the bar */
 @media (min-width: 761px) and (max-width: 1099px) {

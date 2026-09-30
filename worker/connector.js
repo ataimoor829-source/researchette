@@ -3,7 +3,7 @@
    An AI app (Claude, Gemini, ChatGPT…) finds the login details at /.well-known/*, registers itself
    at /oauth/register, then sends a mentor to /oauth/authorize to log in and tap Allow. It gets a
    short-lived access token (refreshed automatically) and calls tools that act as that mentor, through
-   the same routes and checks as the portal. Only mentor accounts can connect. Changing the mentor's
+   the same routes and checks as the portal. Only owner accounts can connect. Changing the mentor's
    password, or disconnecting the app in the portal, signs it out. */
 
 // Long enough that an assistant doesn't have to keep asking you to connect again. You can still end it at any
@@ -148,7 +148,7 @@ async function authorize(request, env, ctx, url, api) {
   if (!q.code_challenge || (q.code_challenge_method || 'plain') !== 'S256') return back({ error: 'invalid_request', error_description: 'PKCE with S256 is required.' });
 
   const session = await api.currentUser(request, env);
-  const signedIn = session && session.role === 'admin' ? session : null;
+  const signedIn = session && session.owner ? session : null;   // only owners can connect apps
   const hidden = ['client_id', 'redirect_uri', 'response_type', 'code_challenge', 'code_challenge_method', 'state', 'scope', 'resource']
     .map((k) => '<input type="hidden" name="' + k + '" value="' + esc(k === 'redirect_uri' ? redirect : q[k] || '') + '">').join('');
   const consent = (error, askCode) => page('Connect ' + client.name + ' to Researchette',
@@ -159,7 +159,7 @@ async function authorize(request, env, ctx, url, api) {
     '<form method="post" action="/oauth/authorize">' + hidden +
       (signedIn
         ? '<p class="who">Signed in as <b>' + esc(signedIn.name) + '</b> (' + esc(signedIn.email) + ')</p>'
-        : '<label for="e">Mentor email</label><input id="e" name="email" type="email" autocomplete="username" required value="' + esc(q.email || '') + '">' +
+        : '<label for="e">Owner email</label><input id="e" name="email" type="email" autocomplete="username" required value="' + esc(q.email || '') + '">' +
           '<label for="p">Password</label><input id="p" name="password" type="password" autocomplete="current-password" required>' +
           (askCode ? '<label for="c">Verification code</label><input id="c" name="code" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code from Passwords" required>' : '')) +
       (error ? '<p class="error" role="alert">' + esc(error) + '</p>' : '') +
@@ -174,9 +174,10 @@ async function authorize(request, env, ctx, url, api) {
     const u = await env.DB.prepare('SELECT * FROM users WHERE email = ?').bind(String(q.email || '').trim().toLowerCase().slice(0, 200)).first();
     const ok = u && api.safeEqual((await api.hashPassword(String(q.password || '').trim(), u.pw_salt)).hash, u.pw_hash);
     if (!ok) return consent('That email and password don’t match.');
-    if (u.role !== 'admin' || u.active === 0) return consent('Only mentor accounts can connect apps.');
-    // owners need their verification code too, unless this device already passed two-step verification
+    if (u.role !== 'admin' || u.active === 0) return consent('Only owner accounts can connect apps.');
     await api.withAccess(env, u);
+    if (!u.owner) return consent('Only owner accounts can connect apps.');
+    // owners need their verification code too, unless this device already passed two-step verification
     if (api.needsTwoStep(u) && !(await api.deviceTrusted(env, request, u.id))) {
       const tf = await api.twoStepOf(env, u.id);
       if (!tf || !tf.enabled) return consent('Log in to the Researchette portal once to set up two-step verification, then connect the app.');
@@ -252,8 +253,10 @@ async function bearerUser(request, env, api) {
   if (!t || t.expires < api.now()) return { error: 'invalid_token' };
   const u = await activeMentor(env, t.user_id);
   if (!u) return { error: 'invalid_token' };
+  const user = await api.withAccess(env, await api.openUsers(env, u));
+  if (!user.owner) return { error: 'invalid_token' };   // connected apps are for owners only
   const c = await getClient(env, t.client_id);
-  return { user: await api.withAccess(env, await api.openUsers(env, u)), client: c ? c.name : 'Connected app' };
+  return { user, client: c ? c.name : 'Connected app' };
 }
 
 /* ---------- MCP (Streamable HTTP, JSON responses, stateless) ---------- */

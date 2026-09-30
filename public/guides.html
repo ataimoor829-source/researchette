@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Free Research Guides · Researchette</title>
+<meta name="description" content="Free, simple guides for medical students: finding a research gap, choosing a topic, PubMed, reading papers, writing, statistics, referencing, journals and reviewers.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Researchette">
+<meta property="og:title" content="Free Research Guides · Researchette">
+<meta property="og:description" content="Free, simple guides for medical students: finding a research gap, choosing a topic, PubMed, reading papers, writing, statistics, referencing, journals and reviewers.">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&family=Caveat:wght@600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="assets/portal.css">
+<style>
+/* Layout: every free guide, grouped by topic, with a filter; same glass language as the rest of the site. */
+body { font-size: 1.0625rem; line-height: 1.65; }
+.wrap { width: 100%; max-width: 1100px; margin-inline: auto; padding-inline: 22px; }
+.nav { position: sticky; top: 0; z-index: 40; padding-top: env(safe-area-inset-top, 0px); background: var(--glass); -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%); border-bottom: 1px solid var(--line); box-shadow: 0 10px 30px -26px rgba(24,32,61,.45); }
+.nav .wrap { max-width: none; padding-inline: clamp(16px, 3vw, 44px); }
+.nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 10px; }
+.nav-links { display: flex; align-items: center; gap: 6px; }
+.nav-links a:not(.btn) { color: var(--muted); text-decoration: none; padding: .45em .85em; border-radius: 999px; font-size: .93rem; }
+.nav-links a:not(.btn):hover { color: var(--ink); background: var(--pen-soft); }
+@media (max-width: 480px) { .nav-links a.home-link { display: none; } .nav-links a:not(.btn) { padding-inline: .6em; } }
+
+.hero { padding-block: clamp(56px, 10vw, 120px) clamp(36px, 5vw, 60px); display: grid; gap: 20px; max-width: 720px; }
+.hero h1 { font-size: clamp(2.4rem, 1.5rem + 4vw, 4.2rem); font-weight: 800; letter-spacing: -.035em; line-height: 1.04; }
+.hero .lede { color: var(--muted); font-size: 1.1rem; max-width: 50ch; }
+.word { display: inline-block; animation: wordin .9s var(--ease) both; animation-delay: calc(var(--w) * 90ms + 100ms); }
+@keyframes wordin { from { opacity: 0; transform: translateY(.45em); filter: blur(8px); } }
+.fade-up { animation: fadeup .9s var(--ease) both; animation-delay: var(--d, .6s); }
+@keyframes fadeup { from { opacity: 0; transform: translateY(18px); } }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips button { font: 600 .88rem var(--f-body); padding: .55em 1em; border-radius: 99px; border: 1px solid var(--line); background: var(--glass-strong); color: var(--muted); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .1s ease, background-color .2s, color .2s; }
+.chips button:active { transform: scale(.95); }
+.chips button[aria-pressed="true"] { background: var(--pen); color: #fff; border-color: transparent; }
+.cat { display: grid; gap: 12px; margin-top: clamp(28px, 4vw, 40px); }
+.cat[hidden] { display: none; }
+.cat h2 { font-size: clamp(1.2rem, 1rem + .8vw, 1.5rem); letter-spacing: -.02em; }
+.list { padding: 6px clamp(18px, 3vw, 28px); }
+.list details + details { border-top: 1px solid var(--line); }
+.list details { scroll-margin-top: calc(80px + env(safe-area-inset-top, 0px)); }
+.list summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 16px; padding-block: 18px; -webkit-tap-highlight-color: transparent; }
+.list summary::-webkit-details-marker { display: none; }
+.list summary b { display: block; font-weight: 600; font-size: 1.02rem; }
+.list summary small { display: block; color: var(--muted); font-size: .88rem; margin-top: 2px; }
+.list .plus { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--pen-soft); color: var(--pen); transition: transform .5s var(--ease), background-color .3s; }
+.list .plus svg { width: 14px; height: 14px; }
+.list details[open] .plus { transform: rotate(45deg); background: var(--pen); color: #fff; }
+.list details::details-content { height: 0; overflow: clip; transition: height .55s var(--ease), content-visibility .55s allow-discrete; }
+.list details[open]::details-content { height: auto; }
+.list .content { padding-bottom: 22px; font-size: .96rem; color: var(--muted); display: grid; gap: 10px; max-width: 66ch; }
+.list .content b { color: var(--ink); }
+.list ol, .list ul { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+.list code { font-family: var(--f-mono); font-size: .8rem; background: var(--pen-soft); color: var(--ink); padding: .12em .4em; border-radius: 5px; overflow-wrap: anywhere; }
+.formula { font-family: var(--f-mono); font-size: .8rem; color: var(--ink); background: var(--pen-soft); border-radius: 12px; padding: 10px 12px; overflow-wrap: anywhere; }
+.new-tag { display: inline-block; vertical-align: 2px; margin-left: 8px; font: 500 .6rem var(--f-mono); letter-spacing: .08em; text-transform: uppercase; padding: .3em .6em; border-radius: 99px; background: var(--teal-soft); color: var(--teal); }
+.cta-band { margin-top: clamp(64px, 10vw, 110px); padding: clamp(22px, 3.5vw, 32px); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 24px; }
+.cta-band p { color: var(--muted); margin-top: 4px; }
+
+.end { padding-block: clamp(80px, 12vw, 140px) 36px; display: grid; gap: 40px; justify-items: center; text-align: center; }
+.contact { display: grid; gap: 16px; justify-items: center; width: 100%; }
+.contact-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; max-width: 820px; }
+.contact-item { display: grid; justify-items: center; gap: 4px; padding: 20px 16px; text-decoration: none; color: var(--ink); transition: transform .45s var(--ease); min-width: 0; }
+.contact-item:hover { transform: translateY(-4px); }
+.contact-item svg { width: 22px; height: 22px; color: var(--pen); margin-bottom: 4px; }
+.contact-item span { font-size: .8rem; color: var(--muted); }
+.contact-item b { font-weight: 600; font-size: .98rem; overflow-wrap: anywhere; }
+@media (max-width: 640px) { .contact-grid { grid-template-columns: 1fr; } .contact-item { grid-template-columns: auto 1fr; justify-items: start; align-items: center; column-gap: 14px; text-align: left; } .contact-item svg { grid-row: span 2; margin: 0; } }
+.foot-row a.legal { color: var(--muted); font-size: .85rem; align-self: center; }
+.foot-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 22px; padding-top: 28px; border-top: 1px solid var(--line); width: 100%; font-size: .85rem; color: var(--muted); align-items: center; }
+
+.js .reveal { opacity: 0; transform: translateY(40px) scale(.98); filter: blur(8px); transition: opacity 1s var(--ease), transform 1s var(--ease), filter 1s var(--ease); transition-delay: var(--d, 0s); }
+.js .reveal.in { opacity: 1; transform: none; filter: none; }
+@media (prefers-reduced-motion: reduce) { .js .reveal { opacity: 1; transform: none; filter: none; } }
+</style>
+<link rel="stylesheet" href="assets/liquid.css">
+</head>
+<body>
+<script>document.body.classList.add('js');</script>
+<div class="aura" aria-hidden="true"><i></i><i></i><i></i></div>
+
+<header class="nav">
+  <div class="wrap">
+    <div class="nav-inner">
+      <a class="logo" href="index.html" aria-label="Researchette home">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="7" fill="#3448D8"/><path d="M5 13h3l2-5 3 9 2-4h4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>research<i>ette</i></span>
+      </a>
+      <nav class="nav-links" aria-label="Main">
+        <a class="home-link" href="index.html">Home</a>
+        <a href="research.html">Student publications</a>
+        <a class="btn btn-primary btn-sm" href="index.html#join">Join</a>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <span class="eyebrow fade-up" style="--d:.05s">Free guides</span>
+    <h1 aria-label="Free research guides.">
+      <span class="word" style="--w:0" aria-hidden="true">Free</span>
+      <span class="word" style="--w:1" aria-hidden="true">research</span>
+      <span class="word" style="--w:2" aria-hidden="true">guides.</span>
+    </h1>
+    <p class="lede fade-up" style="--d:.5s">18 short, simple guides for medical students, from finding your first research gap to replying to reviewers. Free for everyone.</p>
+    <div class="fade-up" style="--d:.65s"><div class="chips" role="group" aria-label="Show guides about"><button type="button" data-cat="all" aria-pressed="true">All</button><button type="button" data-cat="start" aria-pressed="false">Start here</button><button type="button" data-cat="papers" aria-pressed="false">Finding & reading papers</button><button type="button" data-cat="writing" aria-pressed="false">Writing</button><button type="button" data-cat="publishing" aria-pressed="false">Publishing</button><button type="button" data-cat="types" aria-pressed="false">Other kinds of paper</button></div></div>
+  </section>
+
+  <section class="cat reveal" data-cat="start">
+    <h2>Start here</h2>
+    <div class="list glass">
+      <details id="gap" data-cat="start">
+        <summary><div><b>How to find a research gap<span class="new-tag">New</span></b><small>Where new, publishable topics come from</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
+        <div class="content">
+        <p>A research gap is a question that published studies haven’t answered yet, or haven’t answered <b>for your place or your group of people</b>. Journals publish studies that fill a gap.</p>
+        <p><b>6 places to find one</b></p>
+        <ol><li><b>“Limitations” and “future research”</b> at the end of recent papers. Authors often write exactly what still needs to be studied.</li>
+        <li><b>No local data.</b> Well studied abroad, but not in Pakistan, your city or your hospital.</li>
+        <li><b>Old data.</b> The last local study is more than 5–10 years old, and things have changed since.</li>
+        <li><b>A different group.</b> Studied in doctors but not students, in adults but not children, in cities but not villages.</li>
+        <li><b>Results that disagree.</b> Some studies say yes and others say no, so a new, careful study helps.</li>
+        <li><b>Something new.</b> A new guideline, medicine, test or habit (like online classes) that hasn’t been studied much yet.</li></ol>
+        <p><b>Quick 5-minute check:</b> search PubMed for your topic plus <code>Pakistan</code> and tick “5 years”. Very few results means you may have found a gap.</p>
+        <p class="formula">Write it like this: Although [what is known], little is known about [the gap] in [your group or place].</p>
+        <p><b>Example:</b> Although skipping breakfast is common among university students worldwide, little is known about it among MBBS students in Lahore.</p>
+        </div>
+      </details>
+      <details id="pico" data-cat="start">
+        <summary><div><b>Choose a research topic with PICO</b><small>The starting point of every study</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
+        <div class="content">
+        <p class="formula">Who (P) · What you look at (I) · Compared with whom (C) · What you count (O)</p>
+        <p><b>Example:</b> How many MBBS students (P) at our college skip breakfast (O)? There’s no comparison group here, and that’s fine.</p>
+        <p>Then check it with <b>FINER</b>: can you finish it (Feasible), do people want to know (Interesting), is it new here (Novel), is it safe and fair (Ethical), and is it useful (Relevant)? If any answer is “no”, make the topic smaller or change the group or place.</p>
+        </div>
+      </details>
+      <details id="ethics" data-cat="start">
+        <summary><div><b>Research ethics basics<span class="new-tag">New</span></b><small>Do this before you ask anyone a question</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
+        <div class="content">
+        <ul><li><b>Approval first:</b> get written approval from your college ethics committee (ERC or IRB) before collecting any data. Journals ask for it.</li>
+        <li><b>Consent:</b> each person must agree to take part after you explain the study simply. They can stop at any time.</li>
+        <li><b>Privacy:</b> don’t collect names unless you really need them, and keep the data in a password-protected file.</li>
+        <li><b>No pressure:</b> people must feel free to say no, especially juniors or patients.</li>
+        <li><b>Case reports:</b> the patient must give written consent for publication.</li></ul>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <section class="cat reveal" data-cat="papers">
+    <h2>Finding & reading papers</h2>
+    <div class="list glass">
+      <details id="pubmed" data-cat="papers">
+        <summary><div><b>Your first PubMed search</b><small>Key words joined with AND and OR</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
+        <div class="content">
+        <ul><li>Use key words, not a sentence: <code>breakfast</code>, <code>"medical students"</code></li>
+        <li>OR joins words that mean the same, AND joins different ideas: <code>(breakfast OR "morning meal") AND "medical students"</code></li>
+        <li>Tick the “5 years” filter so papers are recent.</li>
+        <li>Too many results? Add another AND word. Too few? Add more OR words.</li></ul>
+        </div>
+      </details>
+      <details id="read" data-cat="papers">
+        <summary><div><b>How to read a paper quickly<span class="new-tag">New</span></b><small>You don’t have to read every word</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
+        <div class="content">
+        <p>Don’t read a paper from start to end. Read it in this order, and stop as soon as you know whether it’s useful:</p>
+        <ol><li><b>Title and abstract</b> (2 minutes): is it about your topic?</li>
+        <li><b>Tables and figures:</b> the main results are here.</li>
+        <li><b>Last paragraph of the introduction:</b> the aim of the study.</li>
+        <li><b>Conclusion:</b> what the authors think it means.</li>
+        <li><b>Methods</b>, only for papers you will use: who, where, how many people, and how things were measured.</li></ol>
+        <p><b>For each useful paper, write down:</b> author and year, place, number of people, main finding, and one weak point. These notes become your introduction and discussion later.</p>
+        </div>
+      </details>
+      <details id="tools" data-cat="papers">
+        <summary><div><b>Free tools every student researcher needs<span class="new-tag">New</span></b><small>All free, all used by real researchers</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
+        <div class="content">
+        <ul><li><b>PubMed</b> (pubmed.ncbi.nlm.nih.gov): searching medical papers.</li>
+        <li><b>Google Scholar:</b> finding extra papers; “Cited by” shows newer papers that used an older one.</li>
+        <li><b>Zotero:</b> saves papers in one click and writes your reference list in Word.</li>
+        <li><b>Unpaywall</b> (browser extension): finds free, legal full-text PDFs.</li>
+        <li><b>OpenEpi</b> (openepi.com): sample size calculator.</li>
+        <li><b>Jamovi:</b> free statistics software, simpler than SPSS.</li>
+        <li><b>Google Forms:</b> online questionnaires.</li>
+        <li><b>Rayyan:</b> choosing papers for a systematic review, with a partner.</li></ul>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <section class="cat reveal" data-cat="writing">
+    <h2>Writing</h2>
+    <div class="list glass">
+      <details id="title" data-cat="writing">
+        <summary><div><b>Write a clear title<span class="new-tag">New</span></b><small>The first thing editors read</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
+        <div class="content">
+        <p>A good title says <b>what</b> you studied, in <b>whom</b>, <b>where</b>, and often the <b>type of study</b>. Aim for 10–15 words, and avoid abbreviations.</p>
+        <p><b>Weak:</b> A study of breakfast.</p>
+        <p><b>Strong:</b> Breakfast Skipping among MBBS Students at a Medical College in Lahore: A Cross-Sectional Study</p>
+        </div>
+      </details>
+      <details id="abstract" data-cat="writing">
+        <summary><div><b>Write an abstract<span class="new-tag">New</span></b><small>The 250 words most people read</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
+        <div class="content">
+        <p>The abstract is the short summary at the top of your paper. Most readers only read this, so write it <b>last</b>, when the paper is finished.</p>
+        <ol><li><b>Background:</b> 1–2 sentences on the problem and the gap.</li>
+        <li><b>Objective:</b> your aim, in one sentence.</li>
+        <li><b>Methods:</b> design, place, time, number of people, and how you measured and analysed.</li>
+        <li><b>Results:</b> your main numbers, like “164 of 400 (41%)”.</li>
+        <li><b>Conclusion:</b> what it means, in one or two sentences.</li></ol>
+        <p>Usually 250 words or fewer. Check your journal’s word limit and headings.</p>
+        </div>
+      </details>
+      <details id="intro" data-cat="writing">
+        <summary><div><b>Write an introduction in 3 paragraphs<span class="new-tag">New</span></b><small>Known → unknown → your aim</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
+        <div class="content">
+        <ol><li><b>What is known:</b> the problem and why it matters, with numbers and references.</li>
+        <li><b>What is not known:</b> the gap, for example no recent data from Pakistan.</li>
+        <li><b>Your aim:</b> finish with one sentence, like “This study aimed to find out how many…”.</li></ol>
+        <p>Keep it short: about 300–400 words for an original article.</p>
+        </div>
+      </details>
+      <details id="stats" data-cat="writing">
+        <summary><div><b>Which statistical test?<span class="new-tag">New</span></b><small>A one-minute cheat sheet</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
+        <div class="content">
+        <ul><li><b>Two group answers</b> (e.g. year of study and skipping breakfast yes/no): chi-square test.</li>
+        <li><b>A number between 2 groups</b> (e.g. age of men vs women): t-test.</li>
+        <li><b>A number between 3 or more groups:</b> ANOVA.</li>
+        <li><b>Two numbers together</b> (e.g. hours of sleep and marks): correlation.</li>
+        <li><b>The same people, before and after:</b> paired t-test.</li></ul>
+        <p><b>p-value:</b> the chance that a difference is just luck. Less than 0.05 means it is probably real, which we call “significant”.</p>
+        </div>
+      </details>
+      <details id="vancouver" data-cat="writing">
+        <summary><div><b>Vancouver referencing</b><small>The style most medical journals use</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
+        <div class="content">
+        <p><b>Example:</b> Watson JD, Crick FH. Molecular structure of nucleic acids; a structure for deoxyribose nucleic acid. Nature. 1953;171(4356):737-8.</p>
+        <p>Number references in the order you first cite them, like [1]. List up to 6 authors, then “et al.” Let Zotero format them for you.</p>
+        </div>
+      </details>
+      <details id="plagiarism" data-cat="writing">
+        <summary><div><b>Avoid plagiarism, and use AI safely<span class="new-tag">New</span></b><small>The mistakes that get papers rejected</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
+        <div class="content">
+        <ul><li>Never copy sentences. Read, close the paper, then write the idea in your own words and add the reference number.</li>
+        <li>Check your similarity score before submitting (your university can run Turnitin). HEC generally accepts up to 19%.</li>
+        <li>AI tools can help fix grammar, but they often <b>invent references that don’t exist</b>. Check every reference on PubMed yourself.</li>
+        <li>Never let AI write your results or make up data, and follow your journal’s rules on saying whether you used AI.</li></ul>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <section class="cat reveal" data-cat="publishing">
+    <h2>Publishing</h2>
+    <div class="list glass">
+      <details id="predatory" data-cat="publishing">
+        <summary><div><b>Spot a fake (predatory) journal<span class="new-tag">New</span></b><small>Protect your paper and your money</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
+        <div class="content">
+        <p>Predatory journals take a fee and publish almost anything, without real review. A paper there can hurt your CV.</p>
+        <p><b>Warning signs</b></p>
+        <ul><li>Emails full of praise inviting you to submit.</li>
+        <li>“Guaranteed acceptance”, or publishing within a few days.</li>
+        <li>A made-up “impact factor”, or a website full of mistakes.</li>
+        <li>Not listed in MEDLINE (PubMed), Scopus or DOAJ.</li></ul>
+        <p><b>Before you submit:</b> look the journal up in the HEC Journal Recognition System (HJRS), Scopus and DOAJ, and ask your mentor.</p>
+        </div>
+      </details>
+      <details id="authorship" data-cat="publishing">
+        <summary><div><b>Authorship and ORCID<span class="new-tag">New</span></b><small>Who gets their name on the paper</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
+        <div class="content">
+        <p>Under the ICMJE rules most journals follow, every author must do <b>all four</b>:</p>
+        <ol><li>Make a real contribution to the idea, the data collection or the analysis.</li>
+        <li>Help write the paper or check it critically.</li>
+        <li>Approve the final version.</li>
+        <li>Agree to be responsible for the work.</li></ol>
+        <p>People who helped but don’t meet all four go in the Acknowledgements. Agree on the order of authors <b>before</b> you start writing.</p>
+        <p><b>Get an ORCID iD:</b> a free number at orcid.org that links all your papers to you, even if your name is spelled differently. Most journals ask for it.</p>
+        </div>
+      </details>
+      <details id="reviewers" data-cat="publishing">
+        <summary><div><b>Reply to reviewers<span class="new-tag">New</span></b><small>Turning comments into acceptance</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
+        <div class="content">
+        <p>Getting comments from reviewers is normal, and usually means the journal is interested. Reply to every comment, politely.</p>
+        <ol><li>Thank the editor and the reviewers.</li>
+        <li>Copy each comment, then write your reply under it.</li>
+        <li>Say exactly what you changed and where (page and line number).</li>
+        <li>If you disagree, explain politely, with a reference.</li>
+        <li>Highlight the changes in the revised paper.</li></ol>
+        <p class="formula">Comment 1: … → Response: Thank you. We have added … (page 4, lines 12–15).</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <section class="cat reveal" data-cat="types">
+    <h2>Other kinds of paper</h2>
+    <div class="list glass">
+      <details id="case" data-cat="types">
+        <summary><div><b>Case report structure</b><small>Based on the CARE guidelines</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
+        <div class="content">
+        <ol><li>Title, abstract and keywords</li><li>Introduction</li><li>Patient information and findings</li><li>Timeline</li><li>Diagnosis, treatment and outcome</li><li>Discussion and learning points</li><li>Patient consent</li></ol>
+        </div>
+      </details>
+      <details id="letter" data-cat="types">
+        <summary><div><b>Letter to the editor</b><small>A realistic first publication</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
+        <div class="content">
+        <ol><li>Reply to an article the journal published in the last few months.</li><li>Make one or two clear points.</li><li>Support them with references.</li><li>Keep it within 300–600 words.</li></ol>
+        </div>
+      </details>
+      <details id="meta" data-cat="types">
+        <summary><div><b>Meta-analysis in 6 steps</b><small>What a PRISMA review involves</small></div><span class="plus" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></span></summary>
+        <div class="content">
+        <ol><li>Write a plan (protocol) and register it on PROSPERO.</li><li>Search at least 3 databases.</li><li>Two people choose the studies separately.</li><li>Copy the numbers into one sheet.</li><li>Check each study’s quality (risk of bias).</li><li>Combine the results and report them with PRISMA.</li></ol>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <div class="cta-band glass reveal">
+    <div><h3>Want a mentor to check your work?</h3><p>Join the roadmap: one small step a day, with every draft reviewed.</p></div>
+    <a class="btn btn-primary" href="index.html#join">Join us today <span class="btn-arrow" aria-hidden="true">→</span></a>
+  </div>
+
+  <section class="end">
+    <div class="contact reveal">
+      <span class="eyebrow">Contact</span>
+      <div class="contact-grid">
+        <a data-tilt class="contact-item glass" href="mailto:itszainr1@gmail.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M22 6l-10 7L2 6"/></svg><span>Email</span><b>itszainr1@gmail.com</b></a>
+        <a data-tilt class="contact-item glass" href="https://wa.me/923395888444" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-13.4 7.8L3 21l1.3-4.4A9 9 0 1 1 21 12z"/></svg><span>WhatsApp</span><b>0339 5888444</b></a>
+        <a data-tilt class="contact-item glass" href="tel:+923395888444"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg><span>Call</span><b>0339 5888444</b></a>
+      </div>
+    </div>
+    <div class="foot-row">
+      <a class="logo" href="index.html"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="7" fill="#3448D8"/><path d="M5 13h3l2-5 3 9 2-4h4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>research<i>ette</i></span></a>
+      <a class="legal" href="privacy.html">Privacy</a>
+      <a class="legal" href="terms.html">Terms</a>
+      <span>© 2026 Researchette</span>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  /* topic filter */
+  var chips = document.querySelectorAll('.chips button'), cats = document.querySelectorAll('.cat');
+  chips.forEach(function (b) {
+    b.addEventListener('click', function () {
+      chips.forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      cats.forEach(function (c) { c.hidden = b.dataset.cat !== 'all' && c.dataset.cat !== b.dataset.cat; });
+    });
+  });
+  /* a link like guides.html#gap opens that guide */
+  function openHash() {
+    var d = location.hash && document.getElementById(location.hash.slice(1));
+    if (d && d.tagName === 'DETAILS') { d.open = true; setTimeout(function () { d.scrollIntoView({ block: 'start' }); }, 50); }
+  }
+  openHash(); addEventListener('hashchange', openHash);
+
+  var items = document.querySelectorAll('.reveal');
+  if (!('IntersectionObserver' in window) || matchMedia('(prefers-reduced-motion: reduce)').matches) { items.forEach(function (e) { e.classList.add('in'); }); }
+  else {
+    var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }); }, { threshold: .05 });
+    items.forEach(function (e) { io.observe(e); });
+  }
+})();
+</script>
+<script src="assets/menu.js"></script>
+<script src="assets/fx.js"></script>
+</body>
+</html>

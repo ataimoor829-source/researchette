@@ -9,6 +9,7 @@ Medical research mentorship: daily tasks, step-by-step lessons and mentor feedba
   - `mentors.html`: each mentor's details and message, opened from “Read message” on the landing page.
   - `privacy.html`, `terms.html`: privacy policy and terms and conditions, linked from every footer and the portal login.
   - `reviews.html`: student reviews. Add real reviews to the `REVIEWS` list at the bottom of the file.
+  - `guides.html`: the free guides, grouped by topic with a filter; `guides.html#gap` opens one guide directly. The landing page shows six of them (keep those copies in step when you edit a guide).
   - `research.html`: students' published papers, loaded from the database. Owners add and remove them in the portal.
   - `portal.html`: login, member portal and mentor portal.
   - `assets/curriculum.js`: the programmes and all lesson content, written for complete beginners. Edit this to change the course. Lessons can include pictures drawn by `portal.js`: tables, flows, decision charts, the evidence pyramid, formulas, letter cards (PICO, FINER, SMART), funnels, AND/OR/NOT circles, a drawing of the PubMed screen, spreadsheets and a forest plot (the types are listed at the top of the extra-guidance section).

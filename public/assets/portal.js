@@ -52,6 +52,7 @@
     return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
   }
   function greet() { var h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; }
+  function wave() { var h = new Date().getHours(); return h < 12 ? '☀️' : h < 18 ? '👋' : '🌙'; }
   function today() { return new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }); }
   function pill(st) { return '<span class="pill ' + st + '">' + LABEL[st] + '</span>'; }
   function T(id) { return C.track(id); }
@@ -228,7 +229,7 @@
     var key = shellKey();
     if (app.dataset.shell === key) return;
     app.dataset.shell = key;
-    app.classList.toggle('dash', me.role === 'admin');   // wide screens: icon rail + glass panels (portal.css)
+    app.classList.toggle('dash', true);   // wide screens: icon rail + glass panels (dash.css)
     var home = me.role === 'admin' ? 'overview' : 'today';
     app.innerHTML =
       '<header class="topbar"><div class="shell"><div class="topbar-inner">' +
@@ -667,11 +668,32 @@
     var d = stepOf(t, cur.step);
     var summary = '<div class="glass card today-head">' + ring(done, total) + '<div class="txt"><span class="small muted">' + esc(tr.name) + '</span><h3>' + done + ' of ' + total + ' steps approved</h3><span class="small muted">Today: Step ' + cur.step + ' · ' + esc(d.title) + '</span></div></div>';
     var body = stepCard(t, cur.step, st);
-    var help = can('chat') ? '<div class="glass card help-card"><div><h3>Stuck on this step?</h3><p class="small muted">Ask your mentor in the chat. They’ll see which step you’re on.</p></div>' +
-      '<button class="btn btn-primary" type="button" id="ask">' + ic('msgs') + 'Ask your mentor</button></div>' : '';
-    return { html: head + summary + body.html + help, mount: function (m) {
+    var help = can('chat') ? '<div class="glass card help-card m-only"><div><h3>Stuck on this step?</h3><p class="small muted">Ask your mentor in the chat. They’ll see which step you’re on.</p></div>' +
+      '<button class="btn btn-primary" type="button" data-ask>' + ic('msgs') + 'Ask your mentor</button></div>' : '';
+    /* wide screens: a calm dashboard (three tiles, today's step, and a slim side panel); phones keep the summary card */
+    var inReview = st.filter(function (x) { return x.status === 'review'; }).length, fix = st.filter(function (x) { return x.status === 'revision'; }).length;
+    var tiles = '<div class="tiles three w-only">' +
+      '<div class="tile glass c-teal"><div class="tile-h"><span>Your progress</span><i>' + ic('done') + '</i></div>' + miniGauge(done, total, '#0B9E8C') + '<div class="tile-n"><b data-count="' + done + '">' + done + '</b><small>of ' + total + ' steps approved</small></div></div>' +
+      '<a class="tile glass c-pen" href="#stepcard" data-jump><div class="tile-h"><span>Working on</span><i>' + ic('pen') + '</i></div><p class="tile-t">' + esc(d.title) + '</p><div class="tile-n"><b>Step ' + cur.step + '</b><small>' + d.minutes + ' min</small></div></a>' +
+      (fix ? '<a class="tile glass c-rose" href="#feedback"><div class="tile-h"><span>Needs changes</span><i>' + ic('alert') + '</i></div><p class="tile-t">Your mentor left notes to fix.</p><div class="tile-n"><b>' + fix + '</b><small>step' + (fix > 1 ? 's' : '') + '</small></div></a>'
+        : '<a class="tile glass c-amber" href="#feedback"><div class="tile-h"><span>With your mentor</span><i>' + ic('clock') + '</i></div><p class="tile-t">' + (inReview ? 'Being reviewed now.' : 'Nothing waiting for review.') + '</p><div class="tile-n"><b>' + inReview + '</b><small>in review</small></div></a>') +
+    '</div>';
+    var next = st.filter(function (x) { return x.step > cur.step; }).slice(0, 3);
+    var side = '<aside class="ov-side stack w-only">' +
+      '<div class="ov-me"><span class="avatar warm">' + initials(me.name) + '</span><div class="li-main"><b>' + esc(me.name) + '</b><span class="small muted">' + esc(me.college || 'Member') + '</span></div><button class="ov-more" type="button" data-acct aria-label="Account and settings">•••</button></div>' +
+      progSwitch(t) +
+      (can('chat') ? '<div class="glass card mv-mentor"><span class="sc-ic">' + ic('msgs') + '</span><div><h3>' + (me.mentorName ? esc(short(me.mentorName)) : 'Your mentor') + '</h3><p class="small muted">Stuck? Ask in the chat. They’ll see which step you’re on.</p></div><button class="btn btn-primary btn-sm btn-block" type="button" data-ask>Ask your mentor</button></div>' : '') +
+      (next.length ? '<div class="phase-title"><h3>Up next</h3><a class="small" href="#roadmap">Roadmap</a></div><div class="ov-wait">' + next.map(function (x) {
+        var s = stepOf(t, x.step);
+        return '<div class="glass wait">' + sicon(x.status, x.step) + '<div class="li-main"><b>' + esc(s.title) + '</b><span class="small muted">Step ' + x.step + ' · ' + s.minutes + ' min</span></div></div>';
+      }).join('') + '</div>' : '') +
+    '</aside>';
+    var mhead = '<div class="ov-top w-only"><div><h1>' + greet() + ', ' + first(me.name) + ' ' + wave() + '</h1><p class="muted">' + today() + ' · ' + esc(tr.name) + '</p></div></div>';
+    return { html: '<div class="ov mv"><div class="ov-main stack-lg"><div class="m-only stack-lg">' + head + summary + '</div>' + mhead + tiles + body.html + help + '</div>' + side + '</div>', mount: function (m) {
       animateRing(m); bindProg(m); body.mount(m);
-      var ask = m.querySelector('#ask'); if (ask) ask.addEventListener('click', function () { chatContext = tr.name + ' · Step ' + cur.step + ': ' + d.title; go('chat'); });
+      m.querySelectorAll('[data-ask]').forEach(function (b) { b.addEventListener('click', function () { chatContext = tr.name + ' · Step ' + cur.step + ': ' + d.title; go('chat'); }); });
+      m.querySelectorAll('[data-acct]').forEach(function (b) { b.addEventListener('click', accountSheet); });
+      m.querySelectorAll('[data-jump]').forEach(function (a) { a.addEventListener('click', function (e) { e.preventDefault(); var c = m.querySelector('#stepcard'); if (c) c.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }); }); });
     } };
   }
 

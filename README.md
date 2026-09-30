@@ -65,9 +65,9 @@ Code: `worker/connector.js`. Its tables are created automatically on first use.
 
 Owners, and mentors with the **View lessons** or **Edit lessons** permission, open **Lessons** (Overview, or the account menu) to read any step exactly as students see it and edit its wording: title, short description, minutes, “In simple words”, the step-by-step points, common mistakes, the weak/strong example, task instructions, what to include and the template. Edits are saved in the database (`lesson_edits`) and layered over `public/assets/curriculum.js`, so students see them straight away and any step can be reset to the original. Charts and tables, and the order of steps, still come from `curriculum.js`.
 
-## Results & publications (owners)
+## Student publications (owners)
 
-Owners open **Results & publications** from the portal Overview to add, edit or remove a student's paper: student name, research title, journal, and optionally the year, type and DOI or link (a bare DOI like `10.1234/abcd` becomes a doi.org link). Papers are saved in the database (`research`) and show on `research.html` straight away, newest year first; the landing page links there from the top bar and the bold band above Reviews. The connector has matching tools (`list_research`, `add_research`, `update_research`, `remove_research`).
+Owners open **Student publications** from the portal Overview to add, edit or remove a student's paper: student name, research title, journal, and optionally the year, type and DOI or link (a bare DOI like `10.1234/abcd` becomes a doi.org link). Papers are saved in the database (`research`) and show on `research.html` straight away, newest year first; the landing page links there from the top bar and the bold band above Reviews. The connector has matching tools (`list_research`, `add_research`, `update_research`, `remove_research`).
 
 ## Owners, mentors and permissions
 

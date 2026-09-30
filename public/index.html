@@ -331,7 +331,7 @@ section { padding-block: var(--gap-section) 0; }
 .reviews-cta .stars svg { width: 18px; height: 18px; }
 .reviews-cta h3 { margin-top: 8px; }
 .reviews-cta.after-research { margin-top: 14px; }
-/* results & publications: the one dark, bold band in this section so it's the first thing people see */
+/* student publications: the one dark, bold band in this section so it's the first thing people see */
 .pubs-band { margin-top: clamp(28px, 4vw, 40px); position: relative; overflow: hidden; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px clamp(20px, 3vw, 32px); padding: clamp(26px, 4vw, 40px); border-radius: var(--r); text-decoration: none; color: var(--on-deep); background: linear-gradient(150deg, var(--deep), color-mix(in srgb, var(--deep) 60%, #3448D8)); box-shadow: var(--shadow); transition: transform .5s var(--ease); }
 .pubs-band:hover { transform: translateY(-3px); }
 .pubs-band:active { transform: scale(.99); transition-duration: .1s; }
@@ -465,7 +465,7 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
         <a href="#roadmap">Roadmap</a>
         <a href="#guides">Free guides</a>
         <a href="#mentors">Mentors</a>
-        <a class="nav-pub" href="research.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>Results &amp; publications</a>
+        <a class="nav-pub" href="research.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>Student publications</a>
         <a href="reviews.html">Reviews</a>
         <a class="login-link" href="portal.html">Log in</a>
         <button class="theme-btn" id="theme-btn" type="button" aria-label="Switch between light and dark mode">
@@ -775,12 +775,12 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
       <span class="hand" aria-hidden="true">real papers!</span>
       <span class="pb-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg></span>
       <div class="pb-text">
-        <span class="eyebrow">Results &amp; publications</span>
-        <h3>Results and publications of our own students.</h3>
+        <span class="eyebrow">Student publications</span>
+        <h3>Published by our students.</h3>
         <p>See the papers our students researched, wrote and published in journals with our mentors beside them.</p>
         <div class="pb-stats" id="pb-stats" hidden></div>
       </div>
-      <span class="btn pb-btn">See their results <span class="btn-arrow" aria-hidden="true">→</span></span>
+      <span class="btn pb-btn">See student publications <span class="btn-arrow" aria-hidden="true">→</span></span>
     </a>
     <div class="reviews-cta after-research glass reveal">
       <div><span class="stars" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/></svg></span>
@@ -1050,7 +1050,7 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
 })();
 </script>
 <script>
-/* live count on the Results & publications band; stays hidden until there's at least one paper */
+/* live count on the Student publications band; stays hidden until there's at least one paper */
 fetch('/api/research', { headers: { accept: 'application/json' } }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
   var list = (d && d.research) || [], el = document.getElementById('pb-stats');
   if (!list.length || !el) return;

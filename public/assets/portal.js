@@ -826,7 +826,7 @@
       (canViewLessons() || isOwner() ? '<div class="owner-tools' + (canViewLessons() && isOwner() ? '' : ' one') + '">' +
         (canViewLessons() ? '<a class="glass card team-card" href="#lessons"><span class="ot-icon">' + ic(can('edit_lessons') ? 'pen' : 'today') + '</span><div class="li-main"><h3>' + (can('edit_lessons') ? 'Edit lessons' : 'Lessons') + '</h3><span class="small muted">' + (can('edit_lessons') ? 'Proofread any step as students see it and change the wording.' : 'Read any step exactly as students see it.') + '</span></div>' + ic('chev', 'chev') + '</a>' : '') +
         (isOwner() ? '<a class="glass card team-card" href="#team"><span class="ot-icon">' + ic('users') + '</span><div class="li-main"><h3>Team & permissions</h3><span class="small muted">Mentors, what everyone can do, and all activity.</span></div>' + ic('chev', 'chev') + '</a>' +
-          '<a class="glass card team-card" href="#research"><span class="ot-icon">' + ic('paper') + '</span><div class="li-main"><h3>Results & publications</h3><span class="small muted">Add or remove your students’ papers on the website.</span></div>' + ic('chev', 'chev') + '</a>' : '') +
+          '<a class="glass card team-card" href="#research"><span class="ot-icon">' + ic('paper') + '</span><div class="li-main"><h3>Student publications</h3><span class="small muted">Add or remove your students’ papers on the website.</span></div>' + ic('chev', 'chev') + '</a>' : '') +
       '</div>' : '') +
       '<div class="stats">' +
         '<a class="stat glass' + (stats.pending ? ' hot' : '') + '" href="#reviews"><b>' + stats.pending + '</b><span>Waiting for review</span></a>' +
@@ -1080,8 +1080,8 @@
         '<div class="row rs-actions"><button class="btn btn-glass btn-sm" type="button" data-edit="' + esc(p.id) + '">Edit</button><button class="btn btn-danger btn-sm" type="button" data-del="' + esc(p.id) + '">Remove</button></div></div>';
     }).join('');
     return { html: '<a class="back" href="#overview">' + ic('back', 'chev') + 'Overview</a>' +
-      '<section class="page-head"><div class="row spread wrap"><div class="stack" style="gap:6px"><span class="eyebrow">Owners only</span><h1>Results & publications</h1></div><button class="btn btn-primary" type="button" id="add-paper">+ Add paper</button></div>' +
-      '<p class="muted">Papers your students published with you. They show on the website’s <a href="research.html" target="_blank" rel="noopener">Results & publications</a> page straight away, newest year first. Add a paper only with the student’s permission.</p></section>' +
+      '<section class="page-head"><div class="row spread wrap"><div class="stack" style="gap:6px"><span class="eyebrow">Owners only</span><h1>Student publications</h1></div><button class="btn btn-primary" type="button" id="add-paper">+ Add paper</button></div>' +
+      '<p class="muted">Papers your students published with you. They show on the website’s <a href="research.html" target="_blank" rel="noopener">Student publications</a> page straight away, newest year first. Add a paper only with the student’s permission.</p></section>' +
       (list.length ? '<div class="glass list">' + rows + '</div>' : '<div class="glass empty"><b>No papers yet</b><span>Tap Add paper to put your first student’s publication on the website.</span></div>'),
       mount: function (m) {
         m.querySelector('#add-paper').addEventListener('click', function () { researchSheet(null); });
@@ -1097,7 +1097,7 @@
   }
   function researchSheet(p) {
     var e = p || {};
-    sheet('<h2>' + (p ? 'Edit paper' : 'Add a published paper') + '</h2><p class="muted small">This shows publicly on the website’s Results & publications page.</p>' +
+    sheet('<h2>' + (p ? 'Edit paper' : 'Add a published paper') + '</h2><p class="muted small">This shows publicly on the website’s Student publications page.</p>' +
       '<form id="rs" class="stack" novalidate>' +
         '<div class="field"><label for="rs-student">Student’s name</label><input id="rs-student" autocomplete="off" required placeholder="Eeman Dar" value="' + esc(e.student || '') + '"></div>' +
         '<div class="field"><label for="rs-title">Research title</label><textarea id="rs-title" rows="2" required placeholder="Knowledge of hand hygiene among final-year medical students in Lahore">' + esc(e.title || '') + '</textarea></div>' +

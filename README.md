@@ -14,6 +14,7 @@ Medical research mentorship: daily tasks, step-by-step lessons and mentor feedba
   - `assets/curriculum.js`: the programmes and all lesson content. Edit this to change the course.
   - `assets/store.js`: talks to the API. `assets/portal.js`, `portal.css`: portal screens.
   - `assets/liquid.css`, `assets/fx.js`: shared glass look and pointer effects.
+  - `assets/menu.js`: the phone menu (menu button in the top bar at 860px and below) on every public page.
   - `manifest.webmanifest`, `sw.js`, `assets/icons/`: make the portal installable as a phone app.
   - `_headers`: security headers for every page. `robots.txt` keeps the portal out of search results.
 - `worker/index.js`: the API (Cloudflare Worker). Handles logins, applications, members, submissions and reviews.

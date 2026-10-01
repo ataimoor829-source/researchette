@@ -489,7 +489,7 @@ var ORIGINAL = {
         ['Not Relevant', 'Think who it helps', 'If nobody would use the answer, choose another topic']] }],
     mistakes: ['Choosing a topic that is too big, like “the diet of students”.', 'Not saying what you will count or measure.', 'Putting two or three topics in one sentence.', 'Choosing people you can’t reach, like patients in another city.'],
     include: ['Your topic in one sentence', 'P, I, C and O written separately (write “not needed” if C doesn’t apply)', 'One short line for each FINER letter'],
-    template: 'My research topic (one sentence):\n\nP – Who will I study?\nI – What am I looking at?\nC – Compared with whom? (write “not needed” if none)\nO – What will I count or measure?\n\nFINER check:\nF – Feasible:\nI – Interesting:\nN – Novel:\nE – Ethical:\nR – Relevant:'
+    template: 'My research topic (one sentence):\n\nP: Who will I study?\nI: What am I looking at?\nC: Compared with whom? (write “not needed” if none)\nO: What will I count or measure?\n\nFINER check:\nF (Feasible):\nI (Interesting):\nN (Novel):\nE (Ethical):\nR (Relevant):'
   });
   add('original:2', {
     intro: 'Before you start, look at what other people have already found about your topic. This is called a literature search (“literature” just means published papers). It shows you what is already known, gives you ideas for your own study, and shows the gap your study will fill. You will use PubMed: a free website with millions of medical papers. Don’t worry if it looks confusing at first: follow the five steps and the picture below.',

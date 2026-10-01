@@ -155,6 +155,12 @@ const EXTRA_SCHEMA = [
   'CREATE INDEX IF NOT EXISTS trusted_devices_user ON trusted_devices (user_id)',
   'CREATE TABLE IF NOT EXISTS login_tickets (ticket_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, purpose TEXT NOT NULL, attempts INTEGER DEFAULT 0, expires TEXT NOT NULL)',
   'CREATE TABLE IF NOT EXISTS user_prefs (user_id TEXT PRIMARY KEY, welcomed_at TEXT)',
+  'CREATE TABLE IF NOT EXISTS classes (id TEXT PRIMARY KEY, name TEXT NOT NULL, mentor_id TEXT, created_by TEXT, created_at TEXT NOT NULL)',
+  'CREATE TABLE IF NOT EXISTS class_members (class_id TEXT NOT NULL, user_id TEXT NOT NULL, added_at TEXT NOT NULL, PRIMARY KEY (class_id, user_id))',
+  'CREATE INDEX IF NOT EXISTS class_members_user ON class_members (user_id)',
+  'CREATE TABLE IF NOT EXISTS class_messages (id TEXT PRIMARY KEY, class_id TEXT NOT NULL, sender_id TEXT NOT NULL, sender_role TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL)',
+  'CREATE INDEX IF NOT EXISTS class_messages_class ON class_messages (class_id, created_at)',
+  'CREATE TABLE IF NOT EXISTS class_reads (class_id TEXT NOT NULL, reader_id TEXT NOT NULL, last_read TEXT NOT NULL, PRIMARY KEY (class_id, reader_id))',
   'CREATE TABLE IF NOT EXISTS lesson_edits (key TEXT PRIMARY KEY, data TEXT NOT NULL, updated_by TEXT, updated_at TEXT NOT NULL)',
   'CREATE TABLE IF NOT EXISTS step_unlocks (user_id TEXT NOT NULL, track TEXT NOT NULL, step INTEGER NOT NULL, unlocked_by TEXT, created_at TEXT NOT NULL, PRIMARY KEY (user_id, track, step))',
   "CREATE TABLE IF NOT EXISTS research (id TEXT PRIMARY KEY, student TEXT NOT NULL, title TEXT NOT NULL, journal TEXT NOT NULL, year INTEGER, kind TEXT DEFAULT '', link TEXT DEFAULT '', created_by TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)"
@@ -269,6 +275,85 @@ async function unreadFor(env, reader) {
   const by = {}; let total = 0;
   results.forEach((r) => { by[r.member_id] = r.n; total += r.n; });
   return { total, by };
+}
+
+/* ---------- classes ----------
+   A class is a group of members under one mentor, with one group chat. Owners create and edit classes;
+   the class's mentor (and every owner) can read and post; members read and post in classes they belong to. */
+async function classRow(env, id) {
+  const c = await env.DB.prepare('SELECT c.*, u.name AS mentor_name FROM classes c LEFT JOIN users u ON u.id = c.mentor_id WHERE c.id = ?').bind(id).first();
+  if (!c) throw new HttpError(404, 'Class not found.');
+  return c;
+}
+async function classFor(env, user, id) {
+  await ensureSchema(env);
+  const c = await classRow(env, id);
+  if (user.role === 'admin') { if (!(user.owner || c.mentor_id === user.id)) throw new HttpError(403, 'This class belongs to another mentor.'); }
+  else if (!(await env.DB.prepare('SELECT 1 FROM class_members WHERE class_id = ? AND user_id = ?').bind(id, user.id).first())) throw new HttpError(404, 'Class not found.');
+  return c;
+}
+async function classMembers(env, id) {
+  const { results } = await env.DB.prepare("SELECT u.id, u.name, u.college FROM class_members cm JOIN users u ON u.id = cm.user_id WHERE cm.class_id = ? AND u.role = 'member' ORDER BY u.name").bind(id).all();
+  return results.map((r) => ({ id: r.id, name: r.name, college: r.college || '' }));
+}
+async function classInfo(env, c, reader) {
+  const [members, last, unread] = await Promise.all([
+    classMembers(env, c.id),
+    env.DB.prepare('SELECT m.*, u.name AS sender_name FROM class_messages m LEFT JOIN users u ON u.id = m.sender_id WHERE m.class_id = ? ORDER BY m.created_at DESC LIMIT 1').bind(c.id).first(),
+    env.DB.prepare('SELECT COUNT(*) AS n FROM class_messages m LEFT JOIN class_reads r ON r.class_id = m.class_id AND r.reader_id = ? WHERE m.class_id = ? AND m.sender_id != ? AND m.created_at > COALESCE(r.last_read, \'\')').bind(reader.id, c.id, reader.id).first()
+  ]);
+  return {
+    id: c.id, name: c.name, mentor: c.mentor_id ? { id: c.mentor_id, name: c.mentor_name || '' } : null, createdAt: c.created_at, members,
+    last: last ? { body: (await unseal(env, last.body)).slice(0, 160), senderName: last.sender_name || '', role: last.sender_role, at: last.created_at } : null,
+    unread: unread ? unread.n : 0
+  };
+}
+async function classesOf(env, user) {
+  await ensureSchema(env);
+  const q = user.role === 'admin'
+    ? (user.owner ? env.DB.prepare('SELECT c.*, u.name AS mentor_name FROM classes c LEFT JOIN users u ON u.id = c.mentor_id ORDER BY c.created_at DESC')
+      : env.DB.prepare('SELECT c.*, u.name AS mentor_name FROM classes c LEFT JOIN users u ON u.id = c.mentor_id WHERE c.mentor_id = ? ORDER BY c.created_at DESC').bind(user.id))
+    : env.DB.prepare('SELECT c.*, u.name AS mentor_name FROM classes c JOIN class_members cm ON cm.class_id = c.id LEFT JOIN users u ON u.id = c.mentor_id WHERE cm.user_id = ? ORDER BY c.created_at DESC').bind(user.id);
+  const { results } = await q.all();
+  const list = await Promise.all(results.map((c) => classInfo(env, c, user)));
+  return list.sort((a, b) => ((b.last && b.last.at) || b.createdAt).localeCompare((a.last && a.last.at) || a.createdAt));
+}
+async function classUnread(env, user) {
+  await ensureSchema(env);
+  const scope = user.role === 'admin' ? (user.owner ? '' : ' AND c.mentor_id = ?') : ' AND c.id IN (SELECT class_id FROM class_members WHERE user_id = ?)';
+  const args = user.role === 'admin' ? (user.owner ? [] : [user.id]) : [user.id];
+  const r = await env.DB.prepare('SELECT COUNT(*) AS n FROM class_messages m JOIN classes c ON c.id = m.class_id LEFT JOIN class_reads r ON r.class_id = m.class_id AND r.reader_id = ? WHERE m.sender_id != ? AND m.created_at > COALESCE(r.last_read, \'\')' + scope)
+    .bind(user.id, user.id, ...args).first();
+  return r ? r.n : 0;
+}
+async function classMessages(env, classId, readerId, after) {
+  const { results } = await env.DB.prepare('SELECT m.*, u.name AS sender_name FROM class_messages m LEFT JOIN users u ON u.id = m.sender_id WHERE m.class_id = ? AND m.created_at > ? ORDER BY m.created_at ASC LIMIT 500').bind(classId, after || '').all();
+  await env.DB.prepare('INSERT INTO class_reads (class_id, reader_id, last_read) VALUES (?, ?, ?) ON CONFLICT (class_id, reader_id) DO UPDATE SET last_read = excluded.last_read').bind(classId, readerId, now()).run();
+  return Promise.all(results.map(async (r) => ({ id: r.id, senderId: r.sender_id, senderName: r.sender_name || (r.sender_role === 'admin' ? 'Mentor' : 'Member'), role: r.sender_role, body: await unseal(env, r.body), context: '', at: r.created_at })));
+}
+async function sendClassMessage(env, classId, sender, text) {
+  const bodyText = str(text, 4000);
+  if (!bodyText) throw bad('Write a message first.');
+  const id = randomId('g'), at = now();
+  await env.DB.batch([
+    env.DB.prepare('INSERT INTO class_messages (id, class_id, sender_id, sender_role, body, created_at) VALUES (?, ?, ?, ?, ?, ?)').bind(id, classId, sender.id, sender.role, await seal(env, bodyText), at),
+    env.DB.prepare('INSERT INTO class_reads (class_id, reader_id, last_read) VALUES (?, ?, ?) ON CONFLICT (class_id, reader_id) DO UPDATE SET last_read = excluded.last_read').bind(classId, sender.id, at)
+  ]);
+  return { id, senderId: sender.id, senderName: sender.name, role: sender.role, body: bodyText, context: '', at };
+}
+async function saveClassMembers(env, classId, ids) {
+  const clean = [...new Set((Array.isArray(ids) ? ids : []).map((x) => str(x, 40)).filter(Boolean))].slice(0, 300);
+  const ok = clean.length ? (await env.DB.prepare("SELECT id FROM users WHERE role = 'member' AND id IN (" + clean.map(() => '?').join(',') + ')').bind(...clean).all()).results.map((r) => r.id) : [];
+  const t = now();
+  await env.DB.batch([env.DB.prepare('DELETE FROM class_members WHERE class_id = ?').bind(classId),
+    ...ok.map((id) => env.DB.prepare('INSERT INTO class_members (class_id, user_id, added_at) VALUES (?, ?, ?)').bind(classId, id, t))]);
+  return ok;
+}
+async function classMentor(env, id) {
+  if (!id) return null;
+  const m = await env.DB.prepare("SELECT id, name FROM users WHERE id = ? AND role = 'admin'").bind(str(id, 40)).first();
+  if (!m) throw bad('Pick a mentor from the list.');
+  return m;
 }
 
 /* ---------- users & sessions ---------- */
@@ -713,7 +798,27 @@ async function route(request, env, url, ctx) {
   }
   if (path === '/api/chat/unread' && method === 'GET') {
     const u = await requireUser(request, env);
-    return json({ unread: (await unreadFor(env, u)).total });
+    const [a, b] = await Promise.all([unreadFor(env, u), classUnread(env, u)]);
+    return json({ unread: a.total + b });
+  }
+
+  /* classes: members see and chat in their own classes */
+  if (path === '/api/classes' && method === 'GET') {
+    const u = await requireUser(request, env);
+    if (u.role !== 'member') throw bad('Mentors open classes from Messages.');
+    return json(await classesOf(env, u));
+  }
+  if ((m = path.match(/^\/api\/classes\/([\w-]+)\/messages$/))) {
+    const u = await requireUser(request, env);
+    if (u.role !== 'member') throw bad('Mentors open classes from Messages.');
+    const c = await classFor(env, u, m[1]);
+    if (method === 'GET') return json({ class: await classInfo(env, c, u), messages: await classMessages(env, c.id, u.id, str(url.searchParams.get('after'), 40)) });
+    if (method === 'POST') {
+      if (!can(u, 'chat')) throw new HttpError(403, 'Chat is turned off for your account.');
+      const msg = await sendClassMessage(env, c.id, u, (await body(request)).body);
+      record(env, ctx, 'class.member', u.name + ' wrote in ' + c.name, [['Class', c.name], ['Message', msg.body.length > 500 ? msg.body.slice(0, 500) + '…' : msg.body]], 'class-' + c.id, u.id, u.id);
+      return json(msg, 201);
+    }
   }
 
   /* admin */
@@ -789,7 +894,51 @@ async function route(request, env, url, ctx) {
       unread: unread.by[r.member_id] || 0
     }))));
   }
-  if (path === '/api/admin/chats/unread' && method === 'GET') return json({ unread: (await unreadFor(env, admin)).total });
+  if (path === '/api/admin/chats/unread' && method === 'GET') {
+    const [a, b] = await Promise.all([unreadFor(env, admin), classUnread(env, admin)]);
+    return json({ unread: a.total + b });
+  }
+
+  /* classes: owners make them; the class's mentor and owners chat in them */
+  if (path === '/api/admin/classes' && method === 'GET') return json(await classesOf(env, admin));
+  if (path === '/api/admin/classes' && method === 'POST') {
+    needOwner(admin);
+    const b = await body(request), name = str(b.name, 80);
+    if (!name) throw bad('Give the class a name.');
+    const mentor = await classMentor(env, b.mentorId), id = randomId('k'), t = now();
+    await env.DB.prepare('INSERT INTO classes (id, name, mentor_id, created_by, created_at) VALUES (?, ?, ?, ?, ?)').bind(id, name, mentor ? mentor.id : null, admin.id, t).run();
+    const ids = await saveClassMembers(env, id, b.memberIds);
+    record(env, ctx, 'class.created', admin.name + ' made the class ' + name, [['Class', name], ['Mentor', mentor ? mentor.name : 'None'], ['Members', String(ids.length)]], 'class-' + id, admin.id);
+    return json(await classInfo(env, await classRow(env, id), admin), 201);
+  }
+  if ((m = path.match(/^\/api\/admin\/classes\/([\w-]+)$/))) {
+    const c = await classFor(env, admin, m[1]);
+    if (method === 'GET') return json(await classInfo(env, c, admin));
+    needOwner(admin);
+    if (method === 'DELETE') {
+      await env.DB.batch(['DELETE FROM class_messages WHERE class_id = ?', 'DELETE FROM class_members WHERE class_id = ?', 'DELETE FROM class_reads WHERE class_id = ?', 'DELETE FROM classes WHERE id = ?'].map((q) => env.DB.prepare(q).bind(c.id)));
+      record(env, ctx, 'class.deleted', admin.name + ' deleted the class ' + c.name, [['Class', c.name]], '', admin.id);
+      return json({ ok: true });
+    }
+    if (method === 'POST') {
+      const b = await body(request), name = b.name !== undefined ? str(b.name, 80) : c.name;
+      if (!name) throw bad('Give the class a name.');
+      const mentor = b.mentorId !== undefined ? await classMentor(env, b.mentorId) : (c.mentor_id ? { id: c.mentor_id } : null);
+      await env.DB.prepare('UPDATE classes SET name = ?, mentor_id = ? WHERE id = ?').bind(name, mentor ? mentor.id : null, c.id).run();
+      if (b.memberIds !== undefined) await saveClassMembers(env, c.id, b.memberIds);
+      record(env, ctx, 'class.updated', admin.name + ' updated the class ' + name, [['Class', name]], 'class-' + c.id, admin.id);
+      return json(await classInfo(env, await classRow(env, c.id), admin));
+    }
+  }
+  if ((m = path.match(/^\/api\/admin\/classes\/([\w-]+)\/messages$/))) {
+    const c = await classFor(env, admin, m[1]);
+    if (method === 'GET') return json({ class: await classInfo(env, c, admin), messages: await classMessages(env, c.id, admin.id, str(url.searchParams.get('after'), 40)) });
+    if (method === 'POST') {
+      const msg = await sendClassMessage(env, c.id, admin, (await body(request)).body);
+      record(env, ctx, 'class.mentor', admin.name + ' wrote in ' + c.name, [['Class', c.name], ['Message', msg.body.length > 500 ? msg.body.slice(0, 500) + '…' : msg.body]], 'class-' + c.id, admin.id);
+      return json(msg, 201);
+    }
+  }
   if ((m = path.match(/^\/api\/admin\/chat\/([\w-]+)$/))) {
     needPerm(admin, 'chat');
     const u = await memberFor(env, admin, m[1]);

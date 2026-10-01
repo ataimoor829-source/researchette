@@ -84,3 +84,14 @@
   panel.addEventListener('click', function (e) { if (e.target.closest('a')) hide(); });
   addEventListener('resize', function () { if (open) { if (innerWidth > 860) hide(); else place(); } });
 })();
+
+/* A one-time note about cookies. The site sets no tracking or advertising cookies; the only cookie is the
+   portal login. The note shows once per browser and is dismissed for good with OK. */
+(function () {
+  try { if (localStorage.getItem('rt-cookie-ok')) return; } catch (e) { return; }
+  var n = document.createElement('div');
+  n.className = 'cookie-note'; n.setAttribute('role', 'region'); n.setAttribute('aria-label', 'Cookie notice');
+  n.innerHTML = '<p>We use one essential cookie to keep you logged in. No tracking or ads. <a href="/privacy#cookies">Privacy</a></p><button type="button" class="btn btn-primary btn-sm">OK</button>';
+  n.querySelector('button').addEventListener('click', function () { try { localStorage.setItem('rt-cookie-ok', '1'); } catch (e) {} n.remove(); });
+  setTimeout(function () { document.body.appendChild(n); }, 1200);
+})();

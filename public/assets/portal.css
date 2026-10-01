@@ -789,3 +789,24 @@ html.menu-open .coach { display: none; }
 /* welcome card preview (credentials sheet) */
 .idcard { border-radius: 16px; overflow: hidden; background: var(--glass-strong); min-height: 120px; display: grid; place-items: center; }
 .idcard img { display: block; width: 100%; height: auto; }
+
+/* classes */
+.class-head { display: grid; gap: 12px; }
+.class-head h2 { font-size: 1.35rem; margin-top: 2px; }
+.class-members summary { list-style: none; display: flex; align-items: center; gap: 10px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.class-members summary::-webkit-details-marker { display: none; }
+.class-members .list { margin-top: 8px; }
+.faces { display: inline-flex; }
+.faces .avatar { width: 30px; height: 30px; font-size: .62rem; box-shadow: 0 0 0 2px var(--paper); }
+.faces .avatar + .avatar { margin-left: -8px; }
+.avatar.more { background: var(--pen-soft); color: var(--pen); }
+.pick-list { display: grid; gap: 4px; max-height: 300px; overflow-y: auto; overscroll-behavior: contain; padding: 4px; border: 1px solid var(--line); border-radius: 16px; margin-top: 6px; }
+.pick { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; cursor: pointer; }
+.pick[hidden] { display: none; }
+.pick:hover { background: var(--pen-soft); }
+.pick:has(input:checked) { background: var(--pen-soft); }
+.pick input { width: 18px; height: 18px; accent-color: var(--pen); flex: none; }
+.pick .avatar { width: 32px; height: 32px; font-size: .66rem; }
+.pick .li-main { display: grid; min-width: 0; }
+.pick .li-main b { font-size: .94rem; }
+.pick .small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

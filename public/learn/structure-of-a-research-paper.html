@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Structure of a research paper (IMRaD) and word count · Researchette</title>
+<meta name="description" content="The parts of a research paper in order (IMRaD), which part to write first, and the ideal, minimum and maximum word count for each part.">
+<link rel="canonical" href="https://researchette.com/learn/structure-of-a-research-paper">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Researchette">
+<meta property="og:title" content="Structure of a research paper (IMRaD) and word count · Researchette">
+<meta property="og:description" content="The parts of a research paper in order (IMRaD), which part to write first, and the ideal, minimum and maximum word count for each part.">
+<meta property="og:url" content="https://researchette.com/learn/structure-of-a-research-paper">
+<meta property="og:image" content="https://researchette.com/assets/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://researchette.com/assets/og.jpg">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Article","headline":"Structure of a research paper (IMRaD) and word count","description":"The parts of a research paper in order (IMRaD), which part to write first, and the ideal, minimum and maximum word count for each part.","url":"https://researchette.com/learn/structure-of-a-research-paper","inLanguage":"en","dateModified":"2026-10-01","author":{"@type":"Person","name":"Zain Ramzan"},"publisher":{"@type":"EducationalOrganization","name":"Researchette","url":"https://researchette.com/"},"isAccessibleForFree":true,"educationalLevel":"Beginner","about":"Medical research writing"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://researchette.com/"},{"@type":"ListItem","position":2,"name":"Learn research","item":"https://researchette.com/learn/"},{"@type":"ListItem","position":3,"name":"The shape of a paper","item":"https://researchette.com/learn/structure-of-a-research-paper"}]}]}</script>
+<link rel="icon" href="/assets/icons/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&family=Caveat:wght@600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="/assets/portal.css">
+<style>
+/* Layout: every free guide, grouped by topic, with a filter; same glass language as the rest of the site. */
+body { font-size: 1.0625rem; line-height: 1.65; }
+.wrap { width: 100%; max-width: 1100px; margin-inline: auto; padding-inline: 22px; }
+.nav { position: sticky; top: 0; z-index: 40; padding-top: env(safe-area-inset-top, 0px); background: var(--glass); -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%); border-bottom: 1px solid var(--line); box-shadow: 0 10px 30px -26px rgba(24,32,61,.45); }
+.nav .wrap { max-width: none; padding-inline: clamp(16px, 3vw, 44px); }
+.nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 10px; }
+.nav-links { display: flex; align-items: center; gap: 6px; }
+.nav-links a:not(.btn) { color: var(--muted); text-decoration: none; padding: .45em .85em; border-radius: 999px; font-size: .93rem; }
+.nav-links a:not(.btn):hover { color: var(--ink); background: var(--pen-soft); }
+@media (max-width: 480px) { .nav-links a.home-link { display: none; } .nav-links a:not(.btn) { padding-inline: .6em; } }
+
+.hero { padding-block: clamp(56px, 10vw, 120px) clamp(36px, 5vw, 60px); display: grid; gap: 20px; max-width: 720px; }
+.hero h1 { font-size: clamp(2.4rem, 1.5rem + 4vw, 4.2rem); font-weight: 800; letter-spacing: -.035em; line-height: 1.04; }
+.hero .lede { color: var(--muted); font-size: 1.1rem; max-width: 50ch; }
+.word { display: inline-block; animation: wordin .9s var(--ease) both; animation-delay: calc(var(--w) * 90ms + 100ms); }
+@keyframes wordin { from { opacity: 0; transform: translateY(.45em); filter: blur(8px); } }
+.fade-up { animation: fadeup .9s var(--ease) both; animation-delay: var(--d, .6s); }
+@keyframes fadeup { from { opacity: 0; transform: translateY(18px); } }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips button { font: 600 .88rem var(--f-body); padding: .55em 1em; border-radius: 99px; border: 1px solid var(--line); background: var(--glass-strong); color: var(--muted); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .1s ease, background-color .2s, color .2s; }
+.chips button:active { transform: scale(.95); }
+.chips button[aria-pressed="true"] { background: var(--pen); color: #fff; border-color: transparent; }
+.cat { display: grid; gap: 12px; margin-top: clamp(28px, 4vw, 40px); }
+.cat[hidden] { display: none; }
+.cat h2 { font-size: clamp(1.2rem, 1rem + .8vw, 1.5rem); letter-spacing: -.02em; }
+.list { padding: 6px clamp(18px, 3vw, 28px); }
+.list details + details { border-top: 1px solid var(--line); }
+.list details { scroll-margin-top: calc(80px + env(safe-area-inset-top, 0px)); }
+.list summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 16px; padding-block: 18px; -webkit-tap-highlight-color: transparent; }
+.list summary::-webkit-details-marker { display: none; }
+.list summary b { display: block; font-weight: 600; font-size: 1.02rem; }
+.list summary small { display: block; color: var(--muted); font-size: .88rem; margin-top: 2px; }
+.list .plus { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--pen-soft); color: var(--pen); transition: transform .5s var(--ease), background-color .3s; }
+.list .plus svg { width: 14px; height: 14px; }
+.list details[open] .plus { transform: rotate(45deg); background: var(--pen); color: #fff; }
+.list details::details-content { height: 0; overflow: clip; transition: height .55s var(--ease), content-visibility .55s allow-discrete; }
+.list details[open]::details-content { height: auto; }
+.list .content { padding-bottom: 22px; font-size: .96rem; color: var(--muted); display: grid; gap: 10px; max-width: 66ch; }
+.list .content b { color: var(--ink); }
+.list ol, .list ul { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+.list code { font-family: var(--f-mono); font-size: .8rem; background: var(--pen-soft); color: var(--ink); padding: .12em .4em; border-radius: 5px; overflow-wrap: anywhere; }
+.formula { font-family: var(--f-mono); font-size: .8rem; color: var(--ink); background: var(--pen-soft); border-radius: 12px; padding: 10px 12px; overflow-wrap: anywhere; }
+.new-tag { display: inline-block; vertical-align: 2px; margin-left: 8px; font: 500 .6rem var(--f-mono); letter-spacing: .08em; text-transform: uppercase; padding: .3em .6em; border-radius: 99px; background: var(--teal-soft); color: var(--teal); }
+.cta-band { margin-top: clamp(64px, 10vw, 110px); padding: clamp(22px, 3.5vw, 32px); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 24px; }
+.cta-band p { color: var(--muted); margin-top: 4px; }
+
+.end { padding-block: clamp(80px, 12vw, 140px) 36px; display: grid; gap: 40px; justify-items: center; text-align: center; }
+.contact { display: grid; gap: 16px; justify-items: center; width: 100%; }
+.contact-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; max-width: 820px; }
+.contact-item { display: grid; justify-items: center; gap: 4px; padding: 20px 16px; text-decoration: none; color: var(--ink); transition: transform .45s var(--ease); min-width: 0; }
+.contact-item:hover { transform: translateY(-4px); }
+.contact-item svg { width: 22px; height: 22px; color: var(--pen); margin-bottom: 4px; }
+.contact-item span { font-size: .8rem; color: var(--muted); }
+.contact-item b { font-weight: 600; font-size: .98rem; overflow-wrap: anywhere; }
+@media (max-width: 640px) { .contact-grid { grid-template-columns: 1fr; } .contact-item { grid-template-columns: auto 1fr; justify-items: start; align-items: center; column-gap: 14px; text-align: left; } .contact-item svg { grid-row: span 2; margin: 0; } }
+.foot-row a.legal { color: var(--muted); font-size: .85rem; align-self: center; }
+.foot-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 22px; padding-top: 28px; border-top: 1px solid var(--line); width: 100%; font-size: .85rem; color: var(--muted); align-items: center; }
+
+.js .reveal { opacity: 0; transform: translateY(40px) scale(.98); filter: blur(8px); transition: opacity 1s var(--ease), transform 1s var(--ease), filter 1s var(--ease); transition-delay: var(--d, 0s); }
+.js .reveal.in { opacity: 1; transform: none; filter: none; }
+@media (prefers-reduced-motion: reduce) { .js .reveal { opacity: 1; transform: none; filter: none; } }
+</style>
+<link rel="stylesheet" href="/assets/liquid.css">
+<style>
+.learn-body { display: grid; gap: 22px; }
+.learn-body h2 { font-size: 1.3rem; margin: 6px 0 0; }
+.learn-body .card { padding: clamp(18px, 3vw, 28px); display: grid; gap: 14px; }
+.learn-body ol.steps { margin: 0; padding: 0; list-style: none; counter-reset: s; display: grid; gap: 12px; }
+.learn-body ol.steps li { counter-increment: s; display: grid; grid-template-columns: 32px 1fr; gap: 12px; }
+.learn-body ol.steps li::before { content: counter(s); width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: var(--pen-soft); color: var(--pen); font: 700 .85rem var(--f-display); }
+.learn-body ol.steps b { display: block; }
+.learn-body ol.steps p { margin: 2px 0 0; color: var(--muted); }
+.wl { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; }
+.wl div { padding: 12px 8px; border-radius: 14px; border: 1px solid var(--line); }
+.wl span { display: block; font-size: .78rem; color: var(--muted); font-weight: 600; }
+.wl b { font: 800 1.2rem var(--f-display); }
+.wl .ideal { background: var(--teal-soft); border-color: transparent; color: var(--teal); }
+.wl .ideal span { color: var(--teal); }
+.ex { border-radius: 16px; padding: 14px 16px; }
+.ex.weak { background: var(--red-soft, rgba(221,68,96,.1)); }
+.ex.strong { background: var(--teal-soft); }
+.ex small { display: block; font: 700 .72rem var(--f-mono, monospace); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
+.ex.weak small { color: var(--redpen); } .ex.strong small { color: var(--teal); }
+.ex.weak p { text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--redpen) 40%, transparent); }
+pre.tpl { white-space: pre-wrap; margin: 0; padding: 16px 18px; border-radius: 16px; background: var(--glass-strong); font: .95rem/1.65 var(--f-body); overflow-wrap: anywhere; }
+ul.plain { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+ul.miss { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+ul.miss li { display: grid; grid-template-columns: 20px 1fr; gap: 8px; }
+ul.miss li::before { content: "✕"; color: var(--redpen); font-weight: 700; }
+table.budget { width: 100%; border-collapse: collapse; font-size: .95rem; }
+table.budget th, table.budget td { padding: 10px 8px; border-top: 1px solid var(--line); text-align: center; }
+table.budget th:first-child, table.budget td:first-child { text-align: left; }
+table.budget thead th { border-top: 0; color: var(--pen); font-size: .82rem; }
+dl.gloss { margin: 0; display: grid; }
+dl.gloss div { padding: 12px 0; border-top: 1px solid var(--line); }
+dl.gloss div:first-child { border-top: 0; }
+dl.gloss dt { font-weight: 700; color: var(--pen); }
+dl.gloss dd { margin: 2px 0 0; }
+.pager { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
+.cta-box { display: grid; gap: 10px; padding: clamp(20px, 3vw, 30px); border-radius: 24px; color: #fff; background: linear-gradient(140deg, #4B5CF0, #2A38B8 60%, #0F6F66); }
+.cta-box h2 { color: #fff; margin: 0; }
+.cta-box p { margin: 0; opacity: .9; }
+.cta-box .btn { justify-self: start; background: #fff; color: #2A38B8; }
+.crumbs { font-size: .88rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px; }
+.crumbs a { color: inherit; }
+.hub { display: grid; gap: 10px; }
+@media (min-width: 720px) { .hub { grid-template-columns: 1fr 1fr; } }
+.hub a { display: grid; gap: 4px; padding: 16px 18px; border-radius: 18px; text-decoration: none; color: inherit; }
+.hub a b { color: var(--ink); }
+.hub a span { color: var(--muted); font-size: .92rem; }
+.hub a small { color: var(--teal); font-weight: 600; }
+</style>
+</head>
+<body>
+<script>document.body.classList.add('js');</script>
+<div class="aura" aria-hidden="true"><i></i><i></i><i></i></div>
+
+<header class="nav">
+  <div class="wrap">
+    <div class="nav-inner">
+      <a class="logo" href="/" aria-label="Researchette home">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="7" fill="#3448D8"/><path d="M5 13h3l2-5 3 9 2-4h4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>research<i>ette</i></span>
+      </a>
+      <nav class="nav-links" aria-label="Main">
+        <a class="home-link" href="/">Home</a>
+        <a href="/learn/">Learn research</a>
+        <a href="/research">Student publications</a>
+        <a class="btn btn-primary btn-sm" href="/#join">Join</a>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <span class="eyebrow">Start here</span>
+    <h1>Structure of a research paper (IMRaD) and word count</h1>
+  </section>
+  <div class="learn-body">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> › <a href="/learn/">Learn research</a> › <span>The shape of a paper</span></nav>
+    <section class="glass card"><p class="lede" style="margin:0">Almost every research paper uses the same order, called IMRaD: Introduction, Methods, Results and Discussion. The title and abstract sit on top; the conclusion and references come at the end. Once you know the order, you always know what goes where.</p></section>
+    <section class="glass card"><h2>Word count for each part</h2><table class="budget"><thead><tr><th>Part</th><th>Min</th><th>Ideal</th><th>Max</th></tr></thead><tbody><tr><td>Title</td><td>8</td><td><b>12–15</b></td><td>20</td></tr><tr><td>Abstract</td><td>150</td><td><b>250</b></td><td>300</td></tr><tr><td>Introduction</td><td>250</td><td><b>350–450</b></td><td>600</td></tr><tr><td>Objectives</td><td>15</td><td><b>20–40</b></td><td>60</td></tr><tr><td>Methodology</td><td>350</td><td><b>500–700</b></td><td>900</td></tr><tr><td>Results</td><td>250</td><td><b>400–600</b></td><td>800</td></tr><tr><td>Discussion</td><td>500</td><td><b>700–1000</b></td><td>1200</td></tr><tr><td>Limitations</td><td>50</td><td><b>80–120</b></td><td>150</td></tr><tr><td>Conclusion</td><td>30</td><td><b>50–80</b></td><td>100</td></tr><tr><td>References (count)</td><td>10</td><td><b>15–30</b></td><td>40</td></tr></tbody></table><p class="muted">For the main text, from Introduction to Conclusion. The abstract, tables and references are counted separately. Always check your target journal’s own limit.</p></section>
+    <section class="glass card"><h2>The parts, in order</h2><ol class="steps"><li><div><b>Title and abstract</b><p>The shop window. Most people read only these, so they must tell the whole story in a few lines.</p></div></li><li><div><b>Introduction: why?</b><p>What is known, what is missing, and what you set out to find.</p></div></li><li><div><b>Methods: how?</b><p>Exactly what you did, so someone else could repeat it.</p></div></li><li><div><b>Results: what did you find?</b><p>Only the numbers and facts. No opinions yet.</p></div></li><li><div><b>Discussion: what does it mean?</b><p>Explain the results, compare with other studies, admit the limits.</p></div></li><li><div><b>Conclusion and references</b><p>The take-home message in 2 or 3 lines, then the list of papers you used.</p></div></li></ol></section>
+    <section class="glass card"><h2>Tips</h2><ul class="plain"><li>Write Methods first: it is the easiest, because you already know what you did.</li><li>Then Results, then Discussion, then Introduction.</li><li>Write the Abstract and Title last, once everything else is done.</li></ul></section>
+    <section class="glass card"><h2>The order, with word counts</h2><pre class="tpl">Title (12–15 words)
+Abstract (about 250 words: Objective · Methods · Results · Conclusion) + 3–6 keywords
+1. Introduction (350–450 words)
+2. Objectives (1–2 sentences)
+3. Methods (500–700 words)
+4. Results (400–600 words + 2–4 tables)
+5. Discussion (700–1000 words, ending with Limitations)
+6. Conclusion (50–80 words)
+References (15–30)
+
+Main text total: about 2500–3000 words.</pre></section>
+    <section class="glass card"><h2>Common mistakes to avoid</h2><ul class="miss"><li>Writing the abstract first, then having to rewrite it.</li><li>Putting results inside the Methods, or opinions inside the Results.</li><li>Mixing the order because a friend’s paper looked different. Check your target journal’s instructions.</li></ul></section>
+    <section class="cta-box"><h2>Want a mentor to check your paper?</h2><p>Researchette mentors guide medical students through their own study, step by step, and give feedback on every draft until it is ready to submit.</p><a class="btn" href="/#join">Apply for mentorship →</a></section>
+    <nav class="pager" aria-label="More guides"><a class="btn btn-glass" href="/learn/research-terms-explained">← Research words in plain English</a><a class="btn btn-primary" href="/learn/how-to-write-a-research-title">Next: Title →</a></nav>
+  </div>
+<section class="end">
+    <div class="contact reveal">
+      <span class="eyebrow">Contact</span>
+      <div class="contact-grid">
+        <a data-tilt class="contact-item glass" href="mailto:itszainr1@gmail.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M22 6l-10 7L2 6"/></svg><span>Email</span><b>itszainr1@gmail.com</b></a>
+        <a data-tilt class="contact-item glass" href="https://wa.me/923395888444" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-13.4 7.8L3 21l1.3-4.4A9 9 0 1 1 21 12z"/></svg><span>WhatsApp</span><b>0339 5888444</b></a>
+        <a data-tilt class="contact-item glass" href="tel:+923395888444"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg><span>Call</span><b>0339 5888444</b></a>
+      </div>
+    </div>
+    <div class="foot-row">
+      <a class="logo" href="/"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="7" fill="#3448D8"/><path d="M5 13h3l2-5 3 9 2-4h4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>research<i>ette</i></span></a>
+      <a class="legal" href="/learn/">Learn research</a>
+      <a class="legal" href="/guides">Free guides</a>
+      <a class="legal" href="/privacy">Privacy</a>
+      <a class="legal" href="/terms">Terms</a>
+      <span>© 2026 Researchette</span>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  /* topic filter */
+  var chips = document.querySelectorAll('.chips button'), cats = document.querySelectorAll('.cat');
+  chips.forEach(function (b) {
+    b.addEventListener('click', function () {
+      chips.forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      cats.forEach(function (c) { c.hidden = b.dataset.cat !== 'all' && c.dataset.cat !== b.dataset.cat; });
+    });
+  });
+  /* a link like guides.html#gap opens that guide */
+  function openHash() {
+    var d = location.hash && document.getElementById(location.hash.slice(1));
+    if (d && d.tagName === 'DETAILS') { d.open = true; setTimeout(function () { d.scrollIntoView({ block: 'start' }); }, 50); }
+  }
+  openHash(); addEventListener('hashchange', openHash);
+
+  var items = document.querySelectorAll('.reveal');
+  if (!('IntersectionObserver' in window) || matchMedia('(prefers-reduced-motion: reduce)').matches) { items.forEach(function (e) { e.classList.add('in'); }); }
+  else {
+    var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }); }, { threshold: .05 });
+    items.forEach(function (e) { io.observe(e); });
+  }
+})();
+</script>
+<script src="/assets/menu.js"></script>
+<script src="/assets/fx.js"></script>
+</body>
+</html>

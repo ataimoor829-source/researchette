@@ -155,6 +155,7 @@ const EXTRA_SCHEMA = [
   'CREATE INDEX IF NOT EXISTS trusted_devices_user ON trusted_devices (user_id)',
   'CREATE TABLE IF NOT EXISTS login_tickets (ticket_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, purpose TEXT NOT NULL, attempts INTEGER DEFAULT 0, expires TEXT NOT NULL)',
   'CREATE TABLE IF NOT EXISTS user_prefs (user_id TEXT PRIMARY KEY, welcomed_at TEXT)',
+  'CREATE TABLE IF NOT EXISTS session_kicks (token_hash TEXT PRIMARY KEY, kicked_at TEXT NOT NULL)',
   'CREATE TABLE IF NOT EXISTS classes (id TEXT PRIMARY KEY, name TEXT NOT NULL, mentor_id TEXT, created_by TEXT, created_at TEXT NOT NULL)',
   'CREATE TABLE IF NOT EXISTS class_members (class_id TEXT NOT NULL, user_id TEXT NOT NULL, added_at TEXT NOT NULL, PRIMARY KEY (class_id, user_id))',
   'CREATE INDEX IF NOT EXISTS class_members_user ON class_members (user_id)',
@@ -418,12 +419,22 @@ async function trustDevice(env, userId) {
   return `${DEVICE_COOKIE}=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Expires=${expires.toUTCString()}`;
 }
 async function forgetDevices(env, userId) { await ensureSchema(env); await env.DB.prepare('DELETE FROM trusted_devices WHERE user_id = ?').bind(userId).run(); }
+/* Each account can be logged in on at most MAX_DEVICES devices. Logging in on one more signs out the device that
+   logged in longest ago (every session lasts the same time, so the oldest is the one that expires first). The
+   signed-out device is remembered for a while so it can be told why. */
+const MAX_DEVICES = 2;
+const KICKED_MSG = 'You were logged out because your account was opened on two other devices. Each account works on up to two devices. Log in again to continue here.';
 async function startSession(env, ctx, u, extraCookies = []) {
+  await ensureSchema(env);
   const token = hex(crypto.getRandomValues(new Uint8Array(32)));
-  const expires = new Date(Date.now() + SESSION_DAYS * 864e5);
+  const expires = new Date(Date.now() + SESSION_DAYS * 864e5), t = now();
+  const older = "SELECT token_hash FROM sessions WHERE user_id = ? AND token_hash NOT IN (SELECT token_hash FROM sessions WHERE user_id = ? ORDER BY expires DESC LIMIT " + MAX_DEVICES + ")";
   await env.DB.batch([
-    env.DB.prepare('DELETE FROM sessions WHERE expires < ?').bind(now()),
-    env.DB.prepare('INSERT INTO sessions (token_hash, user_id, expires) VALUES (?, ?, ?)').bind(await sha256(token), u.id, expires.toISOString())
+    env.DB.prepare('DELETE FROM sessions WHERE expires < ?').bind(t),
+    env.DB.prepare('DELETE FROM session_kicks WHERE kicked_at < ?').bind(new Date(Date.now() - 30 * 864e5).toISOString()),
+    env.DB.prepare('INSERT INTO sessions (token_hash, user_id, expires) VALUES (?, ?, ?)').bind(await sha256(token), u.id, expires.toISOString()),
+    env.DB.prepare('INSERT OR REPLACE INTO session_kicks (token_hash, kicked_at) SELECT token_hash, ? FROM (' + older + ')').bind(t, u.id, u.id),
+    env.DB.prepare('DELETE FROM sessions WHERE token_hash IN (' + older + ')').bind(u.id, u.id)
   ]);
   record(env, ctx, u.role + '.login', u.name + ' logged in', [['Name', u.name], ['Email', u.email]], u.role === 'member' ? 'member-' + u.id : '', u.id, u.role === 'member' ? u.id : null);
   return [`${COOKIE}=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Expires=${expires.toUTCString()}`, ...extraCookies];
@@ -449,7 +460,18 @@ async function currentUser(request, env) {
     .bind(await sha256(token), now()).first();
   return row ? withAccess(env, await openUsers(env, row)) : null;
 }
-async function requireUser(request, env) { const u = await currentUser(request, env); if (!u) throw new HttpError(401, 'Please log in again.'); return u; }
+// a login that was signed out because the account was opened on more devices than allowed
+async function wasKicked(request, env) {
+  const token = cookieOf(request);
+  if (!token) return false;
+  await ensureSchema(env);
+  return !!(await env.DB.prepare('SELECT 1 FROM session_kicks WHERE token_hash = ?').bind(await sha256(token)).first());
+}
+async function requireUser(request, env) {
+  const u = await currentUser(request, env);
+  if (!u) throw new HttpError(401, (await wasKicked(request, env)) ? KICKED_MSG : 'Please log in again.');
+  return u;
+}
 async function requireAdmin(request, env) { const u = await requireUser(request, env); if (u.role !== 'admin') throw new HttpError(403, 'Mentors only.'); return u; }
 async function getMember(env, id) {
   const u = await env.DB.prepare("SELECT * FROM users WHERE id = ? AND role = 'member'").bind(id).first();
@@ -682,7 +704,9 @@ async function route(request, env, url, ctx) {
     return json({ ok: true }, 200, { 'set-cookie': `${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0` });
   }
   if (path === '/api/me' && method === 'GET') {
-    const u = pub(await withWelcome(env, await currentUser(request, env)));
+    const cu = await currentUser(request, env);
+    if (!cu && (await wasKicked(request, env))) throw new HttpError(401, KICKED_MSG);
+    const u = pub(await withWelcome(env, cu));
     // members see who to ask (for example to unlock another programme)
     if (u && u.role === 'member' && u.mentorId) { const r = await DB.prepare('SELECT name FROM users WHERE id = ?').bind(u.mentorId).first(); if (r) u.mentorName = r.name; }
     return json(u);

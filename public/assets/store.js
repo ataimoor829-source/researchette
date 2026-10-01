@@ -37,7 +37,7 @@ window.Store = (function () {
     signIn: function (email, password) { return post('/api/login', { email: email, password: password }); },
     signOut: function () { return post('/api/logout'); },
     verifyLogin: function (ticket, code) { return post('/api/login/verify', { ticket: ticket, code: code }); },
-    me: function () { return call('GET', '/api/me').catch(function () { return null; }); },
+    me: function () { var self = this; return call('GET', '/api/me').catch(function (e) { if (/other devices/.test(e.message)) self.signedOut = e.message; return null; }); },
     welcomed: function () { return post('/api/me/welcomed'); },
     changePassword: function (_userId, current, next) { return post('/api/me/password', { current: current, next: next }); },
 

@@ -828,6 +828,7 @@
           return '<li' + (preview ? '' : ' class="' + (on ? 'done' : '') + '" data-pt="' + i + '" role="checkbox" tabindex="0" aria-checked="' + !!on + '"') + '><span class="n">' + (on ? ic('check') : i + 1) + '</span><div><b>' + esc(l.h) + '</b><p>' + esc(l.p) + '</p></div></li>';
         }).join('') + '</ol></div>' +
         (d.mistakes ? '<div class="note mistakes"><span class="eyebrow">Common mistakes to avoid</span><ul>' + d.mistakes.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul></div>' : '') +
+        stepGuides(t, n) +
         '<button class="btn btn-glass" type="button" data-goto="1">See an example →</button></div>';
       if (k === 1 && !preview && store(quizKey) === null) {
         var strongFirst = Math.random() < .5, pick = function (strong) { return '<button type="button" class="ex-box ex-pick" data-strong="' + (strong ? 1 : 0) + '"><span class="lbl"></span><p>' + esc(strong ? d.example.strong : d.example.weak) + '</p></button>'; };
@@ -865,6 +866,7 @@
         box.innerHTML = panel(k);
         var pn = box.firstElementChild; if (pn && lastTab >= 0 && k !== lastTab) pn.classList.add(k > lastTab ? 'from-right' : 'from-left'); lastTab = k;
         box.querySelectorAll('[data-goto]').forEach(function (b) { b.addEventListener('click', function () { show(+b.dataset.goto); }); });
+        bindGuides(box);
         box.querySelectorAll('[data-pt]').forEach(function (li) {
           var toggle = function () {
             var r = readSet(), i = li.dataset.pt, on = !r[i];
@@ -953,30 +955,61 @@
   }
 
   /* ---------- member: writing basics (assets/writing.js) ---------- */
-  var W = window.RT_WRITING || [];
+  var W = window.RT_WRITING || [], WSTEPS = window.RT_WRITING_STEPS || {};
+  function guide(id) { return W.filter(function (w) { return w.id === id; })[0]; }
+  function partNo(w) { var n = 0, out = 0; W.forEach(function (x) { if (!x.intro) n++; if (x === w) out = x.intro ? 0 : n; }); return out; }
+  function partsCount() { return W.filter(function (x) { return !x.intro; }).length; }
+  function wordsBox(w) {
+    var x = w.words; if (!x) return '';
+    return '<div class="stack"><span class="eyebrow">How long should it be?</span><div class="wlim"><div><span>Minimum</span><b>' + esc(String(x.min)) + '</b></div><div class="on"><span>Ideal</span><b>' + esc(String(x.ideal)) + '</b></div><div><span>Maximum</span><b>' + esc(String(x.max)) + '</b></div></div>' +
+      '<p class="small muted">In ' + esc(x.unit) + '. ' + esc(x.note || '') + '</p></div>';
+  }
+  function budgetTable() {
+    return '<div class="stack"><span class="eyebrow">Word budget for the whole paper</span><div class="wtable" role="table"><div class="wr wh" role="row"><span role="columnheader">Part</span><span role="columnheader">Min</span><span role="columnheader">Ideal</span><span role="columnheader">Max</span></div>' +
+      W.filter(function (x) { return !x.intro && x.words; }).map(function (x) {
+        return '<div class="wr" role="row"><span role="cell">' + esc(x.title) + (x.words.unit === 'references' ? ' <small>(count)</small>' : '') + '</span><span role="cell">' + esc(String(x.words.min)) + '</span><span role="cell"><b>' + esc(String(x.words.ideal)) + '</b></span><span role="cell">' + esc(String(x.words.max)) + '</span></div>';
+      }).join('') + '</div><p class="small muted">Numbers are words, except References. ' + esc(guide('order').words.note) + '</p></div>';
+  }
+  // the body of one guide; used on its own page and inside a programme step
+  function guideBody(w) {
+    if (w.terms) return '<div class="note simple"><span class="eyebrow">In simple words</span><p>' + esc(w.what) + '</p></div>' +
+      '<dl class="gloss">' + w.terms.map(function (t) { return '<div><dt>' + esc(t[0]) + '</dt><dd>' + esc(t[1]) + '</dd></div>'; }).join('') + '</dl>';
+    var first = w.intro;
+    return '<div class="note simple"><span class="eyebrow">In simple words</span><p>' + esc(w.what) + '</p></div>' +
+      (w.budget ? budgetTable() : wordsBox(w)) +
+      '<div class="stack"><span class="eyebrow">The pattern, step by step</span><ol class="lesson">' + w.pattern.map(function (s, k) { return '<li><span class="n">' + (k + 1) + '</span><div><b>' + esc(s.h) + '</b><p>' + esc(s.p) + '</p></div></li>'; }).join('') + '</ol></div>' +
+      (w.starters ? '<div class="stack"><span class="eyebrow">' + (first ? 'Tips' : 'Sentence starters') + '</span><ul class="starters">' + w.starters.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul></div>' : '') +
+      (w.example ? '<div class="stack"><span class="eyebrow">Example</span><div class="ex-box ex-weak"><span class="lbl">Weak</span><p>' + esc(w.example.weak) + '</p></div><div class="ex-box ex-strong"><span class="lbl">Strong</span><p>' + esc(w.example.strong) + '</p></div></div>' : '') +
+      '<div class="stack"><div class="row spread wrap"><span class="eyebrow">' + (first ? 'The order' : 'Template to fill in') + '</span><button class="btn btn-quiet btn-sm" type="button" data-cp="' + w.id + '">Copy</button></div><div class="paper" data-tpl="' + w.id + '">' + esc(w.template) + '</div></div>' +
+      '<div class="note mistakes"><span class="eyebrow">Common mistakes to avoid</span><ul>' + w.mistakes.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul></div>';
+  }
+  function bindGuides(root) {
+    root.querySelectorAll('[data-cp]').forEach(function (b) { if (b.dataset.bound) return; b.dataset.bound = 1; b.addEventListener('click', function () { var w = guide(b.dataset.cp); copy(w.template, root.querySelector('[data-tpl="' + w.id + '"]')); }); });
+  }
+  function wordsLabel(w) { return w.words ? (w.words.unit === 'references' ? w.words.ideal + ' references' : w.words.ideal + ' words') : w.length; }
+  /* "How to write it" inside a step: the guides for that step, opened one at a time */
+  function stepGuides(t, n) {
+    var ids = (WSTEPS[t] || {})[n]; if (!ids || !ids.length) return '';
+    return '<div class="stack wguides"><span class="eyebrow">How to write it</span><p class="small muted">' + (ids.length > 1 ? 'Tap a part to open its guide: the pattern, how many words, sentence starters, an example and a template.' : 'Tap to open the guide: the pattern, how many words, sentence starters, an example and a template.') + '</p>' +
+      ids.map(function (id) { var w = guide(id); if (!w) return ''; return '<details class="wg"><summary><span class="li-main"><b>' + esc(w.title) + '</b><span class="small muted">' + esc(w.short) + '</span></span><span class="wchip">' + esc(wordsLabel(w)) + '</span>' + ic('chev', 'chev') + '</summary><div class="wg-body stack-lg">' + guideBody(w) + '</div></details>'; }).join('') + '</div>';
+  }
   function vBasics() {
-    var html = '<section class="page-head"><span class="eyebrow">Writing basics</span><h1>How to write each part</h1><p class="muted">The pattern for every part of a research paper, with sentence starters, a template to fill in and an example. Start with the first one.</p></section>' +
-      '<div class="glass list">' + W.map(function (w, i) {
-        return '<a class="li" href="#basics-' + w.id + '"><span class="sicon current">' + (i === 0 ? ic('sparkle') : i) + '</span><div class="li-main"><span class="li-title">' + esc(w.title) + '</span><span class="li-sub">' + esc(w.short) + ' · ' + esc(w.length) + '</span></div><div class="li-end">' + ic('chev', 'chev') + '</div></a>';
+    var html = '<section class="page-head"><span class="eyebrow">Writing basics</span><h1>How to write each part</h1><p class="muted">Never written a research paper? Start here. Each part shows the pattern, how many words to write, sentence starters, an example and a template to fill in.</p></section>' +
+      '<div class="glass list">' + W.map(function (w) {
+        var no = partNo(w);
+        return '<a class="li" href="#basics-' + w.id + '"><span class="sicon current">' + (no ? no : ic(w.terms ? 'book' : 'sparkle')) + '</span><div class="li-main"><span class="li-title">' + esc(w.title) + '</span><span class="li-sub">' + esc(w.short) + '</span></div><div class="li-end"><span class="wchip">' + esc(wordsLabel(w)) + '</span>' + ic('chev', 'chev') + '</div></a>';
       }).join('') + '</div>';
     return { html: html };
   }
   function vBasic(id) {
     var i = W.map(function (w) { return w.id; }).indexOf(id);
     if (i < 0) { setHash('basics'); return vBasics(); }
-    var w = W[i], prev = W[i - 1], next = W[i + 1];
+    var w = W[i], prev = W[i - 1], next = W[i + 1], no = partNo(w);
     var html = '<a class="back" href="#basics">' + ic('back', 'chev') + 'Writing basics</a>' +
-      '<section class="page-head"><span class="eyebrow">' + (i ? 'Part ' + i + ' of ' + (W.length - 1) : 'Start here') + ' · ' + esc(w.length) + '</span><h1>' + esc(w.title) + '</h1></section>' +
-      '<article class="glass card stack-lg">' +
-        '<div class="note simple"><span class="eyebrow">In simple words</span><p>' + esc(w.what) + '</p></div>' +
-        '<div class="stack"><span class="eyebrow">The pattern</span><ol class="lesson">' + w.pattern.map(function (s, k) { return '<li><span class="n">' + (k + 1) + '</span><div><b>' + esc(s.h) + '</b><p>' + esc(s.p) + '</p></div></li>'; }).join('') + '</ol></div>' +
-        (w.starters ? '<div class="stack"><span class="eyebrow">' + (i ? 'Sentence starters' : 'Tips') + '</span><ul class="starters">' + w.starters.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul></div>' : '') +
-        (w.example ? '<div class="stack"><span class="eyebrow">Example</span><div class="ex-box ex-weak"><span class="lbl">Weak</span><p>' + esc(w.example.weak) + '</p></div><div class="ex-box ex-strong"><span class="lbl">Strong</span><p>' + esc(w.example.strong) + '</p></div></div>' : '') +
-        '<div class="stack"><div class="row spread wrap"><span class="eyebrow">' + (i ? 'Template to fill in' : 'The order') + '</span><button class="btn btn-quiet btn-sm" type="button" id="cp-tpl">Copy</button></div><div class="paper" id="tpl">' + esc(w.template) + '</div></div>' +
-        '<div class="note mistakes"><span class="eyebrow">Common mistakes to avoid</span><ul>' + w.mistakes.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul></div>' +
-      '</article>' +
+      '<section class="page-head"><span class="eyebrow">' + (no ? 'Part ' + no + ' of ' + partsCount() : 'Start here') + ' · ' + esc(w.length) + '</span><h1>' + esc(w.title) + '</h1></section>' +
+      '<article class="glass card stack-lg">' + guideBody(w) + '</article>' +
       '<div class="row spread wrap basics-nav">' + (prev ? '<a class="btn btn-glass" href="#basics-' + prev.id + '">' + ic('back') + esc(prev.title) + '</a>' : '<span></span>') + (next ? '<a class="btn btn-primary" href="#basics-' + next.id + '">Next: ' + esc(next.title) + ' →</a>' : '<a class="btn btn-primary" href="#today">Back to today’s step</a>') + '</div>';
-    return { html: html, mount: function (m) { m.querySelector('#cp-tpl').addEventListener('click', function () { copy(w.template, m.querySelector('#tpl')); }); } };
+    return { html: html, mount: bindGuides };
   }
 
   /* ---------- member: feedback ---------- */

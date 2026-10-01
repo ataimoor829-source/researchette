@@ -669,3 +669,35 @@ a.li:active { transform: scale(.985); }
 .starters li { padding: 10px 14px; border-radius: 14px; background: var(--pen-soft); font-size: .94rem; line-height: 1.5; }
 .basics-nav .btn { max-width: 100%; }
 @media (max-width: 520px) { .basics-nav { flex-direction: column-reverse; align-items: stretch; } .basics-nav > span { display: none; } }
+/* word limits: minimum, ideal, maximum */
+.wlim { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.wlim div { display: grid; gap: 2px; padding: 12px 10px; border-radius: 14px; text-align: center; background: var(--glass); border: 1px solid var(--line); }
+.wlim span { font-size: .74rem; color: var(--muted); font-weight: 600; letter-spacing: .02em; }
+.wlim b { font: 800 1.15rem var(--f-display); letter-spacing: -.02em; }
+.wlim .on { background: var(--teal-soft); border-color: transparent; }
+.wlim .on b, .wlim .on span { color: var(--teal); }
+.wtable { display: grid; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; font-size: .9rem; }
+.wr { display: grid; grid-template-columns: 1.6fr 1fr 1.2fr 1fr; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--line); }
+.wr:first-child { border-top: 0; }
+.wr span:not(:first-child) { text-align: center; }
+.wh { background: var(--pen-soft); color: var(--pen); font-weight: 700; font-size: .78rem; }
+.wr small { color: var(--muted); }
+.wchip { flex: none; font: 600 .72rem var(--f-body); padding: .3em .7em; border-radius: 99px; background: var(--teal-soft); color: var(--teal); white-space: nowrap; }
+.li-end .wchip { margin-right: 4px; }
+@media (max-width: 520px) { .li-end .wchip { display: none; } }
+/* plain-English glossary */
+.gloss { margin: 0; display: grid; }
+.gloss div { padding: 12px 0; border-top: 1px solid var(--line); display: grid; gap: 2px; }
+.gloss div:first-child { border-top: 0; }
+.gloss dt { font-weight: 700; color: var(--pen); }
+.gloss dd { margin: 0; color: var(--ink); line-height: 1.5; }
+/* "How to write it" guides inside a step */
+.wguides { gap: 10px; }
+.wg { border: 1px solid var(--line); border-radius: 18px; background: var(--glass); }
+.wg summary { list-style: none; display: flex; align-items: center; gap: 10px; padding: 14px 16px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.wg summary::-webkit-details-marker { display: none; }
+.wg summary .li-main { display: grid; gap: 1px; flex: 1; min-width: 0; }
+.wg summary .chev { width: 16px; height: 16px; flex: none; color: var(--muted); transform: rotate(90deg); transition: transform .3s var(--spring, ease); }
+.wg[open] summary .chev { transform: rotate(-90deg); }
+.wg[open] summary { border-bottom: 1px solid var(--line); }
+.wg-body { padding: 16px; }

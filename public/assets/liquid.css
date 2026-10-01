@@ -213,3 +213,6 @@ html.menu-open .menu-panel { opacity: 1; transform: none; }
 /* ---------- staggered entrances: children of .stagger arrive one after another (index set by fx.js) ---------- */
 .js .stagger > * { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) { .js .stagger > * { opacity: 1; transform: none; transition: none; } }
+
+/* plain backgrounds: warm paper in light mode, soft charcoal in dark mode, no colour blobs */
+.aura { display: none !important; }

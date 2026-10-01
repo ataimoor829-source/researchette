@@ -1,6 +1,6 @@
 /* Researchette portal. Tokens mirror index.html so both feel like one product. */
 :root {
-  --paper: #F4F7FC; --ink: #18203D; --muted: #5F6989; --line: rgba(24, 32, 61, .08);
+  --paper: #F7F5F0; --ink: #18203D; --muted: #5F6989; --line: rgba(24, 32, 61, .08);
   --pen: #3448D8; --pen-soft: rgba(52, 72, 216, .09); --teal: #0B9E8C; --teal-soft: rgba(11, 158, 140, .11);
   --amber: #B7791F; --amber-soft: rgba(214, 150, 40, .14);
   --hl-bg: #FFE27A; --redpen: #DD4460; --red-soft: rgba(221, 68, 96, .1); --on-pen: #FFFFFF; --deep: #1A2250; --on-deep: #F4F7FC;

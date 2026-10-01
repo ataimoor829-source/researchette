@@ -115,7 +115,7 @@ a.ov-next:hover { transform: translateY(-3px); }
 
 /* ---------- the glass shell: light glass in light mode, dark glass in dark mode ---------- */
 :root {
-  --d-bg: #EDF1F9;
+  --d-bg: #F7F5F0;
   --d-bar: rgba(248,250,255,.88); --d-bar-edge: rgba(255,255,255,.95); --d-bar-shadow: 0 20px 40px -26px rgba(40,50,110,.4);
   --d-panel: rgba(255,255,255,.4); --d-panel-edge: rgba(255,255,255,.85); --d-panel-shadow: 0 40px 80px -46px rgba(40,50,110,.4);
   --d-card: linear-gradient(155deg, rgba(255,255,255,.86), rgba(255,255,255,.62)); --d-card-edge: rgba(255,255,255,.95);

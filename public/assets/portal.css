@@ -785,3 +785,7 @@ html.menu-open .coach { display: none; }
   html.bar-hide .coach:not(:has(.coach-card:not([hidden]))) { transform: translateY(16px); opacity: 0; }
   html.bar-hide .coach:not(:has(.coach-card:not([hidden]))) > * { pointer-events: none; }
 }
+
+/* welcome card preview (credentials sheet) */
+.idcard { border-radius: 16px; overflow: hidden; background: var(--glass-strong); min-height: 120px; display: grid; place-items: center; }
+.idcard img { display: block; width: 100%; height: auto; }

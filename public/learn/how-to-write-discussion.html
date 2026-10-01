@@ -19,13 +19,13 @@
 <link rel="icon" href="/assets/icons/icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&family=Caveat:wght@600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
 <link rel="stylesheet" href="/assets/portal.css">
 <style>
 /* Layout: every free guide, grouped by topic, with a filter; same glass language as the rest of the site. */
 body { font-size: 1.0625rem; line-height: 1.65; }
 .wrap { width: 100%; max-width: 1100px; margin-inline: auto; padding-inline: 22px; }
-.nav { position: sticky; top: 0; z-index: 40; padding-top: env(safe-area-inset-top, 0px); background: var(--glass); -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%); border-bottom: 1px solid var(--line); box-shadow: 0 10px 30px -26px rgba(24,32,61,.45); }
+.nav { position: sticky; top: 0; z-index: 40; padding-top: env(safe-area-inset-top, 0px); background: var(--glass); -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%); border-bottom: 1px solid var(--line); box-shadow: 0 10px 30px -26px rgba(28, 28, 26,.45); }
 .nav .wrap { max-width: none; padding-inline: clamp(16px, 3vw, 44px); }
 .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 10px; }
 .nav-links { display: flex; align-items: center; gap: 6px; }
@@ -86,6 +86,7 @@ body { font-size: 1.0625rem; line-height: 1.65; }
 @media (prefers-reduced-motion: reduce) { .js .reveal { opacity: 1; transform: none; filter: none; } }
 </style>
 <link rel="stylesheet" href="/assets/liquid.css">
+<link rel="stylesheet" href="/assets/editorial.css">
 <style>
 .learn-body { display: grid; gap: 22px; }
 .learn-body h2 { font-size: 1.3rem; margin: 6px 0 0; }
@@ -102,7 +103,7 @@ body { font-size: 1.0625rem; line-height: 1.65; }
 .wl .ideal { background: var(--teal-soft); border-color: transparent; color: var(--teal); }
 .wl .ideal span { color: var(--teal); }
 .ex { border-radius: 16px; padding: 14px 16px; }
-.ex.weak { background: var(--red-soft, rgba(221,68,96,.1)); }
+.ex.weak { background: var(--red-soft, rgba(179, 65, 46,.1)); }
 .ex.strong { background: var(--teal-soft); }
 .ex small { display: block; font: 700 .72rem var(--f-mono, monospace); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
 .ex.weak small { color: var(--redpen); } .ex.strong small { color: var(--teal); }
@@ -122,10 +123,10 @@ dl.gloss div:first-child { border-top: 0; }
 dl.gloss dt { font-weight: 700; color: var(--pen); }
 dl.gloss dd { margin: 2px 0 0; }
 .pager { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
-.cta-box { display: grid; gap: 10px; padding: clamp(20px, 3vw, 30px); border-radius: 24px; color: #fff; background: linear-gradient(140deg, #4B5CF0, #2A38B8 60%, #0F6F66); }
+.cta-box { display: grid; gap: 10px; padding: clamp(20px, 3vw, 30px); border-radius: 24px; color: #fff; background: #1F4E3D; }
 .cta-box h2 { color: #fff; margin: 0; }
 .cta-box p { margin: 0; opacity: .9; }
-.cta-box .btn { justify-self: start; background: #fff; color: #2A38B8; }
+.cta-box .btn { justify-self: start; background: #fff; color: #173B2E; }
 .crumbs { font-size: .88rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px; }
 .crumbs a { color: inherit; }
 .hub { display: grid; gap: 10px; }
@@ -136,7 +137,7 @@ dl.gloss dd { margin: 2px 0 0; }
 .hub a small { color: var(--teal); font-weight: 600; }
 ul.locked { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
 ul.locked li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; }
-ul.locked li::before { content: ""; width: 22px; height: 22px; margin-top: 1px; border-radius: 7px; background: var(--pen-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233448D8' stroke-width='2.4' stroke-linecap='round'%3E%3Crect x='5' y='11' width='14' height='10' rx='2'/%3E%3Cpath d='M8 11V8a4 4 0 0 1 8 0v3'/%3E%3C/svg%3E") center / 13px no-repeat; }
+ul.locked li::before { content: ""; width: 22px; height: 22px; margin-top: 1px; border-radius: 7px; background: var(--pen-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231F4E3D' stroke-width='2.4' stroke-linecap='round'%3E%3Crect x='5' y='11' width='14' height='10' rx='2'/%3E%3Cpath d='M8 11V8a4 4 0 0 1 8 0v3'/%3E%3C/svg%3E") center / 13px no-repeat; }
 .lock-tag { justify-self: start; font: 700 .72rem var(--f-mono, monospace); letter-spacing: .08em; text-transform: uppercase; padding: .35em .8em; border-radius: 99px; background: rgba(255,255,255,.18); }
 .cta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
 .cta-login { color: #fff; opacity: .9; font-weight: 600; }
@@ -150,7 +151,7 @@ ul.locked li::before { content: ""; width: 22px; height: 22px; margin-top: 1px; 
   <div class="wrap">
     <div class="nav-inner">
       <a class="logo" href="/" aria-label="Researchette home">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="7" fill="#3448D8"/><path d="M5 13h3l2-5 3 9 2-4h4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" fill="#1F4E3D"/><path d="M9 17V7h3.6a2.9 2.9 0 0 1 0 5.8H9m3.3 0L15.6 17" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span>research<i>ette</i></span>
       </a>
       <nav class="nav-links" aria-label="Main">
@@ -179,13 +180,13 @@ ul.locked li::before { content: ""; width: 22px; height: 22px; margin-top: 1px; 
     <div class="contact reveal">
       <span class="eyebrow">Contact</span>
       <div class="contact-grid">
-        <a data-tilt class="contact-item glass" href="mailto:itszainr1@gmail.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M22 6l-10 7L2 6"/></svg><span>Email</span><b>itszainr1@gmail.com</b></a>
-        <a data-tilt class="contact-item glass" href="https://wa.me/923395888444" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-13.4 7.8L3 21l1.3-4.4A9 9 0 1 1 21 12z"/></svg><span>WhatsApp</span><b>0339 5888444</b></a>
-        <a data-tilt class="contact-item glass" href="tel:+923395888444"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg><span>Call</span><b>0339 5888444</b></a>
+        <a class="contact-item glass" href="mailto:itszainr1@gmail.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M22 6l-10 7L2 6"/></svg><span>Email</span><b>itszainr1@gmail.com</b></a>
+        <a class="contact-item glass" href="https://wa.me/923395888444" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-13.4 7.8L3 21l1.3-4.4A9 9 0 1 1 21 12z"/></svg><span>WhatsApp</span><b>0339 5888444</b></a>
+        <a class="contact-item glass" href="tel:+923395888444"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg><span>Call</span><b>0339 5888444</b></a>
       </div>
     </div>
     <div class="foot-row">
-      <a class="logo" href="/"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="7" fill="#3448D8"/><path d="M5 13h3l2-5 3 9 2-4h4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>research<i>ette</i></span></a>
+      <a class="logo" href="/"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" fill="#1F4E3D"/><path d="M9 17V7h3.6a2.9 2.9 0 0 1 0 5.8H9m3.3 0L15.6 17" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg><span>research<i>ette</i></span></a>
       <a class="legal" href="/learn/">Learn research</a>
       <a class="legal" href="/guides">Free guides</a>
       <a class="legal" href="/privacy">Privacy</a>

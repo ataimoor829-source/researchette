@@ -31,6 +31,7 @@
     phone: '<rect x="7" y="2" width="10" height="20" rx="3"/><path d="M11 18h2"/>',
     pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
     book: '<path d="M4 19.5V5a2 2 0 0 1 2-2h13v16H6.5a2.5 2.5 0 0 0 0 5H19"/><path d="M8 7h7M8 11h5"/>',
+    group: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/>',
     paper: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>'
   };
   function ic(n, cls) { return '<svg class="' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + P[n] + '</svg>'; }
@@ -380,6 +381,7 @@
       else if (/^admin-/.test(r)) { view = vTeamMember(r.slice(6)); tab = 'overview'; }
       else if (/^member-/.test(r)) { view = vMember(r.slice(7)); tab = 'members'; }
       else if (/^chat-/.test(r)) { view = vMentorChat(r.slice(5)); tab = 'messages'; }
+      else if (/^class-/.test(r)) { view = vClassChat(r.slice(6)); tab = 'messages'; }
       else if (r === 'messages') { view = vMessages(); tab = r; }
       else if (r === 'reviews') { view = vReviews(); tab = r; }
       else if (r === 'members') { view = vMembers(); tab = r; }
@@ -393,6 +395,7 @@
       else if (r === 'basics') { view = vBasics(); tab = r; }
       else if (/^basics-/.test(r)) { view = vBasic(r.slice(7)); tab = 'basics'; }
       else if (r === 'chat' && can('chat')) { view = vMemberChat(); tab = r; }
+      else if (/^class-/.test(r)) { view = vClassChat(r.slice(6)); tab = 'chat'; }
       else { view = vToday(); tab = 'today'; if (r !== 'today') setHash('today'); }
     }
     /* instant feedback: highlight the tab and dim the page while the next one loads */
@@ -1387,6 +1390,7 @@
         }, function (err) { toast(err.message); }).then(function () { send.disabled = false; inp.focus(); });
       });
       toEnd(false);
+      if (o.mounted) o.mounted(m);
       if (o.context) inp.focus();
       chatTimer = setInterval(function () {
         if (document.hidden) return;
@@ -1400,11 +1404,12 @@
   }
 
   async function vMemberChat() {
-    var r = await S.chat(), context = chatContext, draft = chatDraft; chatContext = null; chatDraft = '';
+    var both = await Promise.all([S.chat(), S.classes().catch(function () { return []; })]), r = both[0], cls = both[1], context = chatContext, draft = chatDraft; chatContext = null; chatDraft = '';
     var suggest = ['I’m stuck on today’s step.', 'Can you check my research topic?', 'Which journal should I choose?'];
     return chatScreen({
       messages: r.messages, context: context, draft: draft, placeholder: 'Message your mentor…',
-      head: '<section class="page-head"><span class="eyebrow">Chat</span><h1>Ask your mentor</h1><p class="muted">Stuck on a step or unsure about something? Ask here. Your mentor usually replies within a day.</p></section>',
+      head: '<section class="page-head"><span class="eyebrow">Chat</span><h1>Ask your mentor</h1><p class="muted">Stuck on a step or unsure about something? Ask here. Your mentor usually replies within a day.</p></section>' +
+        (cls.length ? '<section class="stack" style="gap:8px"><div class="phase-title"><h3>Your class' + (cls.length > 1 ? 'es' : '') + '</h3></div><div class="glass list">' + cls.map(classRowHtml).join('') + '</div></section><div class="phase-title"><h3>Private chat with your mentor</h3></div>' : ''),
       empty: '<div class="chat-empty">' + ic('msgs') + '<b>No messages yet</b><span>Ask anything about your research. Try one of these:</span><div class="chips">' +
         suggest.map(function (x) { return '<button class="chip" type="button" data-suggest>' + esc(x) + '</button>'; }).join('') + '</div></div>',
       load: function (after) { return S.chat(after); },
@@ -1425,9 +1430,75 @@
     });
   }
 
+  /* ---------- classes: a group of members under one mentor, with one group chat ---------- */
+  function classRowHtml(c) {
+    var who = c.last ? ((c.last.senderName === me.name ? 'You' : esc(first(c.last.senderName))) + ': ' + esc(c.last.body)) : 'No messages yet';
+    return '<a class="li chat-li' + (c.unread ? ' unread' : '') + '" href="#class-' + esc(c.id) + '"><span class="sicon current">' + ic('group') + '</span>' +
+      '<div class="li-main"><span class="li-title">' + esc(c.name) + '</span><span class="li-sub">' + who + '</span><span class="li-sub">' + c.members.length + ' member' + (c.members.length === 1 ? '' : 's') + (c.mentor ? ' · ' + esc(first(c.mentor.name)) : '') + '</span></div>' +
+      '<div class="li-end">' + (c.last ? '<span class="small muted">' + rel(c.last.at) + '</span>' : '') + (c.unread ? '<span class="badge">' + c.unread + '</span>' : '') + '</div></a>';
+  }
+  async function vClassChat(id) {
+    var admin = me.role === 'admin', r = await (admin ? S.adminClassChat(id) : S.classChat(id)), c = r.class;
+    var faces = c.members.slice(0, 5).map(function (u) { return '<span class="avatar warm" title="' + esc(u.name) + '">' + initials(u.name) + '</span>'; }).join('') + (c.members.length > 5 ? '<span class="avatar more">+' + (c.members.length - 5) + '</span>' : '');
+    return chatScreen({
+      messages: r.messages, placeholder: 'Message ' + c.name + '…',
+      head: (admin ? '<a class="back" href="#messages">' + ic('back', 'chev') + 'Messages</a>' : '<a class="back" href="#chat">' + ic('back', 'chev') + 'Chat</a>') +
+        '<div class="glass card class-head"><div class="row spread wrap" style="gap:12px"><div class="li-main"><span class="eyebrow">Class</span><h2>' + esc(c.name) + '</h2>' +
+          '<span class="small muted">' + (c.mentor ? 'Mentor: ' + esc(c.mentor.name) + ' · ' : '') + c.members.length + ' member' + (c.members.length === 1 ? '' : 's') + '</span></div>' +
+          (admin && isOwner() ? '<button class="btn btn-glass btn-sm" type="button" id="edit-class">Manage class</button>' : '') + '</div>' +
+          (c.members.length ? '<details class="class-members"><summary><span class="faces">' + faces + '</span><span class="small muted">See members</span></summary><div class="list">' +
+            c.members.map(function (u) { return (admin ? '<a class="li" href="#member-' + esc(u.id) + '">' : '<div class="li">') + '<span class="avatar warm">' + initials(u.name) + '</span><div class="li-main"><span class="li-title">' + esc(u.name) + '</span>' + (u.college ? '<span class="li-sub">' + esc(u.college) + '</span>' : '') + '</div>' + (admin ? '</a>' : '</div>'); }).join('') + '</div></details>' : '') +
+        '</div>',
+      empty: '<div class="chat-empty">' + ic('group') + '<b>No messages yet</b><span>' + (admin ? 'Say hello to the class. Everyone in it will see your message.' : 'Say hello to your class. Your mentor and classmates will see it.') + '</span></div>',
+      load: function (after) { return admin ? S.adminClassChat(id, after) : S.classChat(id, after); },
+      send: function (text) { return admin ? S.sendAdminClass(id, text) : S.sendClass(id, text); },
+      mounted: function (m) { var e = m.querySelector('#edit-class'); if (e) e.addEventListener('click', function () { classSheet(c); }); }
+    });
+  }
+  /* owners: make a class, or change its name, mentor and members */
+  function classSheet(c) {
+    Promise.all([S.mentors(), S.members()]).then(function (got) {
+      var mentors = got[0], members = got[1].slice().sort(function (a, b) { return a.name.localeCompare(b.name); });
+      var chosen = {}; (c ? c.members : []).forEach(function (u) { chosen[u.id] = 1; });
+      sheet('<h2>' + (c ? 'Manage class' : 'New class') + '</h2><p class="muted small">Pick a mentor and the members. Everyone in the class shares one group chat.</p>' +
+        '<form id="cls" class="stack" novalidate>' +
+          '<div class="field"><label for="cls-name">Class name</label><input id="cls-name" maxlength="80" placeholder="e.g. October batch, KEMU group" value="' + esc(c ? c.name : '') + '"></div>' +
+          '<div class="field"><label for="cls-mentor">Mentor</label><select id="cls-mentor"><option value="">No mentor yet</option>' +
+            mentors.map(function (x) { return '<option value="' + esc(x.id) + '"' + ((c ? c.mentor && c.mentor.id === x.id : x.id === me.id) ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select></div>' +
+          '<div class="field"><div class="row spread"><label for="cls-q">Members</label><span class="small muted" id="cls-n"></span></div><input id="cls-q" type="search" placeholder="Search by name, email or college" autocomplete="off">' +
+            '<div class="pick-list" id="cls-list">' + members.map(function (u) {
+              return '<label class="pick" data-s="' + esc([u.name, u.email, u.college].join(' ').toLowerCase()) + '"><input type="checkbox" value="' + esc(u.id) + '"' + (chosen[u.id] ? ' checked' : '') + '><span class="avatar warm">' + initials(u.name) + '</span><span class="li-main"><b>' + esc(u.name) + '</b><span class="small muted">' + esc(u.college || u.email) + '</span></span></label>';
+            }).join('') + '</div></div>' +
+          '<p class="error" id="cls-err" role="alert" hidden></p>' +
+          '<button class="btn btn-primary btn-block" type="submit">' + (c ? 'Save changes' : 'Create class') + '</button>' +
+          (c ? '<button class="btn btn-danger btn-block btn-sm" type="button" id="cls-del">Delete class</button>' : '') +
+          '<button class="btn btn-quiet btn-block btn-sm" type="button" data-close>Cancel</button>' +
+        '</form>',
+        function (el, close) {
+          var f = el.querySelector('#cls'), err = el.querySelector('#cls-err'), n = el.querySelector('#cls-n');
+          var count = function () { var k = el.querySelectorAll('#cls-list input:checked').length; n.textContent = k + ' selected'; };
+          count(); el.querySelector('#cls-list').addEventListener('change', count);
+          el.querySelector('#cls-q').addEventListener('input', function (e) { var t = e.target.value.trim().toLowerCase(); el.querySelectorAll('.pick').forEach(function (p) { p.hidden = !!t && p.dataset.s.indexOf(t) < 0; }); });
+          f.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var name = el.querySelector('#cls-name').value.trim(), ids = [].map.call(el.querySelectorAll('#cls-list input:checked'), function (i) { return i.value; });
+            if (!name) { err.textContent = 'Give the class a name.'; err.hidden = false; return; }
+            S.saveClass(c && c.id, { name: name, mentorId: el.querySelector('#cls-mentor').value, memberIds: ids }).then(function (res) {
+              close(); toast(c ? 'Class saved' : 'Class created'); if (location.hash === '#class-' + res.id) render(); else go('class-' + res.id);
+            }, function (x) { err.textContent = x.message; err.hidden = false; });
+          });
+          var del = el.querySelector('#cls-del');
+          if (del) del.addEventListener('click', function () {
+            if (!del.dataset.armed) { del.dataset.armed = '1'; del.textContent = 'Tap again to delete the class and its chat'; return; }
+            S.deleteClass(c.id).then(function () { close(); toast('Class deleted'); go('messages'); }, function (x) { toast(x.message); });
+          });
+        });
+    }, function (e) { toast(e.message); });
+  }
+
   var chatFilter = 'mine';
   async function vMessages() {
-    var all = await S.chats(), mineList = all.filter(function (c) { return c.mine; });
+    var got = await Promise.all([S.chats(), S.adminClasses().catch(function () { return []; })]), all = got[0], cls = got[1], mineList = all.filter(function (c) { return c.mine; });
     var showAll = seesAll() && chatFilter === 'all', list = seesAll() ? (showAll ? all : mineList) : all;
     var unread = list.filter(function (c) { return c.unread; }).length;
     var rows = list.map(function (c) {
@@ -1439,9 +1510,12 @@
     }).join('');
     return { html: '<section class="page-head"><span class="eyebrow">Chat</span><h1>Messages</h1><p class="muted">' +
         (list.length ? (unread ? unread + ' conversation' + (unread === 1 ? '' : 's') + ' waiting for a reply.' : 'You’re all caught up.') : showAll ? 'No conversations yet.' : 'When one of your students sends a message, it shows up here.') + '</p></section>' +
+      ((cls.length || isOwner()) ? '<section class="stack" style="gap:8px"><div class="phase-title"><h3>Classes</h3>' + (isOwner() ? '<button class="btn btn-glass btn-sm" type="button" id="new-class">' + ic('group') + 'New class</button>' : '') + '</div>' +
+        (cls.length ? '<div class="glass list">' + cls.map(classRowHtml).join('') + '</div>' : '<div class="glass empty"><span>Group students into a class under one mentor, then message them all at once.</span></div>') + '</section><div class="phase-title"><h3>Private chats</h3></div>' : '') +
       (seesAll() ? '<div class="seg" id="cfilter" style="--n:2;--i:' + (showAll ? 1 : 0) + '"><button type="button" data-f="mine"' + (showAll ? '' : ' class="on"') + '>For you · ' + mineList.length + '</button><button type="button" data-f="all"' + (showAll ? ' class="on"' : '') + '>Everyone · ' + all.length + '</button></div>' : '') +
       (list.length ? '<div class="glass list">' + rows + '</div>' : '<div class="glass empty">' + ic('msgs') + '<b>No conversations yet</b><span>To message a member first, open them in Members and tap Chat.</span></div>'),
       mount: function (m) {
+        var nc = m.querySelector('#new-class'); if (nc) nc.addEventListener('click', function () { classSheet(null); });
         m.querySelectorAll('#cfilter button').forEach(function (b, i) {
           b.addEventListener('click', function () { chatFilter = b.dataset.f; m.querySelector('#cfilter').style.setProperty('--i', i); setTimeout(render, 180); });
         });

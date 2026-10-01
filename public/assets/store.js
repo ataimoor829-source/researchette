@@ -56,6 +56,16 @@ window.Store = (function () {
     chatWith: function (memberId, after) { return call('GET', '/api/admin/chat/' + q(memberId) + (after ? '?after=' + q(after) : '')); },
     sendChatTo: function (memberId, body) { return post('/api/admin/chat/' + q(memberId), { body: body }); },
     adminUnread: function () { return call('GET', '/api/admin/chats/unread'); },
+    /* classes: groups of members with one group chat */
+    classes: function () { return call('GET', '/api/classes'); },
+    classChat: function (id, after) { return call('GET', '/api/classes/' + q(id) + '/messages' + (after ? '?after=' + q(after) : '')); },
+    sendClass: function (id, body) { return post('/api/classes/' + q(id) + '/messages', { body: body }); },
+    adminClasses: function () { return call('GET', '/api/admin/classes'); },
+    adminClass: function (id) { return call('GET', '/api/admin/classes/' + q(id)); },
+    saveClass: function (id, data) { return post('/api/admin/classes' + (id ? '/' + q(id) : ''), data); },
+    deleteClass: function (id) { return call('DELETE', '/api/admin/classes/' + q(id)); },
+    adminClassChat: function (id, after) { return call('GET', '/api/admin/classes/' + q(id) + '/messages' + (after ? '?after=' + q(after) : '')); },
+    sendAdminClass: function (id, body) { return post('/api/admin/classes/' + q(id) + '/messages', { body: body }); },
 
     /* lesson edits (everyone reads; owners save) */
     lessons: function () { return call('GET', '/api/lessons'); },

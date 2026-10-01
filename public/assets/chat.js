@@ -24,7 +24,7 @@
   var I = {
     chat: '<svg class="chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.6A8 8 0 1 1 21 12z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01" stroke-width="2.6"/></svg>',
     x: '<svg class="x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
-    logo: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 17V7h3.6a2.9 2.9 0 0 1 0 5.8H9m3.3 0L15.6 17" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    logo: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 13h3l2-5 3 9 2-4h4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
     wa: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1 0 12 2zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.5-3.9-4.7-4.1-.1-.2-1.1-1.5-1.1-2.9s.7-2.1 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .5l-.3.5-.4.4c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l2 .9c.3.1.5.2.5.3.1.2.1.7-.1 1.3z"/></svg>',
     bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>',
@@ -41,7 +41,7 @@
       '<form class="rc-form"><textarea rows="1" placeholder="Type your question…" aria-label="Your question" maxlength="1000"></textarea><button class="rc-send" type="submit" aria-label="Send" disabled>' + I.send + '</button></form>' +
     '</div>' +
     '<div class="rc-hello" role="button" tabindex="0" hidden><button class="rc-close" type="button" aria-label="Hide this message">×</button><span class="rc-av">' + I.logo + '</span>' +
-      '<div><b>Hi there!</b><span>Got a question about research or joining? We’re happy to help.</span></div></div>' +
+      '<div><b>Hi there! 👋</b><span>Got a question about research or joining? We’re happy to help.</span></div></div>' +
     '<button class="rc-btn" type="button" aria-label="Chat with us" aria-expanded="false" aria-controls="rc-panel">' + I.chat + I.x + '<span class="rc-dot" aria-hidden="true"></span><span class="rc-badge" aria-hidden="true">1</span></button>';
   document.body.appendChild(root);
 
@@ -107,7 +107,7 @@
   }
   function start() {
     if (started) return; started = true;
-    add('Hi! Welcome to Researchette.\nPick a question below for an instant answer, or type your own and we’ll reply on WhatsApp.', 'bot');
+    add('Hi! 👋 Welcome to Researchette.\nPick a question below for an instant answer, or type your own and we’ll reply on WhatsApp.', 'bot');
     chips();
   }
   form.addEventListener('submit', function (e) {

@@ -676,21 +676,25 @@
     var st = await S.stepStates(me.id, t), total = st.length;
     var done = st.filter(function (x) { return x.status === 'approved'; }).length;
     var cur = st.filter(function (x) { return x.status !== 'approved'; })[0];
-    var head = '<section class="page-head"><span class="eyebrow">' + today() + '</span><h1>' + greet() + ', ' + first(me.name) + '.</h1></section>' + progSwitch(t);
+    var head = '<section class="page-head"><h1>' + greet() + ', ' + first(me.name) + '.</h1><p class="muted">' + today() + '</p></section>' + progSwitch(t);
     if (!cur) {
       return { html: head + '<div class="glass card locked-box">' + ring(total, total) + '<span class="stamp">Programme complete!</span><h2>You’ve finished all ' + total + ' steps of ' + esc(tr.name) + '.</h2><p class="muted">Your mentor will help you with the final submission. Ready for the next one?</p><button class="btn btn-primary" type="button" data-prog>Choose another programme</button></div>',
         mount: function (m) { animateRing(m); bindProg(m); if (store('rt-done-' + me.id + '-' + t) === null) { store('rt-done-' + me.id + '-' + t, '1'); setTimeout(function () { confetti(m.querySelector('.stamp')); }, 700); } } };
     }
     var d = stepOf(t, cur.step);
-    var summary = '<div class="glass card today-head">' + ring(done, total) + '<div class="txt"><span class="small muted">' + esc(tr.name) + '</span><h3>' + done + ' of ' + total + ' steps approved</h3><span class="small muted">Today: Step ' + cur.step + ' · ' + esc(d.title) + '</span></div></div>';
-    var body = stepCard(t, cur.step, st);
-    var help = can('chat') ? '<div class="glass card help-card m-only"><div><h3>Stuck on this step?</h3><p class="small muted">Ask your mentor in the chat. They’ll see which step you’re on.</p></div>' +
-      '<button class="btn btn-primary" type="button" data-ask>' + ic('msgs') + 'Ask your mentor</button></div>' : '';
+    /* one calm card for today's step: progress, what it is, and one button into the step */
+    var rs = {}; try { rs = JSON.parse(store('rt-read-' + me.id + '-' + t + '-' + cur.step) || '{}'); } catch (e) {}
+    var readN = d.lesson.filter(function (l, i) { return rs[i]; }).length;
+    var go = cur.status === 'revision' ? ['See what to change', 'Your mentor asked for a few changes.'] : cur.status === 'review' ? ['View your answer', 'Sent. Your mentor is reviewing it.'] : [readN ? 'Continue' : 'Start this step', d.minutes + ' min · ' + (readN ? readN + ' of ' + d.lesson.length + ' points read' : d.lesson.length + ' short points to read')];
+    var stepHref = '#step-' + t + '-' + cur.step;
+    var summary = '<a class="glass card today-step" href="' + stepHref + '"><div class="ts-top">' + ring(done, total) + '<div class="ts-txt"><span class="eyebrow">Step ' + cur.step + ' of ' + total + '</span><h2>' + esc(d.title) + '</h2><p class="muted">' + esc(d.summary) + '</p></div></div>' +
+      '<div class="ts-foot"><span class="small muted">' + esc(go[1]) + '</span><span class="btn btn-primary btn-sm">' + esc(go[0]) + ' →</span></div></a>';
+    var help = can('chat') ? '<button class="glass help-row m-only" type="button" data-ask><span class="sc-ic">' + ic('msgs') + '</span><span class="li-main"><b>Stuck? Ask your mentor</b><span class="small muted">They’ll see which step you’re on.</span></span>' + ic('chev', 'chev') + '</button>' : '';
     /* wide screens: a calm dashboard (three tiles, today's step, and a slim side panel); phones keep the summary card */
     var inReview = st.filter(function (x) { return x.status === 'review'; }).length, fix = st.filter(function (x) { return x.status === 'revision'; }).length;
     var tiles = '<div class="tiles three w-only">' +
       '<div class="tile glass c-teal"><div class="tile-h"><span>Your progress</span><i>' + ic('done') + '</i></div>' + miniGauge(done, total, '#0B9E8C') + '<div class="tile-n"><b data-count="' + done + '">' + done + '</b><small>of ' + total + ' steps approved</small></div></div>' +
-      '<a class="tile glass c-pen" href="#stepcard" data-jump><div class="tile-h"><span>Working on</span><i>' + ic('pen') + '</i></div><p class="tile-t">' + esc(d.title) + '</p><div class="tile-n"><b>Step ' + cur.step + '</b><small>' + d.minutes + ' min</small></div></a>' +
+      '<a class="tile glass c-pen" href="' + stepHref + '"><div class="tile-h"><span>Working on</span><i>' + ic('pen') + '</i></div><p class="tile-t">' + esc(d.title) + '</p><div class="tile-n"><b>Step ' + cur.step + '</b><small>' + d.minutes + ' min</small></div></a>' +
       (fix ? '<a class="tile glass c-rose" href="#feedback"><div class="tile-h"><span>Needs changes</span><i>' + ic('alert') + '</i></div><p class="tile-t">Your mentor left notes to fix.</p><div class="tile-n"><b>' + fix + '</b><small>step' + (fix > 1 ? 's' : '') + '</small></div></a>'
         : '<a class="tile glass c-amber" href="#feedback"><div class="tile-h"><span>With your mentor</span><i>' + ic('clock') + '</i></div><p class="tile-t">' + (inReview ? 'Being reviewed now.' : 'Nothing waiting for review.') + '</p><div class="tile-n"><b>' + inReview + '</b><small>in review</small></div></a>') +
     '</div>';
@@ -705,11 +709,10 @@
       }).join('') + '</div>' : '') +
     '</aside>';
     var mhead = '<div class="ov-top w-only"><div><h1>' + greet() + ', ' + first(me.name) + ' ' + wave() + '</h1><p class="muted">' + today() + ' · ' + esc(tr.name) + '</p></div></div>';
-    return { html: '<div class="ov mv"><div class="ov-main stack-lg"><div class="m-only stack-lg">' + head + summary + '</div>' + mhead + tiles + body.html + help + '</div>' + side + '</div>', mount: function (m) {
-      animateRing(m); bindProg(m); body.mount(m);
+    return { html: '<div class="ov mv"><div class="ov-main stack-lg"><div class="m-only stack-lg">' + head + '</div>' + mhead + tiles + summary + help + '</div>' + side + '</div>', mount: function (m) {
+      animateRing(m); bindProg(m);
       m.querySelectorAll('[data-ask]').forEach(function (b) { b.addEventListener('click', function () { chatContext = tr.name + ' · Step ' + cur.step + ': ' + d.title; go('chat'); }); });
       m.querySelectorAll('[data-acct]').forEach(function (b) { b.addEventListener('click', accountSheet); });
-      m.querySelectorAll('[data-jump]').forEach(function (a) { a.addEventListener('click', function (e) { e.preventDefault(); var c = m.querySelector('#stepcard'); if (c) c.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }); }); });
     } };
   }
 
@@ -720,6 +723,7 @@
   }
 
   /* charts and diagrams inside lessons */
+  function vizLabel(v) { return { table: 'Table', flow: 'Steps in order', choose: 'Which one to pick', pyramid: 'Picture', formula: 'Formula, worked out', letters: 'Memory aid', funnel: 'Picture', venn: 'Picture', screen: 'What you’ll see on screen', sheet: 'Spreadsheet', forest: 'Forest plot' }[v.type] || 'Picture'; }
   function visual(v) {
     var body = '';
     if (v.type === 'table') {
@@ -811,25 +815,26 @@
     var tab = x.status === 'current' ? 0 : 2;
     var html = '<article class="glass card stack-lg" id="stepcard">' +
       '<div class="step-head"><div class="row spread wrap"><span class="eyebrow">' + esc(T(t).short) + ' · ' + esc(ph.name) + '</span>' + pill(x.status) + '</div>' +
-      '<h2>Step ' + n + ' · ' + esc(d.title) + '</h2><div class="step-meta">' + ic('clock', 'chev') + d.minutes + ' min · ' + esc(d.summary) + '</div>' +
+      '<h2>Step ' + n + ' · ' + esc(d.title) + '</h2><div class="step-meta">' + ic('clock', 'chev') + '<span>' + d.minutes + ' min · ' + esc(d.summary) + '</span></div>' +
         (x.unlocked && !preview && x.status === 'current' && n > 1 && st[n - 2].status !== 'approved' ? '<p class="small unlocked-note">' + ic('check') + 'Your mentor unlocked this step for you, so you can start it now.</p>' : '') + '</div>' +
       '<div class="seg" role="tablist" style="--n:3;--i:' + tab + '"><button type="button" role="tab" data-t="0">Learn</button><button type="button" role="tab" data-t="1">Example</button><button type="button" role="tab" data-t="2">Task</button></div>' +
       '<div id="panel"></div></article>';
 
     var readKey = 'rt-read-' + me.id + '-' + t + '-' + n, quizKey = 'rt-quiz-' + me.id + '-' + t + '-' + n, lastTab = -1;
     function readSet() { try { return JSON.parse(store(readKey) || '{}'); } catch (e) { return {}; } }
-    function readCount() { var r = readSet(), c = d.lesson.filter(function (l, i) { return r[i]; }).length; return c === d.lesson.length ? 'All ' + c + ' read ✓' : c + ' of ' + d.lesson.length + ' read'; }
+    function readCount() { var r = readSet(), c = d.lesson.filter(function (l, i) { return r[i]; }).length; return c === d.lesson.length ? 'All ' + c + ' read ✓' : 'Tap to tick · ' + c + ' of ' + d.lesson.length; }
     function panel(k) {
       if (k === 0) return '<div class="panel stack-lg">' +
         (d.intro ? '<div class="note simple"><span class="eyebrow">In simple words</span><p>' + esc(d.intro) + '</p></div>' : '') +
-        (d.visuals || []).map(visual).join('') +
         '<div class="stack"><div class="row spread wrap"><span class="eyebrow">Step by step</span>' + (preview ? '' : '<span class="pt-count small muted" aria-live="polite">' + readCount() + '</span>') + '</div>' +
-        (preview ? '' : '<p class="small muted pt-hint">Tap each point once you’ve read it.</p>') + '<ol class="lesson' + (preview ? '' : ' ticks') + '">' + d.lesson.map(function (l, i) {
+        '<ol class="lesson' + (preview ? '' : ' ticks') + '">' + d.lesson.map(function (l, i) {
           var on = !preview && readSet()[i];
           return '<li' + (preview ? '' : ' class="' + (on ? 'done' : '') + '" data-pt="' + i + '" role="checkbox" tabindex="0" aria-checked="' + !!on + '"') + '><span class="n">' + (on ? ic('check') : i + 1) + '</span><div><b>' + esc(l.h) + '</b><p>' + esc(l.p) + '</p></div></li>';
         }).join('') + '</ol></div>' +
-        (d.mistakes ? '<div class="note mistakes"><span class="eyebrow">Common mistakes to avoid</span><ul>' + d.mistakes.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul></div>' : '') +
-        stepGuides(t, n) +
+        ((d.visuals || []).length || d.mistakes || stepGuides(t, n) ? '<div class="stack more"><span class="eyebrow">More help</span><div class="folds">' +
+          (d.visuals || []).map(function (v) { return fold(v.title, vizLabel(v), visual(v), '', 'pic'); }).join('') +
+          (d.mistakes ? fold('Common mistakes', d.mistakes.length + ' to avoid', '<ul class="mlist">' + d.mistakes.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul>', '', 'warn') : '') +
+          stepGuides(t, n) + '</div></div>' : '') +
         '<button class="btn btn-glass" type="button" data-goto="1">See an example →</button></div>';
       if (k === 1 && !preview && store(quizKey) === null) {
         var strongFirst = Math.random() < .5, pick = function (strong) { return '<button type="button" class="ex-box ex-pick" data-strong="' + (strong ? 1 : 0) + '"><span class="lbl"></span><p>' + esc(strong ? d.example.strong : d.example.weak) + '</p></button>'; };
@@ -944,7 +949,7 @@
           var r = readSet(), read = d.lesson.filter(function (l, i) { return r[i]; }).length, list = [];
           if (x.status === 'revision') list.push({ id: 'notes', h: 'Read your mentor’s notes', p: 'They’re at the top of the Task tab.', done: store(fbKey) !== null, go: function () { goTo(2, '.note.red'); store(fbKey, '1'); refresh(); } });
           list.push({ id: 'learn', h: 'Read the lesson', p: 'Tap each point once you’ve read it · ' + read + ' of ' + d.lesson.length, done: read === d.lesson.length, go: function () { goTo(0, '.lesson.ticks li:not(.done)'); } });
-          if (guides.length) list.push({ id: 'guide', h: 'Open the writing guide', p: guides.map(function (g) { var w = guide(g); return w ? w.title : ''; }).filter(Boolean).slice(0, 3).join(', ') + (guides.length > 3 ? '…' : '') + ': what to write and how many words', done: store(gKey) !== null, go: function () { goTo(0, '.wguides', function (sec) { var dt = sec.querySelector('.wg'); if (dt) dt.open = true; }); } });
+          if (guides.length) list.push({ id: 'guide', h: 'Open the writing guide', p: guides.map(function (g) { var w = guide(g); return w ? w.title : ''; }).filter(Boolean).slice(0, 3).join(', ') + (guides.length > 3 ? '…' : '') + ': what to write and how many words', done: store(gKey) !== null, go: function () { goTo(0, '.wg.guide', function (dt) { dt.open = true; }); } });
           list.push({ id: 'example', h: 'Look at the example', p: 'Pick the stronger answer of the two', done: store(quizKey) !== null, go: function () { goTo(1, '.panel'); } });
           var w = draftWords();
           list.push({ id: 'write', h: x.status === 'revision' ? 'Fix your answer' : 'Write your answer', p: (d.template ? 'Stuck? Tap “Use a template” to start. ' : '') + (w ? w + ' words so far' : 'Your draft saves by itself'), done: w >= 20, go: function () { goTo(2, '#answer', function (ta) { ta.focus({ preventScroll: true }); }); } });
@@ -963,11 +968,11 @@
         }
         function draw() {
           var list = items(), done = list.filter(function (i) { return i.done; }).length, next = list.filter(function (i) { return !i.done; })[0];
-          var pill = '<button class="coach-pill" type="button" aria-expanded="' + open + '" aria-controls="coach-card"><span class="coach-n">' + (next ? done + '/' + list.length : ic('check')) + '</span><span class="coach-t"><small>' + (x.status === 'review' ? 'Step ' + n : 'What to do next') + '</small><b>' + esc(next ? next.h : list[list.length - 1].h) + '</b></span>' + ic('chev', 'chev') + '</button>';
-          var sheetHtml = '<div class="coach-card" id="coach-card" role="dialog" aria-label="What to do on this step"' + (open ? '' : ' hidden') + '><div class="coach-head"><div><span class="eyebrow">Step ' + n + ' · step by step</span><b>' + esc(d.title) + '</b></div><button class="coach-x" type="button" aria-label="Close">×</button></div>' +
-            '<div class="coach-bar"><i style="width:' + Math.round(done / list.length * 100) + '%"></i></div><ol class="coach-list">' + list.map(function (i, k) {
-              var cur = i === next;
-              return '<li class="' + (i.done ? 'done' : cur ? 'cur' : '') + '"><span class="coach-dot">' + (i.done ? ic('check') : k + 1) + '</span><div><b>' + esc(i.h) + '</b><span>' + esc(i.p) + '</span></div>' + (i.go && (cur || i.btn) ? '<button class="btn btn-primary btn-sm" type="button" data-go="' + k + '">' + (i.btn || 'Go') + '</button>' : i.go && !i.done ? '<button class="btn btn-quiet btn-sm" type="button" data-go="' + k + '">Go</button>' : '') + '</li>';
+          var pill = '<button class="coach-pill" type="button" aria-expanded="' + open + '" aria-controls="coach-card"><span class="coach-n">' + (next ? done + '/' + list.length : ic('check')) + '</span><span class="coach-t"><b>' + (next ? 'Next: ' : '') + esc(next ? next.h : list[list.length - 1].h) + '</b></span></button>';
+          var sheetHtml = '<div class="coach-card" id="coach-card" role="dialog" aria-label="What to do on this step"' + (open ? '' : ' hidden') + '><div class="coach-head"><b>Your plan for this step</b><span class="small muted">' + done + ' of ' + list.length + ' done</span><button class="coach-x" type="button" aria-label="Close">×</button></div>' +
+            '<ol class="coach-list">' + list.map(function (i, k) {
+              var cur = i === next || (i.btn && !next);
+              return '<li class="' + (i.done ? 'done' : cur ? 'cur' : '') + '"><span class="coach-dot">' + (i.done ? ic('check') : k + 1) + '</span><div><b>' + esc(i.h) + '</b>' + (cur ? '<span>' + esc(i.p) + '</span>' : '') + '</div>' + (i.go && cur ? '<button class="btn btn-primary btn-sm" type="button" data-go="' + k + '">' + (i.btn || 'Go') + '</button>' : '') + '</li>';
             }).join('') + '</ol></div>';
           el.innerHTML = sheetHtml + pill;
           if (next && lastNext && next.id !== lastNext) { var pl = el.querySelector('.coach-pill'); pl.classList.add('bump'); }
@@ -981,7 +986,7 @@
         draw();
         /* things the student does on the page tick the list */
         card.addEventListener('click', function (e) { if (e.target.closest('[data-pt], .ex-pick, .seg button, #use-tpl')) setTimeout(refresh, 30); });
-        card.addEventListener('toggle', function (e) { if (e.target.classList && e.target.classList.contains('wg') && e.target.open) { store(gKey, '1'); refresh(); } }, true);
+        card.addEventListener('toggle', function (e) { if (e.target.classList && e.target.classList.contains('guide') && e.target.open) { store(gKey, '1'); refresh(); } }, true);
         var tm; card.addEventListener('input', function () { clearTimeout(tm); tm = setTimeout(refresh, 400); });
         if (x.status === 'revision') card.addEventListener('click', function (e) { if (e.target.closest('.seg [data-t="2"]')) { store(fbKey, '1'); setTimeout(refresh, 30); } });
         if (store(seenKey) === null && x.status !== 'review') setTimeout(function () { if (el.isConnected && !document.querySelector('.tour, .sheet-bg')) setOpen(true); }, 900);
@@ -1040,20 +1045,25 @@
     return '<div class="note simple"><span class="eyebrow">In simple words</span><p>' + esc(w.what) + '</p></div>' +
       (w.budget ? budgetTable() : wordsBox(w)) +
       '<div class="stack"><span class="eyebrow">The pattern, step by step</span><ol class="lesson">' + w.pattern.map(function (s, k) { return '<li><span class="n">' + (k + 1) + '</span><div><b>' + esc(s.h) + '</b><p>' + esc(s.p) + '</p></div></li>'; }).join('') + '</ol></div>' +
-      (w.starters ? '<div class="stack"><span class="eyebrow">' + (first ? 'Tips' : 'Sentence starters') + '</span><ul class="starters">' + w.starters.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul></div>' : '') +
-      (w.example ? '<div class="stack"><span class="eyebrow">Example</span><div class="ex-box ex-weak"><span class="lbl">Weak</span><p>' + esc(w.example.weak) + '</p></div><div class="ex-box ex-strong"><span class="lbl">Strong</span><p>' + esc(w.example.strong) + '</p></div></div>' : '') +
-      '<div class="stack"><div class="row spread wrap"><span class="eyebrow">' + (first ? 'The order' : 'Template to fill in') + '</span><button class="btn btn-quiet btn-sm" type="button" data-cp="' + w.id + '">Copy</button></div><div class="paper" data-tpl="' + w.id + '">' + esc(w.template) + '</div></div>' +
-      '<div class="note mistakes"><span class="eyebrow">Common mistakes to avoid</span><ul>' + w.mistakes.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul></div>';
+      '<div class="folds">' +
+        (w.starters ? fold(first ? 'Tips' : 'Sentence starters', first ? 'Which part to write first' : 'Ready-made first words', '<ul class="starters">' + w.starters.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>') : '') +
+        (w.example ? fold('Example', 'A weak and a strong version', '<div class="ex-box ex-weak"><span class="lbl">Weak</span><p>' + esc(w.example.weak) + '</p></div><div class="ex-box ex-strong"><span class="lbl">Strong</span><p>' + esc(w.example.strong) + '</p></div>') : '') +
+        fold(first ? 'The order, with word counts' : 'Template to fill in', first ? 'Copy it into your document' : 'Copy it and fill the [brackets]', '<div class="paper" data-tpl="' + w.id + '">' + esc(w.template) + '</div><button class="btn btn-glass btn-sm" type="button" data-cp="' + w.id + '">Copy</button>') +
+        fold('Common mistakes', w.mistakes.length + ' to avoid', '<ul class="mlist">' + w.mistakes.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul>', '', 'warn') +
+      '</div>';
   }
   function bindGuides(root) {
     root.querySelectorAll('[data-cp]').forEach(function (b) { if (b.dataset.bound) return; b.dataset.bound = 1; b.addEventListener('click', function () { var w = guide(b.dataset.cp); copy(w.template, root.querySelector('[data-tpl="' + w.id + '"]')); }); });
   }
+  /* one tidy tap-to-open row; used for pictures, mistakes and guides so pages stay short */
+  function fold(title, sub, body, chip, cls) {
+    return '<details class="wg' + (cls ? ' ' + cls : '') + '"><summary><span class="li-main"><b>' + esc(title) + '</b>' + (sub ? '<span class="small muted">' + esc(sub) + '</span>' : '') + '</span>' + (chip ? '<span class="wchip">' + esc(chip) + '</span>' : '') + ic('chev', 'chev') + '</summary><div class="wg-body stack">' + body + '</div></details>';
+  }
   function wordsLabel(w) { return w.words ? (w.words.unit === 'references' ? w.words.ideal + ' references' : w.words.ideal + ' words') : w.length; }
   /* "How to write it" inside a step: the guides for that step, opened one at a time */
   function stepGuides(t, n) {
-    var ids = (WSTEPS[t] || {})[n]; if (!ids || !ids.length) return '';
-    return '<div class="stack wguides"><span class="eyebrow">How to write it</span><p class="small muted">' + (ids.length > 1 ? 'Tap a part to open its guide: the pattern, how many words, sentence starters, an example and a template.' : 'Tap to open the guide: the pattern, how many words, sentence starters, an example and a template.') + '</p>' +
-      ids.map(function (id) { var w = guide(id); if (!w) return ''; return '<details class="wg"><summary><span class="li-main"><b>' + esc(w.title) + '</b><span class="small muted">' + esc(w.short) + '</span></span><span class="wchip">' + esc(wordsLabel(w)) + '</span>' + ic('chev', 'chev') + '</summary><div class="wg-body stack-lg">' + guideBody(w) + '</div></details>'; }).join('') + '</div>';
+    var ids = (WSTEPS[t] || {})[n] || [];
+    return ids.map(function (id) { var w = guide(id); return w ? fold('Writing guide: ' + w.title, w.short, guideBody(w), wordsLabel(w), 'guide') : ''; }).join('');
   }
   function vBasics() {
     var html = '<section class="page-head"><span class="eyebrow">Writing basics</span><h1>How to write each part</h1><p class="muted">Never written a research paper? Start here. Each part shows the pattern, how many words to write, sentence starters, an example and a template to fill in.</p></section>' +
@@ -1068,7 +1078,7 @@
     if (i < 0) { setHash('basics'); return vBasics(); }
     var w = W[i], prev = W[i - 1], next = W[i + 1], no = partNo(w);
     var html = '<a class="back" href="#basics">' + ic('back', 'chev') + 'Writing basics</a>' +
-      '<section class="page-head"><span class="eyebrow">' + (no ? 'Part ' + no + ' of ' + partsCount() : 'Start here') + ' · ' + esc(w.length) + '</span><h1>' + esc(w.title) + '</h1></section>' +
+      '<section class="page-head"><span class="eyebrow">' + (no ? 'Part ' + no + ' of ' + partsCount() : 'Start here') + '</span><h1>' + esc(w.title) + '</h1><p class="muted">' + esc(w.short) + '</p></section>' +
       '<article class="glass card stack-lg">' + guideBody(w) + '</article>' +
       '<div class="row spread wrap basics-nav">' + (prev ? '<a class="btn btn-glass" href="#basics-' + prev.id + '">' + ic('back') + esc(prev.title) + '</a>' : '<span></span>') + (next ? '<a class="btn btn-primary" href="#basics-' + next.id + '">Next: ' + esc(next.title) + ' →</a>' : '<a class="btn btn-primary" href="#today">Back to today’s step</a>') + '</div>';
     return { html: html, mount: bindGuides };

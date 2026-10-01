@@ -744,3 +744,44 @@ a.li:active { transform: scale(.985); }
 @media (min-width: 761px) { .coach { right: 24px; bottom: 24px; } }
 html.menu-open .coach { display: none; }
 @media (prefers-reduced-motion: reduce) { .coach-pill, .coach-card, .coach-pill.bump, .coach-flash { animation: none; } }
+
+/* ---------- cleaner pages: tidy fold-out rows, one card for today ---------- */
+.folds { display: grid; gap: 8px; }
+.wg summary b { font-size: .96rem; }
+.wg.warn summary b { color: var(--redpen); }
+.wg .wg-body { gap: 14px; }
+.wg .viz { margin: 0; }
+.wg .viz > figcaption { display: none; }
+.mlist { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.mlist li { display: grid; grid-template-columns: 20px 1fr; gap: 8px; font-size: .95rem; }
+.mlist li::before { content: "✕"; color: var(--redpen); font-weight: 700; }
+.step-meta { flex-wrap: nowrap; align-items: flex-start; }
+.step-meta svg { flex: none; margin-top: 3px; }
+.today-step { display: grid; gap: 16px; text-decoration: none; color: inherit; transition: transform .35s var(--spring, var(--ease)); }
+.today-step:hover { transform: translateY(-2px); }
+.today-step:active { transform: scale(.99); }
+.ts-top { display: flex; align-items: center; gap: 18px; }
+.ts-txt { display: grid; gap: 4px; min-width: 0; }
+.ts-txt h2 { font-size: clamp(1.25rem, 1.1rem + .6vw, 1.55rem); letter-spacing: -.02em; }
+.ts-txt p { line-height: 1.45; }
+.ts-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 14px; border-top: 1px solid var(--line); }
+.help-row { display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px 16px; border-radius: 20px; text-align: left; font: inherit; color: var(--ink); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.help-row .sc-ic { width: 42px; height: 42px; box-shadow: none; }
+.help-row .sc-ic svg { width: 20px; height: 20px; }
+.help-row .li-main { display: grid; gap: 1px; flex: 1; min-width: 0; }
+.help-row > .chev { width: 16px; height: 16px; color: var(--muted); flex: none; }
+.help-row:active { transform: scale(.99); }
+@media (min-width: 1100px) { .dash .mv .today-step .ring { display: none; } }
+/* the step plan, kept small */
+.coach-head { display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: 10px; }
+.coach-head b { grid-column: 1; }
+.coach-head .small { grid-column: 1; grid-row: 2; }
+.coach-head .coach-x { grid-column: 2; grid-row: 1 / span 2; }
+.coach-list li { padding: 8px 10px; }
+.coach-list li.done b { text-decoration: none; }
+.coach-pill { padding-right: 18px; }
+@media (max-width: 760px) {
+  .coach { transition: transform .38s var(--spring, ease), opacity .25s ease; }
+  html.bar-hide .coach:not(:has(.coach-card:not([hidden]))) { transform: translateY(16px); opacity: 0; }
+  html.bar-hide .coach:not(:has(.coach-card:not([hidden]))) > * { pointer-events: none; }
+}

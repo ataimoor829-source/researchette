@@ -359,6 +359,7 @@
   async function render() {
     var token = ++busy;
     stopChat();
+    var oc = document.getElementById('coach'); if (oc) oc.remove();
     if (meKnown) me = meCache; else { me = meCache = await S.me(); meKnown = true; }
     var r = (location.hash || '').slice(1);
     if (!me) { app.dataset.shell = ''; if (r !== 'login') setHash('login'); return loginView(); }
@@ -924,6 +925,67 @@
       }
       seg.querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { show(+b.dataset.t); }); });
       show(tab);
+      if (!preview && x.status !== 'approved') coach();
+
+      /* "What to do next": a small pill that always shows the next action on this step; tap it for the whole
+         checklist. It ticks things off as the student does them, and opens by itself the first time. */
+      function coach() {
+        var guides = (WSTEPS[t] || {})[n] || [], gKey = 'rt-wg-' + me.id + '-' + t + '-' + n, seenKey = 'rt-coach-' + me.id + '-' + t + '-' + n, fbKey = 'rt-fbseen-' + (sub ? sub.id : '');
+        var draftKey = 'rt-draft-' + me.id + '-' + t + '-' + n;
+        var el = document.createElement('div'); el.className = 'coach'; el.id = 'coach';
+        document.body.appendChild(el);
+        var open = false, lastNext = null;
+        function draftWords() { var ta = box.querySelector('#answer'); return words(ta ? ta.value : (store(draftKey) || '')); }
+        function items() {
+          if (x.status === 'review') return [
+            { id: 'sent', h: 'Submitted for review', p: 'Well done! Your mentor usually replies within 48 hours.', done: true },
+            { id: 'wait', h: 'While you wait', p: 'Read the Writing basics, so the next steps feel easy.', go: function () { location.hash = '#basics'; }, btn: 'Open' }
+          ];
+          var r = readSet(), read = d.lesson.filter(function (l, i) { return r[i]; }).length, list = [];
+          if (x.status === 'revision') list.push({ id: 'notes', h: 'Read your mentor’s notes', p: 'They’re at the top of the Task tab.', done: store(fbKey) !== null, go: function () { goTo(2, '.note.red'); store(fbKey, '1'); refresh(); } });
+          list.push({ id: 'learn', h: 'Read the lesson', p: 'Tap each point once you’ve read it · ' + read + ' of ' + d.lesson.length, done: read === d.lesson.length, go: function () { goTo(0, '.lesson.ticks li:not(.done)'); } });
+          if (guides.length) list.push({ id: 'guide', h: 'Open the writing guide', p: guides.map(function (g) { var w = guide(g); return w ? w.title : ''; }).filter(Boolean).slice(0, 3).join(', ') + (guides.length > 3 ? '…' : '') + ': what to write and how many words', done: store(gKey) !== null, go: function () { goTo(0, '.wguides', function (sec) { var dt = sec.querySelector('.wg'); if (dt) dt.open = true; }); } });
+          list.push({ id: 'example', h: 'Look at the example', p: 'Pick the stronger answer of the two', done: store(quizKey) !== null, go: function () { goTo(1, '.panel'); } });
+          var w = draftWords();
+          list.push({ id: 'write', h: x.status === 'revision' ? 'Fix your answer' : 'Write your answer', p: (d.template ? 'Stuck? Tap “Use a template” to start. ' : '') + (w ? w + ' words so far' : 'Your draft saves by itself'), done: w >= 20, go: function () { goTo(2, '#answer', function (ta) { ta.focus({ preventScroll: true }); }); } });
+          list.push({ id: 'send', h: x.status === 'revision' ? 'Resubmit it' : 'Submit it for review', p: 'Your mentor replies within 48 hours', done: false, go: function () { goTo(2, '#send'); } });
+          return list;
+        }
+        function goTo(k, sel, then) {
+          setOpen(false);
+          if (lastTab !== k) show(k);
+          requestAnimationFrame(function () {
+            var target = box.querySelector(sel) || card;
+            if (then) then(target);
+            target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+            target.classList.remove('coach-flash'); void target.offsetWidth; target.classList.add('coach-flash');
+          });
+        }
+        function draw() {
+          var list = items(), done = list.filter(function (i) { return i.done; }).length, next = list.filter(function (i) { return !i.done; })[0];
+          var pill = '<button class="coach-pill" type="button" aria-expanded="' + open + '" aria-controls="coach-card"><span class="coach-n">' + (next ? done + '/' + list.length : ic('check')) + '</span><span class="coach-t"><small>' + (x.status === 'review' ? 'Step ' + n : 'What to do next') + '</small><b>' + esc(next ? next.h : list[list.length - 1].h) + '</b></span>' + ic('chev', 'chev') + '</button>';
+          var sheetHtml = '<div class="coach-card" id="coach-card" role="dialog" aria-label="What to do on this step"' + (open ? '' : ' hidden') + '><div class="coach-head"><div><span class="eyebrow">Step ' + n + ' · step by step</span><b>' + esc(d.title) + '</b></div><button class="coach-x" type="button" aria-label="Close">×</button></div>' +
+            '<div class="coach-bar"><i style="width:' + Math.round(done / list.length * 100) + '%"></i></div><ol class="coach-list">' + list.map(function (i, k) {
+              var cur = i === next;
+              return '<li class="' + (i.done ? 'done' : cur ? 'cur' : '') + '"><span class="coach-dot">' + (i.done ? ic('check') : k + 1) + '</span><div><b>' + esc(i.h) + '</b><span>' + esc(i.p) + '</span></div>' + (i.go && (cur || i.btn) ? '<button class="btn btn-primary btn-sm" type="button" data-go="' + k + '">' + (i.btn || 'Go') + '</button>' : i.go && !i.done ? '<button class="btn btn-quiet btn-sm" type="button" data-go="' + k + '">Go</button>' : '') + '</li>';
+            }).join('') + '</ol></div>';
+          el.innerHTML = sheetHtml + pill;
+          if (next && lastNext && next.id !== lastNext) { var pl = el.querySelector('.coach-pill'); pl.classList.add('bump'); }
+          lastNext = next ? next.id : 'all';
+          el.querySelector('.coach-pill').addEventListener('click', function () { setOpen(!open); });
+          el.querySelector('.coach-x').addEventListener('click', function () { setOpen(false); });
+          el.querySelectorAll('[data-go]').forEach(function (b) { b.addEventListener('click', function () { list[+b.dataset.go].go(); }); });
+        }
+        function setOpen(v) { if (v === open) return; open = v; draw(); if (v) store(seenKey, '1'); }
+        var refresh = function () { if (el.isConnected) draw(); };
+        draw();
+        /* things the student does on the page tick the list */
+        card.addEventListener('click', function (e) { if (e.target.closest('[data-pt], .ex-pick, .seg button, #use-tpl')) setTimeout(refresh, 30); });
+        card.addEventListener('toggle', function (e) { if (e.target.classList && e.target.classList.contains('wg') && e.target.open) { store(gKey, '1'); refresh(); } }, true);
+        var tm; card.addEventListener('input', function () { clearTimeout(tm); tm = setTimeout(refresh, 400); });
+        if (x.status === 'revision') card.addEventListener('click', function (e) { if (e.target.closest('.seg [data-t="2"]')) { store(fbKey, '1'); setTimeout(refresh, 30); } });
+        if (store(seenKey) === null && x.status !== 'review') setTimeout(function () { if (el.isConnected && !document.querySelector('.tour, .sheet-bg')) setOpen(true); }, 900);
+      }
       if (!preview && x.status === 'approved' && sub && store('rt-cele-' + sub.id) === null) {
         store('rt-cele-' + sub.id, '1');
         setTimeout(function () { confetti(card.querySelector('.stamp') || card.querySelector('.pill')); }, 650);

@@ -12,12 +12,12 @@
 
   /* questions people ask most, answered from what the site already says */
   var QA = [
-    ['How does it work?', 'You pick a programme, like an original article or a case report. Each day you get one small step: a short lesson, an example and a task. You write it, and a mentor corrects it within 48 hours. Step by step, you finish a real paper. 📄'],
-    ['I’ve never done research', 'That’s completely fine! 😊 The roadmap starts from zero, even in first year, and every step is explained in simple words with examples.'],
+    ['How does it work?', 'You pick a programme, like an original article or a case report. Each day you get one small step: a short lesson, an example and a task. You write it, and a mentor corrects it within 48 hours. Step by step, you finish a real paper.'],
+    ['I’ve never done research', 'That’s completely fine. The roadmap starts from zero, even in first year, and every step is explained in simple words with examples.'],
     ['Who are the mentors?', 'Zain Ramzan (published researcher and journal reviewer, 50+ students mentored), Dr Maha Arshad (MD UCLA, orthopaedics resident at Stanford), Dr Sobia Ramzan (PhD Biochemistry, oncology) and Dr Alina (radiology resident, Huntsman Cancer Institute). You can read their messages on the Mentors page.'],
     ['How much time does it take?', 'About 30 to 60 minutes a day, at your own pace. ⏱️'],
-    ['How do I join?', 'Tap “Join us today” and fill in the short form. We then email you the membership and payment details, and send your portal login once it’s confirmed. 🎉'],
-    ['Will you write my paper?', 'No. You write it yourself and we correct every step. That keeps your work original, and you actually learn how to do it. ✍️'],
+    ['How do I join?', 'Tap “Join us today” and fill in the short form. We then email you the membership and payment details, and send your portal login once it’s confirmed.'],
+    ['Will you write my paper?', 'No. You write it yourself and we correct every step. That keeps your work original, and you actually learn how to do it.'],
     ['Will I get published?', 'We guide you through choosing a journal, submitting and replying to reviewers. The final decision is the journal’s, but our mentored students have published.']
   ];
 
@@ -41,7 +41,7 @@
       '<form class="rc-form"><textarea rows="1" placeholder="Type your question…" aria-label="Your question" maxlength="1000"></textarea><button class="rc-send" type="submit" aria-label="Send" disabled>' + I.send + '</button></form>' +
     '</div>' +
     '<div class="rc-hello" role="button" tabindex="0" hidden><button class="rc-close" type="button" aria-label="Hide this message">×</button><span class="rc-av">' + I.logo + '</span>' +
-      '<div><b>Hi there! 👋</b><span>Got a question about research or joining? We’re happy to help.</span></div></div>' +
+      '<div><b>Hi there!</b><span>Got a question about research or joining? We’re happy to help.</span></div></div>' +
     '<button class="rc-btn" type="button" aria-label="Chat with us" aria-expanded="false" aria-controls="rc-panel">' + I.chat + I.x + '<span class="rc-dot" aria-hidden="true"></span><span class="rc-badge" aria-hidden="true">1</span></button>';
   document.body.appendChild(root);
 
@@ -107,7 +107,7 @@
   }
   function start() {
     if (started) return; started = true;
-    add('Hi! 👋 Welcome to Researchette.\nPick a question below for an instant answer, or type your own and we’ll reply on WhatsApp.', 'bot');
+    add('Hi! Welcome to Researchette.\nPick a question below for an instant answer, or type your own and we’ll reply on WhatsApp.', 'bot');
     chips();
   }
   form.addEventListener('submit', function (e) {
@@ -116,7 +116,7 @@
     ta.value = ''; grow(); send.disabled = true;
     body.querySelectorAll('.rc-chips, .rc-cta').forEach(function (c) { c.remove(); });
     add(esc(text), 'me');
-    typing(function () { add('Thanks for your question! 💙 Tap below to send it to our team on WhatsApp. We usually reply within a few hours.', 'bot'); handOff(text); });
+    typing(function () { add('Thanks for your question! Tap below to send it to our team on WhatsApp. We usually reply within a few hours.', 'bot'); handOff(text); });
   });
   function grow() { ta.style.height = 'auto'; ta.style.height = Math.min(110, ta.scrollHeight) + 'px'; }
   ta.addEventListener('input', function () { send.disabled = !ta.value.trim(); grow(); });

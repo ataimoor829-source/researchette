@@ -74,16 +74,6 @@ small, .small, .muted small { letter-spacing: .01em; }
   box-shadow: inset 0 1px 0 var(--ring-a), var(--shadow);
 }
 .glass::before { display: none; }
-/* spotlight that follows the pointer (position set by fx.js) */
-.glass:not(.track)::after {
-  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
-  background: radial-gradient(520px circle at var(--mx, 50%) var(--my, -30%), var(--spot), transparent 55%);
-  opacity: 0; transition: opacity .6s var(--ease-out);
-}
-.glass:hover::after { opacity: 1; }
-/* touch screens have no pointer to follow, so the spotlight layer isn't drawn at all */
-@media (hover: none) { .glass::after { display: none; } }
-
 /* floating layers keep real frosted glass. Bigger surfaces use a thicker material so what's
    behind them never competes with the text on top. */
 .sheet.glass { background: linear-gradient(180deg, color-mix(in srgb, var(--paper) 95%, transparent), color-mix(in srgb, var(--paper) 90%, transparent)); -webkit-backdrop-filter: blur(30px) saturate(180%) !important; backdrop-filter: blur(30px) saturate(180%) !important; }

@@ -27,7 +27,7 @@
     done: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/>',
     msgs: '<path d="M14 9a2 2 0 0 1-2 2H6l-3 3V4a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-3-3h-6a2 2 0 0 1-2-2v-1"/>',
     send: '<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/>',
-    sparkle: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 3v4M21 5h-4M5 17v3M6.5 18.5h-3"/>',
+    sparkle: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.8-.9 1.4v.3M12 17h.01"/>',
     phone: '<rect x="7" y="2" width="10" height="20" rx="3"/><path d="M11 18h2"/>',
     pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
     book: '<path d="M4 19.5V5a2 2 0 0 1 2-2h13v16H6.5a2.5 2.5 0 0 0 0 5H19"/><path d="M8 7h7M8 11h5"/>',
@@ -53,7 +53,7 @@
     return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
   }
   function greet() { var h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; }
-  function wave() { var h = new Date().getHours(); return h < 12 ? '☀️' : h < 18 ? '👋' : '🌙'; }
+  function wave() { return ''; }
   function today() { return new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }); }
   function pill(st) { return '<span class="pill ' + st + '">' + LABEL[st] + '</span>'; }
   function T(id) { return C.track(id); }
@@ -652,7 +652,7 @@
         S.progress(me.id).then(function (p) { progCache = p; progAt = Date.now(); if (el.isConnected) fill(p); }, function () {});
         el.querySelectorAll('[data-ask]').forEach(function (b) {
           b.addEventListener('click', function () {
-            var name = T(b.dataset.ask).name, text = 'Hi ' + who + '! Could you please unlock the ' + name + ' programme for me? 😊';
+            var name = T(b.dataset.ask).name, text = 'Hi ' + who + '! Could you please unlock the ' + name + ' programme for me?';
             close();
             if (can('chat')) { chatContext = 'Unlock a programme: ' + name; chatDraft = text; go('chat'); }
             else window.open(waLink('923395888444', text), '_blank', 'noopener');
@@ -1165,7 +1165,7 @@
   }
   async function vOverview(stats) {
     var both = await Promise.all([S.queue(), can('applications') ? S.applications() : Promise.resolve([])]), q = both[0], apps = both[1].filter(function (a) { return a.status === 'new'; });
-    var old = q[0], hour = new Date().getHours(), wave = hour < 12 ? '☀️' : hour < 18 ? '👋' : '🌙';
+    var old = q[0], wave = '';
     var tiles = [
       ['#reviews', 'Waiting for review', stats.pending, 'clock', 'c-amber', miniBars(lastDays(stats.submissionsByDay, 10), '#E5883A'), stats.pendingMine ? stats.pendingMine + ' from your students' : 'submissions'],
       ['#members', 'Your students', stats.myMembers, 'users', 'c-pen', miniGauge(stats.myMembers, stats.members, '#4B5CF0'), 'of ' + stats.members + ' active'],
@@ -1189,7 +1189,7 @@
           '<section class="glass card ov-chart"><div class="row spread"><h3>Activity</h3><div class="seg sm" id="ov-seg" style="--n:2;--i:' + (ovSeries === 'subs' ? 0 : 1) + '"><button type="button" data-s="subs"' + (ovSeries === 'subs' ? ' class="on"' : '') + '>Submissions</button><button type="button" data-s="reviews"' + (ovSeries === 'reviews' ? ' class="on"' : '') + '>Your reviews</button></div></div><div id="ov-ch">' + activityChart(stats) + '</div><p class="small muted">Per week, last 12 weeks</p></section>' +
           (old ? '<a class="glass card ov-next" href="#review-' + esc(old.id) + '"><div class="nx-text"><span class="eyebrow">Next to review</span><h3>' + esc(old.member.name) + '</h3><p class="small muted">' + esc(T(old.track).short) + ' · Step ' + old.step + ' · ' + esc(stepOf(old.track, old.step).title) + '</p>' +
             '<div class="nx-n"><b>' + q.length + '</b><span>waiting</span></div><div class="nx-n"><b>' + rel(old.createdAt).replace(' ago', '') + '</b><span>oldest</span></div><span class="btn btn-primary btn-sm">Review now →</span></div><div class="nx-art" aria-hidden="true">' + ic('paper') + '<i></i><i></i><i></i></div></a>'
-          : '<div class="glass card ov-next done"><div class="nx-text"><span class="eyebrow">Review queue</span><h3>All caught up 🎉</h3><p class="small muted">New submissions will appear here.</p></div><div class="nx-art" aria-hidden="true">' + ic('done') + '<i></i><i></i><i></i></div></div>') +
+          : '<div class="glass card ov-next done"><div class="nx-text"><span class="eyebrow">Review queue</span><h3>All caught up</h3><p class="small muted">New submissions will appear here.</p></div><div class="nx-art" aria-hidden="true">' + ic('done') + '<i></i><i></i><i></i></div></div>') +
         '</div>' +
         '<section class="stack"><div class="phase-title"><h3>Shortcuts</h3></div><div class="ov-shortcuts">' + tools.map(function (t, i) {
           return '<a class="glass card sc' + (i === 1 || tools.length === 1 ? ' hi' : '') + '" href="' + t[0] + '"><div><h3>' + esc(t[1]) + '</h3><p class="small">' + esc(t[2]) + '</p><span class="sc-go">Open</span></div><span class="sc-ic">' + ic(t[3]) + '</span></a>';
@@ -1720,11 +1720,11 @@
     if (mentor) return 'Welcome to the Researchette team, ' + short(u.name) + '!\n\n' +
       'Thank you so much for joining us as a mentor. Your experience and guidance will make a real difference to our students, and we’re truly grateful to have you with us.\n\n' +
       'Your mentor portal login:\n' + login + '\n\n' + change + '\n\nA short tour will show you around when you first log in. If you need anything at all, just message us. Welcome aboard!';
-    return 'Welcome to Researchette, ' + short(u.name) + '! 🎉\n\n' +
-      'We’re so happy you’re here. This is the start of your research journey, and we’ll be with you every step of the way, from your very first idea to a published paper. 📄✨\n\n' +
-      'Your portal login 🔐\n' + login + '\n\n' +
+    return 'Welcome to Researchette, ' + short(u.name) + '!\n\n' +
+      'We’re so happy you’re here. This is the start of your research journey, and we’ll be with you every step of the way, from your very first idea to a published paper. \n\n' +
+      'Your portal login\n' + login + '\n\n' +
       'First things first: please change this temporary password after you log in (tap your initials at the top right, then Change password).\n\n' +
-      'Your first small task is already waiting for you. Take it one step a day and don’t worry about getting it perfect. That’s what your mentor is here for. 💙\n\n' +
+      'Your first small task is already waiting for you. Take it one step a day and don’t worry about getting it perfect. That’s what your mentor is here for.\n\n' +
       'See you inside!\nTeam Researchette';
   }
   function credentialsSheet(u, pw, title, note) {

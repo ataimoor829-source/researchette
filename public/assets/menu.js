@@ -4,9 +4,9 @@
   var links = document.querySelector('.nav .nav-links');
   if (!links) return;
   // the host may serve pages with or without ".html" (/research or /research.html)
-  var page = function (u) { return (u.split('#')[0].split('/').pop() || 'index').replace(/\.html$/, ''); };
+  var page = function (u) { return (u.split('#')[0].replace(/\/$/, '').split('/').pop() || 'index').replace(/\.html$/, ''); };
   var here = page(location.pathname), home = here === 'index';
-  var at = function (hash) { return (home ? '' : 'index.html') + hash; };
+  var at = function (hash) { return (home ? '' : '/') + hash; };   // root links, so pages in folders (/learn/…) work too
   var I = {
     home: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
     book: '<path d="M4 19V5a2 2 0 0 1 2-2h14v16H6a2 2 0 0 0-2 2z"/><path d="M20 19v2H6"/>',
@@ -18,13 +18,14 @@
   };
   var ic = function (n) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + I[n] + '</svg>'; };
   var ITEMS = [
-    ['Home', home ? '#top' : 'index.html', 'home'],
+    ['Home', home ? '#top' : '/', 'home'],
     ['Programmes', at('#tracks'), 'book'],
     ['Roadmap', at('#roadmap'), 'map'],
-    ['Free guides', 'guides.html', 'gift'],
+    ['Learn research', '/learn/', 'book'],
+    ['Free guides', '/guides', 'gift'],
     ['Mentors', at('#mentors'), 'users'],
-    ['Student publications', 'research.html', 'paper', 'pub'],
-    ['Reviews', 'reviews.html', 'star']
+    ['Student publications', '/research', 'paper', 'pub'],
+    ['Reviews', '/reviews', 'star']
   ];
 
   var btn = document.createElement('button');
@@ -40,7 +41,7 @@
     return '<li><a class="' + (x[3] || '') + '" href="' + x[1] + '" data-name="' + x[0] + '"' + (cur ? ' aria-current="page"' : '') + '><span class="mi">' + ic(x[2]) + '</span>' + x[0] +
       '<svg class="mc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a></li>';
   }).join('') + '</ul>' +
-    '<div class="menu-ctas"><a class="btn btn-glass" href="portal.html">Log in</a><a class="btn btn-primary" href="' + at('#join') + '">Join us today</a></div>';
+    '<div class="menu-ctas"><a class="btn btn-glass" href="/portal">Log in</a><a class="btn btn-primary" href="' + at('#join') + '">Join us today</a></div>';
   document.body.appendChild(bg); document.body.appendChild(panel);
 
   var open = false, timer = 0, reduce = matchMedia('(prefers-reduced-motion: reduce)');

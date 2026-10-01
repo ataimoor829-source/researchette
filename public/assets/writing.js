@@ -4,7 +4,39 @@
    students) so each part is easy to compare with the others. Numbers in the examples are made up. */
 window.RT_WRITING = [
   {
-    id: 'order', title: 'The shape of a paper', short: 'Which parts come first, and why', length: 'Read this first',
+    id: 'words', intro: true, title: 'Research words in plain English', short: 'The ABC of research, if you are brand new', length: '5 min read',
+    what: 'Research has its own words, and they can make simple ideas sound hard. Here is what each one really means. Come back to this page whenever a word in a lesson confuses you.',
+    terms: [
+      ['Research question', 'The one question your study answers. Example: “How many MBBS students skip breakfast?”'],
+      ['Objective', 'The same question written as a goal: “To determine the frequency of breakfast skipping among MBBS students.”'],
+      ['Variable', 'Anything you measure that can change from person to person: age, gender, hours of sleep, skipping breakfast (yes/no).'],
+      ['Study design', 'The type of study. The easiest for students is cross-sectional: you ask a group of people once, at one point in time.'],
+      ['Population', 'Everyone your question is about. Example: all MBBS students at your college.'],
+      ['Sample and sample size', 'The people you actually ask, and how many of them. You work out the number with a formula or a free calculator.'],
+      ['Sampling', 'How you choose who to ask. Random means everyone has an equal chance, like drawing names from a hat.'],
+      ['Inclusion and exclusion', 'The rules for who can join (included) and who can’t (excluded), and why.'],
+      ['Questionnaire / proforma', 'The form you use to collect answers. A proforma is a simple data form, often filled by you, not the participant.'],
+      ['Operational definition', 'Exactly how you decide “yes” or “no” for a variable, so everyone counts it the same way.'],
+      ['Ethics approval (ERC / IRB)', 'Permission from your college’s ethics committee before you collect any data. Journals reject studies without it.'],
+      ['Informed consent', 'Each person agrees to take part after you explain the study. Usually a short signed form.'],
+      ['Synopsis', 'Your study plan on paper, written before you start. You submit it to get ethics approval.'],
+      ['Data and SPSS', 'Data are the answers you collected. SPSS (or Excel) is the software you use to count and test them.'],
+      ['Frequency and percentage', 'How many people had something, and what share of the total. Example: 110 of 250 students (44%).'],
+      ['Mean ± SD', 'The average, and how spread out the values are. Example: age 21.3 ± 1.8 years.'],
+      ['p-value', 'How likely a difference is due to chance. Below 0.05 usually means “significant”, so probably a real difference.'],
+      ['Chi-square test', 'A common test to see if two yes/no things are linked, like short sleep and skipping breakfast.'],
+      ['Bias', 'Anything that pushes your results away from the truth. Example: people saying what sounds good instead of what is true.'],
+      ['Manuscript', 'Your finished paper, ready to send to a journal.'],
+      ['IMRaD', 'The usual order of a paper: Introduction, Methods, Results and Discussion.'],
+      ['Citation and reference', 'A citation is the small number in your text, like (3). The reference is the full detail of that paper in the list at the end.'],
+      ['Vancouver style', 'The way most medical journals want references written: numbered in the order you first use them.'],
+      ['Journal and peer review', 'A journal publishes research. Peer review means experts read your paper and suggest changes before it is accepted.'],
+      ['Plagiarism', 'Copying someone else’s words or ideas without credit. Always write in your own words and cite the source. Journals check with software.']
+    ]
+  },
+  {
+    id: 'order', intro: true, words: { min: 2000, ideal: '2500–3000', max: 3500, unit: 'words', note: 'For the main text, from Introduction to Conclusion. The abstract, tables and references are counted separately. Always check your target journal’s own limit.' },
+    title: 'The shape of a paper', short: 'Which parts come first, and why', length: 'Read this first',
     what: 'Almost every research paper uses the same order, called IMRaD: Introduction, Methods, Results and Discussion. The title and abstract sit on top; the conclusion and references come at the end. Once you know the order, you always know what goes where.',
     pattern: [
       { h: 'Title and abstract', p: 'The shop window. Most people read only these, so they must tell the whole story in a few lines.' },
@@ -15,11 +47,13 @@ window.RT_WRITING = [
       { h: 'Conclusion and references', p: 'The take-home message in 2 or 3 lines, then the list of papers you used.' }
     ],
     starters: ['Write Methods first: it is the easiest, because you already know what you did.', 'Then Results, then Discussion, then Introduction.', 'Write the Abstract and Title last, once everything else is done.'],
-    template: 'Title\nAbstract (Background · Methods · Results · Conclusion)\n1. Introduction\n2. Objectives\n3. Methods\n4. Results\n5. Discussion (with Limitations)\n6. Conclusion\nReferences',
+    template: 'Title (12–15 words)\nAbstract (about 250 words: Objective · Methods · Results · Conclusion) + 3–6 keywords\n1. Introduction (350–450 words)\n2. Objectives (1–2 sentences)\n3. Methods (500–700 words)\n4. Results (400–600 words + 2–4 tables)\n5. Discussion (700–1000 words, ending with Limitations)\n6. Conclusion (50–80 words)\nReferences (15–30)\n\nMain text total: about 2500–3000 words.',
+    budget: true,
     mistakes: ['Writing the abstract first, then having to rewrite it.', 'Putting results inside the Methods, or opinions inside the Results.', 'Mixing the order because a friend’s paper looked different. Check your target journal’s instructions.']
   },
   {
-    id: 'title', title: 'Title', short: 'Say what, who, where and the study type', length: '10–20 words',
+    id: 'title', words: { min: 8, ideal: '12–15', max: 20, unit: 'words', note: 'Some journals also limit it to about 150 characters. Never more than 2 lines.' },
+    title: 'Title', short: 'Say what, who, where and the study type', length: '10–20 words',
     what: 'The title tells a reader in one line what you studied, in whom, where, and what kind of study it was. A good title is specific and plain, not clever.',
     pattern: [
       { h: 'The topic', p: 'What you measured. Example: breakfast skipping.' },
@@ -36,7 +70,8 @@ window.RT_WRITING = [
     mistakes: ['Questions or jokes as titles.', 'Abbreviations nobody knows.', 'Leaving out the study type or the place.']
   },
   {
-    id: 'abstract', title: 'Abstract', short: 'The whole paper in one short paragraph', length: '200–300 words',
+    id: 'abstract', words: { min: 150, ideal: 250, max: 300, unit: 'words', note: 'Most Pakistani journals (JPMA, JCPSP, PJMS) ask for 250 words, split into Objective, Methods, Results, Conclusion. Add 3–6 keywords below it.' },
+    title: 'Abstract', short: 'The whole paper in one short paragraph', length: '200–300 words',
     what: 'The abstract is a mini version of the whole paper. Most readers (and editors) read only this, so each part of your study gets one or two sentences. Most journals want it split into headings.',
     pattern: [
       { h: 'Background (1–2 lines)', p: 'Why the topic matters and what is missing.' },
@@ -54,7 +89,8 @@ window.RT_WRITING = [
     mistakes: ['Results with no numbers.', 'New information that is not in the paper.', 'References or abbreviations in the abstract.', 'Going over the word limit.']
   },
   {
-    id: 'intro', title: 'Introduction', short: 'Wide to narrow: known, missing, your aim', length: '300–500 words · 3–4 paragraphs',
+    id: 'intro', words: { min: 250, ideal: '350–450', max: 600, unit: 'words', note: 'About 3–4 paragraphs. If yours is over 600, cut the textbook background first.' },
+    title: 'Introduction', short: 'Wide to narrow: known, missing, your aim', length: '300–500 words · 3–4 paragraphs',
     what: 'The introduction answers “why did you do this study?”. It works like a funnel: start wide with the big problem, narrow down to what is missing, and end with your aim.',
     pattern: [
       { h: 'Paragraph 1: the big problem', p: 'What the topic is and why it matters, with a number from the world or Pakistan. Example: how common it is, and what harm it causes.' },
@@ -71,7 +107,8 @@ window.RT_WRITING = [
     mistakes: ['Starting with a textbook definition that goes on for a page.', 'No gap, so the reader cannot see why the study was needed.', 'Sentences with no reference.', 'Putting your results in the introduction.']
   },
   {
-    id: 'objectives', title: 'Objectives', short: 'Exactly what you will find out', length: '1–3 lines',
+    id: 'objectives', words: { min: 15, ideal: '20–40', max: 60, unit: 'words', note: '1 main objective, plus 1–2 extra if you need them. One sentence each.' },
+    title: 'Objectives', short: 'Exactly what you will find out', length: '1–3 lines',
     what: 'An objective is one sentence saying exactly what you will measure, in whom. It starts with an action word, and every objective must be answered in your results.',
     pattern: [
       { h: 'Start with an action word', p: 'To determine, to assess, to compare, to find the association between.' },
@@ -88,7 +125,8 @@ window.RT_WRITING = [
     mistakes: ['Vague words: “to study”, “to know about”, “to see”.', 'Objectives you never answer in the results.', 'Too many objectives. One main and one or two extra are enough.']
   },
   {
-    id: 'methods', title: 'Methodology', short: 'Who, where, when, how, so anyone could repeat it', length: '400–700 words · short headings',
+    id: 'methods', words: { min: 350, ideal: '500–700', max: 900, unit: 'words', note: 'Use short headings. It is fine to be a bit longer here, because details make your study repeatable.' },
+    title: 'Methodology', short: 'Who, where, when, how, so anyone could repeat it', length: '400–700 words · short headings',
     what: 'The methods say exactly what you did, in the past tense, so another person could repeat your study. Use short headings so it is easy to follow. Write it like a recipe.',
     pattern: [
       { h: 'Study design, place and time', p: '“A cross-sectional study was conducted at … from … to …”.' },
@@ -109,7 +147,8 @@ window.RT_WRITING = [
     mistakes: ['No ethics approval or consent.', 'No sample size calculation.', 'Not defining what counts as a “yes”.', 'Writing results here.', 'Writing in the future tense (that is for the synopsis only).']
   },
   {
-    id: 'results', title: 'Results', short: 'Only facts and numbers, in order', length: '300–600 words · plus tables',
+    id: 'results', words: { min: 250, ideal: '400–600', max: 800, unit: 'words', note: 'Plus 2–4 tables or figures. Tables are not counted in the word limit by most journals.' },
+    title: 'Results', short: 'Only facts and numbers, in order', length: '300–600 words · plus tables',
     what: 'The results report what you found: numbers only, no opinions or reasons. Go in the same order as your objectives, and let tables carry the details.',
     pattern: [
       { h: 'Who took part', p: 'How many joined (and response rate), then age, gender and year in one or two lines or a table.' },
@@ -126,7 +165,8 @@ window.RT_WRITING = [
     mistakes: ['Explaining or giving opinions (save that for the discussion).', 'Percentages with no numbers, or numbers with no percentages.', 'Repeating every number from the table in the text.', 'Leaving out results that did not go your way.']
   },
   {
-    id: 'discussion', title: 'Discussion', short: 'What the results mean, compared with others', length: '500–900 words · 4–6 paragraphs',
+    id: 'discussion', words: { min: 500, ideal: '700–1000', max: 1200, unit: 'words', note: 'The longest part of the paper. Limitations usually sit at its end.' },
+    title: 'Discussion', short: 'What the results mean, compared with others', length: '500–900 words · 4–6 paragraphs',
     what: 'The discussion explains what your results mean. It is the opposite shape of the introduction: start with your own main finding, then compare it with other studies, explain the differences, and end with what it means in real life.',
     pattern: [
       { h: 'Paragraph 1: your main finding', p: 'Say the key result again in one or two lines, without all the numbers.' },
@@ -144,7 +184,8 @@ window.RT_WRITING = [
     mistakes: ['Only repeating the results with more numbers.', 'Saying your study “proves” something. Use “suggests” or “shows a link”.', 'Comparing with no references.', 'Ignoring studies that disagree with you.']
   },
   {
-    id: 'limitations', title: 'Limitations', short: 'Honest about what could be better', length: '3–6 lines',
+    id: 'limitations', words: { min: 50, ideal: '80–120', max: 150, unit: 'words', note: 'One short paragraph, at the end of the discussion.' },
+    title: 'Limitations', short: 'Honest about what could be better', length: '3–6 lines',
     what: 'Every study has limits. Saying them honestly makes reviewers trust you more, not less. For each limit, say what it means and how a future study could fix it.',
     pattern: [
       { h: 'Say the limit', p: 'Example: one college only; self-reported answers; a cross-sectional design.' },
@@ -161,7 +202,8 @@ window.RT_WRITING = [
     mistakes: ['Writing “no limitations”.', 'A long list that makes the study sound useless. Pick the 2–4 real ones.', 'Listing limits without saying what they mean.']
   },
   {
-    id: 'conclusion', title: 'Conclusion', short: 'The take-home message', length: '2–4 lines',
+    id: 'conclusion', words: { min: 30, ideal: '50–80', max: 100, unit: 'words', note: '2–4 sentences. No numbers, no references.' },
+    title: 'Conclusion', short: 'The take-home message', length: '2–4 lines',
     what: 'The conclusion is the answer to your objective, plus what should happen next. It must match your results. No new numbers, no references and nothing you did not study.',
     pattern: [
       { h: 'Answer the objective', p: 'In one line, in plain words.' },
@@ -177,7 +219,8 @@ window.RT_WRITING = [
     mistakes: ['Claims your results don’t support.', 'Repeating the discussion.', 'New numbers or references.']
   },
   {
-    id: 'references', title: 'References', short: 'Give credit, in Vancouver style', length: '15–30 references',
+    id: 'references', words: { min: 10, ideal: '15–30', max: 40, unit: 'references', note: 'Check your journal: many allow up to 30 for an original article. Most should be from the last 5–10 years.' },
+    title: 'References', short: 'Give credit, in Vancouver style', length: '15–30 references',
     what: 'References show where each fact came from. Most medical journals use Vancouver style: number each source in the order you first use it, like (1), and list them at the end in that order.',
     pattern: [
       { h: 'Number as you go', p: 'The first paper you mention is (1), the next new one is (2), and so on. Reuse the same number if you cite it again.' },
@@ -190,3 +233,9 @@ window.RT_WRITING = [
     mistakes: ['Citing Wikipedia or websites for medical facts.', 'Numbers in the text that do not match the list.', 'Copying references from another paper without reading them.']
   }
 ];
+
+/* which guides belong to each step of a programme (shown as "How to write it" inside the step's lesson) */
+window.RT_WRITING_STEPS = {
+  original: { 1: ['words', 'order', 'objectives'], 2: ['intro', 'references'], 3: ['methods'], 4: ['title', 'intro', 'objectives', 'methods'], 5: ['methods'], 6: ['methods'],
+    7: ['results'], 8: ['order', 'title', 'abstract', 'intro', 'objectives', 'methods', 'results', 'discussion', 'limitations', 'conclusion'], 9: ['references'], 10: ['title', 'abstract'] }
+};

@@ -27,14 +27,14 @@
     done: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/>',
     msgs: '<path d="M14 9a2 2 0 0 1-2 2H6l-3 3V4a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-3-3h-6a2 2 0 0 1-2-2v-1"/>',
     send: '<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/>',
-    sparkle: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 3v4M21 5h-4M5 17v3M6.5 18.5h-3"/>',
+    sparkle: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.8-.9 1.4v.3M12 17h.01"/>',
     phone: '<rect x="7" y="2" width="10" height="20" rx="3"/><path d="M11 18h2"/>',
     pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
     book: '<path d="M4 19.5V5a2 2 0 0 1 2-2h13v16H6.5a2.5 2.5 0 0 0 0 5H19"/><path d="M8 7h7M8 11h5"/>',
     paper: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>'
   };
   function ic(n, cls) { return '<svg class="' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + P[n] + '</svg>'; }
-  var LOGO = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" fill="#1F4E3D"/><path d="M9 17V7h3.6a2.9 2.9 0 0 1 0 5.8H9m3.3 0L15.6 17" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var LOGO = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="7" fill="#3448D8"/><path d="M5 13h3l2-5 3 9 2-4h4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   var LABEL = { approved: 'Approved', review: 'In review', revision: 'Needs changes', current: 'To do', locked: 'Locked', new: 'New', declined: 'Declined' };
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -97,7 +97,7 @@
   function confetti(from) {
     if (reduce || !document.body.animate) return;
     var r = from && from.getBoundingClientRect ? from.getBoundingClientRect() : { left: innerWidth / 2, top: innerHeight / 2, width: 0, height: 0 };
-    var x0 = r.left + r.width / 2, y0 = r.top + r.height / 2, box = document.createElement('div'), cols = ['#1F4E3D', '#2E6B52', '#C9A13B', '#B3412E', '#8DBFA6', '#A9D3BF'];
+    var x0 = r.left + r.width / 2, y0 = r.top + r.height / 2, box = document.createElement('div'), cols = ['#3448D8', '#0B9E8C', '#F2B43A', '#DD4460', '#8FA0FF', '#5CF2D8'];
     box.className = 'confetti'; box.setAttribute('aria-hidden', 'true'); document.body.appendChild(box);
     for (var i = 0; i < 34; i++) {
       var p = document.createElement('i'), a = -Math.PI / 2 + (Math.random() - .5) * Math.PI * 1.3, v = 160 + Math.random() * 220;
@@ -613,7 +613,7 @@
   /* ---------- member: today ---------- */
   function ring(done, total) {
     var c = 2 * Math.PI * 32, off = c * (1 - done / total);
-    return '<div class="ring"><svg viewBox="0 0 76 76" aria-hidden="true"><defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2E6B52"/><stop offset="1" stop-color="#1F4E3D"/></linearGradient></defs>' +
+    return '<div class="ring"><svg viewBox="0 0 76 76" aria-hidden="true"><defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0B9E8C"/><stop offset="1" stop-color="#3448D8"/></linearGradient></defs>' +
       '<circle class="track" cx="38" cy="38" r="32"/><circle class="fill" cx="38" cy="38" r="32" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + (reduce ? off : c).toFixed(1) + '" data-off="' + off.toFixed(1) + '"/></svg><b><span><span data-count="' + done + '">' + done + '</span>/' + total + '</span></b></div>';
   }
   function animateRing(root) { var f = root.querySelector('.ring .fill'); if (f) requestAnimationFrame(function () { requestAnimationFrame(function () { f.style.strokeDashoffset = f.dataset.off; }); }); }
@@ -652,7 +652,7 @@
         S.progress(me.id).then(function (p) { progCache = p; progAt = Date.now(); if (el.isConnected) fill(p); }, function () {});
         el.querySelectorAll('[data-ask]').forEach(function (b) {
           b.addEventListener('click', function () {
-            var name = T(b.dataset.ask).name, text = 'Hi ' + who + '! Could you please unlock the ' + name + ' programme for me? 😊';
+            var name = T(b.dataset.ask).name, text = 'Hi ' + who + '! Could you please unlock the ' + name + ' programme for me?';
             close();
             if (can('chat')) { chatContext = 'Unlock a programme: ' + name; chatDraft = text; go('chat'); }
             else window.open(waLink('923395888444', text), '_blank', 'noopener');
@@ -693,7 +693,7 @@
     /* wide screens: a calm dashboard (three tiles, today's step, and a slim side panel); phones keep the summary card */
     var inReview = st.filter(function (x) { return x.status === 'review'; }).length, fix = st.filter(function (x) { return x.status === 'revision'; }).length;
     var tiles = '<div class="tiles three w-only">' +
-      '<div class="tile glass c-teal"><div class="tile-h"><span>Your progress</span><i>' + ic('done') + '</i></div>' + miniGauge(done, total, '#2E6B52') + '<div class="tile-n"><b data-count="' + done + '">' + done + '</b><small>of ' + total + ' steps approved</small></div></div>' +
+      '<div class="tile glass c-teal"><div class="tile-h"><span>Your progress</span><i>' + ic('done') + '</i></div>' + miniGauge(done, total, '#0B9E8C') + '<div class="tile-n"><b data-count="' + done + '">' + done + '</b><small>of ' + total + ' steps approved</small></div></div>' +
       '<a class="tile glass c-pen" href="' + stepHref + '"><div class="tile-h"><span>Working on</span><i>' + ic('pen') + '</i></div><p class="tile-t">' + esc(d.title) + '</p><div class="tile-n"><b>Step ' + cur.step + '</b><small>' + d.minutes + ' min</small></div></a>' +
       (fix ? '<a class="tile glass c-rose" href="#feedback"><div class="tile-h"><span>Needs changes</span><i>' + ic('alert') + '</i></div><p class="tile-t">Your mentor left notes to fix.</p><div class="tile-n"><b>' + fix + '</b><small>step' + (fix > 1 ? 's' : '') + '</small></div></a>'
         : '<a class="tile glass c-amber" href="#feedback"><div class="tile-h"><span>With your mentor</span><i>' + ic('clock') + '</i></div><p class="tile-t">' + (inReview ? 'Being reviewed now.' : 'Nothing waiting for review.') + '</p><div class="tile-n"><b>' + inReview + '</b><small>in review</small></div></a>') +
@@ -1144,7 +1144,7 @@
     var line = smooth(pts), area = line + 'L' + pts[pts.length - 1][0] + ' ' + (H - B) + 'L' + pts[0][0] + ' ' + (H - B) + 'Z';
     var tag = data[peak].n + (ovSeries === 'subs' ? ' submitted' : ' reviewed');
     return '<svg class="achart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + (ovSeries === 'subs' ? 'Submissions' : 'Your reviews') + ' per week, last 12 weeks">' +
-      '<defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2A5E4A" stop-opacity=".28"/><stop offset="1" stop-color="#2A5E4A" stop-opacity="0"/></linearGradient></defs>' +
+      '<defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4B5CF0" stop-opacity=".28"/><stop offset="1" stop-color="#4B5CF0" stop-opacity="0"/></linearGradient></defs>' +
       grid + xs + '<path d="' + area + '" fill="url(#ag)"/><path d="' + line + '" class="ln"/>' +
       (data[peak].n ? '<line x1="' + pk[0] + '" x2="' + pk[0] + '" y1="' + pk[1] + '" y2="' + (H - B) + '" class="pkl"/><circle cx="' + pk[0] + '" cy="' + pk[1] + '" r="6" class="pkc"/>' +
         '<g transform="translate(' + Math.min(W - 60, Math.max(60, pk[0])) + ' ' + Math.max(14, pk[1] - 22) + ')"><rect x="-52" y="-14" width="104" height="24" rx="12" class="pkb"/><text y="3" text-anchor="middle" class="pkt">' + tag + '</text></g>' : '') +
@@ -1167,11 +1167,11 @@
     var both = await Promise.all([S.queue(), can('applications') ? S.applications() : Promise.resolve([])]), q = both[0], apps = both[1].filter(function (a) { return a.status === 'new'; });
     var old = q[0], wave = '';
     var tiles = [
-      ['#reviews', 'Waiting for review', stats.pending, 'clock', 'c-amber', miniBars(lastDays(stats.submissionsByDay, 10), '#B7792A'), stats.pendingMine ? stats.pendingMine + ' from your students' : 'submissions'],
-      ['#members', 'Your students', stats.myMembers, 'users', 'c-pen', miniGauge(stats.myMembers, stats.members, '#2A5E4A'), 'of ' + stats.members + ' active'],
-      can('applications') ? ['#applications', 'New applications', stats.applications, 'mail', 'c-rose', miniLine(lastDays(stats.submissionsByDay, 14).map(function (v, i) { return v + (i % 3); }), '#B3412E'), 'to look at'] :
-        ['#messages', 'Unread messages', stats.unreadChats || 0, 'msgs', 'c-rose', miniLine(lastDays(stats.submissionsByDay, 14), '#B3412E'), 'in the chat'],
-      ['#reviews', 'Approved this week', stats.approvedWeek, 'done', 'c-teal', miniBars(lastDays(stats.reviewsByDay, 7), '#2E6B52'), 'steps approved']
+      ['#reviews', 'Waiting for review', stats.pending, 'clock', 'c-amber', miniBars(lastDays(stats.submissionsByDay, 10), '#E5883A'), stats.pendingMine ? stats.pendingMine + ' from your students' : 'submissions'],
+      ['#members', 'Your students', stats.myMembers, 'users', 'c-pen', miniGauge(stats.myMembers, stats.members, '#4B5CF0'), 'of ' + stats.members + ' active'],
+      can('applications') ? ['#applications', 'New applications', stats.applications, 'mail', 'c-rose', miniLine(lastDays(stats.submissionsByDay, 14).map(function (v, i) { return v + (i % 3); }), '#DD4460'), 'to look at'] :
+        ['#messages', 'Unread messages', stats.unreadChats || 0, 'msgs', 'c-rose', miniLine(lastDays(stats.submissionsByDay, 14), '#DD4460'), 'in the chat'],
+      ['#reviews', 'Approved this week', stats.approvedWeek, 'done', 'c-teal', miniBars(lastDays(stats.reviewsByDay, 7), '#0B9E8C'), 'steps approved']
     ];
     var tools = [];
     if (canViewLessons()) tools.push(['#lessons', can('edit_lessons') ? 'Edit lessons' : 'Lessons', 'Proofread any step as students see it.', 'pen']);
@@ -1189,7 +1189,7 @@
           '<section class="glass card ov-chart"><div class="row spread"><h3>Activity</h3><div class="seg sm" id="ov-seg" style="--n:2;--i:' + (ovSeries === 'subs' ? 0 : 1) + '"><button type="button" data-s="subs"' + (ovSeries === 'subs' ? ' class="on"' : '') + '>Submissions</button><button type="button" data-s="reviews"' + (ovSeries === 'reviews' ? ' class="on"' : '') + '>Your reviews</button></div></div><div id="ov-ch">' + activityChart(stats) + '</div><p class="small muted">Per week, last 12 weeks</p></section>' +
           (old ? '<a class="glass card ov-next" href="#review-' + esc(old.id) + '"><div class="nx-text"><span class="eyebrow">Next to review</span><h3>' + esc(old.member.name) + '</h3><p class="small muted">' + esc(T(old.track).short) + ' · Step ' + old.step + ' · ' + esc(stepOf(old.track, old.step).title) + '</p>' +
             '<div class="nx-n"><b>' + q.length + '</b><span>waiting</span></div><div class="nx-n"><b>' + rel(old.createdAt).replace(' ago', '') + '</b><span>oldest</span></div><span class="btn btn-primary btn-sm">Review now →</span></div><div class="nx-art" aria-hidden="true">' + ic('paper') + '<i></i><i></i><i></i></div></a>'
-          : '<div class="glass card ov-next done"><div class="nx-text"><span class="eyebrow">Review queue</span><h3>All caught up 🎉</h3><p class="small muted">New submissions will appear here.</p></div><div class="nx-art" aria-hidden="true">' + ic('done') + '<i></i><i></i><i></i></div></div>') +
+          : '<div class="glass card ov-next done"><div class="nx-text"><span class="eyebrow">Review queue</span><h3>All caught up</h3><p class="small muted">New submissions will appear here.</p></div><div class="nx-art" aria-hidden="true">' + ic('done') + '<i></i><i></i><i></i></div></div>') +
         '</div>' +
         '<section class="stack"><div class="phase-title"><h3>Shortcuts</h3></div><div class="ov-shortcuts">' + tools.map(function (t, i) {
           return '<a class="glass card sc' + (i === 1 || tools.length === 1 ? ' hi' : '') + '" href="' + t[0] + '"><div><h3>' + esc(t[1]) + '</h3><p class="small">' + esc(t[2]) + '</p><span class="sc-go">Open</span></div><span class="sc-ic">' + ic(t[3]) + '</span></a>';
@@ -1720,11 +1720,11 @@
     if (mentor) return 'Welcome to the Researchette team, ' + short(u.name) + '!\n\n' +
       'Thank you so much for joining us as a mentor. Your experience and guidance will make a real difference to our students, and we’re truly grateful to have you with us.\n\n' +
       'Your mentor portal login:\n' + login + '\n\n' + change + '\n\nA short tour will show you around when you first log in. If you need anything at all, just message us. Welcome aboard!';
-    return 'Welcome to Researchette, ' + short(u.name) + '! 🎉\n\n' +
-      'We’re so happy you’re here. This is the start of your research journey, and we’ll be with you every step of the way, from your very first idea to a published paper. 📄✨\n\n' +
-      'Your portal login 🔐\n' + login + '\n\n' +
+    return 'Welcome to Researchette, ' + short(u.name) + '!\n\n' +
+      'We’re so happy you’re here. This is the start of your research journey, and we’ll be with you every step of the way, from your very first idea to a published paper. \n\n' +
+      'Your portal login\n' + login + '\n\n' +
       'First things first: please change this temporary password after you log in (tap your initials at the top right, then Change password).\n\n' +
-      'Your first small task is already waiting for you. Take it one step a day and don’t worry about getting it perfect. That’s what your mentor is here for. 💙\n\n' +
+      'Your first small task is already waiting for you. Take it one step a day and don’t worry about getting it perfect. That’s what your mentor is here for.\n\n' +
       'See you inside!\nTeam Researchette';
   }
   function credentialsSheet(u, pw, title, note) {

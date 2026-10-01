@@ -1,7 +1,7 @@
 /* Researchette service worker: lets the portal install as an app and open offline.
    Network first, so a new deploy is picked up straight away; the cache is only a fallback. */
-var CACHE = 'researchette-v52';
-var SHELL = ['portal.html', 'assets/portal.css', 'assets/liquid.css', 'assets/dash.css', 'assets/editorial.css', 'assets/portal.js', 'assets/store.js', 'assets/curriculum.js', 'assets/writing.js', 'assets/fx.js', 'assets/icons/icon-192.png'];
+var CACHE = 'researchette-v55';
+var SHELL = ['portal.html', 'assets/portal.css', 'assets/liquid.css', 'assets/dash.css', 'assets/portal.js', 'assets/store.js', 'assets/curriculum.js', 'assets/writing.js', 'assets/fx.js', 'assets/icons/icon-192.png'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); }));

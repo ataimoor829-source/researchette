@@ -12,19 +12,19 @@
 
   /* questions people ask most, answered from what the site already says */
   var QA = [
-    ['How does it work?', 'You pick a programme, like an original article or a case report. Each day you get one small step: a short lesson, an example and a task. You write it, and a mentor corrects it within 48 hours. Step by step, you finish a real paper. 📄'],
-    ['I’ve never done research', 'That’s completely fine! 😊 The roadmap starts from zero, even in first year, and every step is explained in simple words with examples.'],
+    ['How does it work?', 'You pick a programme, like an original article or a case report. Each day you get one small step: a short lesson, an example and a task. You write it, and a mentor corrects it within 48 hours. Step by step, you finish a real paper.'],
+    ['I’ve never done research', 'That’s completely fine. The roadmap starts from zero, even in first year, and every step is explained in simple words with examples.'],
     ['Who are the mentors?', 'Zain Ramzan (published researcher and journal reviewer, 50+ students mentored), Dr Maha Arshad (MD UCLA, orthopaedics resident at Stanford), Dr Sobia Ramzan (PhD Biochemistry, oncology) and Dr Alina (radiology resident, Huntsman Cancer Institute). You can read their messages on the Mentors page.'],
     ['How much time does it take?', 'About 30 to 60 minutes a day, at your own pace. ⏱️'],
-    ['How do I join?', 'Tap “Join us today” and fill in the short form. We then email you the membership and payment details, and send your portal login once it’s confirmed. 🎉'],
-    ['Will you write my paper?', 'No. You write it yourself and we correct every step. That keeps your work original, and you actually learn how to do it. ✍️'],
+    ['How do I join?', 'Tap “Join us today” and fill in the short form. We then email you the membership and payment details, and send your portal login once it’s confirmed.'],
+    ['Will you write my paper?', 'No. You write it yourself and we correct every step. That keeps your work original, and you actually learn how to do it.'],
     ['Will I get published?', 'We guide you through choosing a journal, submitting and replying to reviewers. The final decision is the journal’s, but our mentored students have published.']
   ];
 
   var I = {
     chat: '<svg class="chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.6A8 8 0 1 1 21 12z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01" stroke-width="2.6"/></svg>',
     x: '<svg class="x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
-    logo: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 17V7h3.6a2.9 2.9 0 0 1 0 5.8H9m3.3 0L15.6 17" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    logo: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 13h3l2-5 3 9 2-4h4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
     wa: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1 0 12 2zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.5-3.9-4.7-4.1-.1-.2-1.1-1.5-1.1-2.9s.7-2.1 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .5l-.3.5-.4.4c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l2 .9c.3.1.5.2.5.3.1.2.1.7-.1 1.3z"/></svg>',
     bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>',
@@ -116,7 +116,7 @@
     ta.value = ''; grow(); send.disabled = true;
     body.querySelectorAll('.rc-chips, .rc-cta').forEach(function (c) { c.remove(); });
     add(esc(text), 'me');
-    typing(function () { add('Thanks for your question! 💙 Tap below to send it to our team on WhatsApp. We usually reply within a few hours.', 'bot'); handOff(text); });
+    typing(function () { add('Thanks for your question! Tap below to send it to our team on WhatsApp. We usually reply within a few hours.', 'bot'); handOff(text); });
   });
   function grow() { ta.style.height = 'auto'; ta.style.height = Math.min(110, ta.scrollHeight) + 'px'; }
   ta.addEventListener('input', function () { send.disabled = !ta.value.trim(); grow(); });

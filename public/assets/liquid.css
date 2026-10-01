@@ -171,10 +171,10 @@ a, button, [role="button"], .track, .tab, summary { -webkit-tap-highlight-color:
   :root { --muted: var(--ink); }
 }
 
-/* ---------- phone menu (assets/menu.js) ---------- */
-.menu-btn { display: none; }
-@media (max-width: 860px) {
-  .nav .nav-links a:not(.btn) { display: none; }
+/* ---------- site menu (assets/menu.js): every page and section lives behind one menu button ---------- */
+.nav .nav-links a:not(.btn) { display: none !important; }
+.nav .nav-links { gap: 8px; }
+@media all {
   .menu-btn { display: inline-grid; place-content: center; gap: 5px; flex: none; width: 40px; height: 40px; padding: 0; border-radius: 50%; cursor: pointer; color: var(--ink);
     background: var(--glass-strong); border: 1px solid var(--glass-edge); box-shadow: inset 0 1px 0 var(--glass-hi); -webkit-tap-highlight-color: transparent; transition: transform .1s ease; }
   .menu-btn:active { transform: scale(.9); }
@@ -206,7 +206,12 @@ html.menu-open .menu-panel { opacity: 1; transform: none; }
 .menu-panel a[aria-current] .mc { display: none; }
 .menu-ctas { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px 2px 2px; }
 .menu-ctas .btn { padding: .8em 1em; font-size: .95rem; }
-@media (min-width: 861px) { .menu-bg, .menu-panel { display: none !important; } }
+/* wider screens: a dropdown under the menu button rather than a full-width sheet */
+@media (min-width: 861px) {
+  .menu-panel { left: auto; right: 16px; width: 380px; max-height: calc(100dvh - 100px); }
+  .menu-bg { background: rgba(12, 16, 40, .12); }
+  .menu-panel li a:hover { background: var(--pen-soft); }
+}
 @media (prefers-reduced-motion: reduce) { .menu-panel, .menu-bg, .menu-btn span { transition: none; } .menu-panel { transform: none; } }
 @media (prefers-reduced-transparency: reduce) { .menu-panel { background: var(--paper); -webkit-backdrop-filter: none; backdrop-filter: none; } }
 

@@ -403,7 +403,7 @@
     if (mainNow && app.dataset.shell === shellKey()) { setTabs(tab, lastBadges); mainNow.classList.add('is-loading'); }
     var v;
     try { v = await view; if (statsP) badges = lastBadges = await statsP; } catch (e) {
-      if (/log in/i.test(e.message)) { forgetMe(); app.dataset.shell = ''; setHash('login'); return render(); }
+      if (/log in/i.test(e.message)) { if (/other devices/.test(e.message)) S.signedOut = e.message; forgetMe(); app.dataset.shell = ''; meKnown = true; meCache = null; setHash('login'); return render(); }
       v = { html: '<div class="glass empty">' + ic('alert') + '<b>Couldn’t load this page</b><span>' + esc(e.message) + '</span><button class="btn btn-glass btn-sm" type="button" id="retry">Try again</button></div>',
         mount: function (m) { m.querySelector('#retry').addEventListener('click', render); } };
     }
@@ -436,7 +436,7 @@
   // coming back to the portal re-checks the account on the next screen, so permission changes show up
   // without a reload (and without redrawing the page, which would lose anything half-typed)
   document.addEventListener('visibilitychange', function () { if (!document.hidden && me) meKnown = false; });
-  function rememberMe(u) { meCache = u; meKnown = true; }
+  function rememberMe(u) { S.signedOut = null; meCache = u; meKnown = true; }
 
   /* ---------- login ---------- */
   function loginView() {
@@ -446,6 +446,7 @@
         '<div class="stack" style="gap:6px"><h1>Welcome back.</h1><p class="muted">Log in to your Researchette portal.</p></div>' +
         '<div class="field"><label for="l-email">Email</label><input id="l-email" type="email" autocomplete="username" required placeholder="you@example.com"></div>' +
         '<div class="field"><label for="l-pw">Password</label><div class="pw"><input id="l-pw" type="password" autocomplete="current-password" required placeholder="Your password"><button type="button" id="l-show">Show</button></div></div>' +
+        (S.signedOut ? '<p class="note amber small" role="status">' + esc(S.signedOut) + '</p>' : '') +
         '<p class="error" id="l-err" role="alert" hidden></p>' +
         '<button class="btn btn-primary btn-block" type="submit">Log in</button>' +
         '<p class="small muted">Forgot your password? Email <a href="mailto:itszainr1@gmail.com">itszainr1@gmail.com</a> and we’ll reset it.</p>' +

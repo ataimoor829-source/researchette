@@ -32,6 +32,7 @@
     pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
     book: '<path d="M4 19.5V5a2 2 0 0 1 2-2h13v16H6.5a2.5 2.5 0 0 0 0 5H19"/><path d="M8 7h7M8 11h5"/>',
     group: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/>',
+    award: '<circle cx="12" cy="9" r="6"/><path d="M8.5 14 7 22l5-3 5 3-1.5-8"/>',
     paper: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>'
   };
   function ic(n, cls) { return '<svg class="' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + P[n] + '</svg>'; }
@@ -281,6 +282,7 @@
       (isOwner() ? '<button class="btn btn-glass btn-block" type="button" id="team-btn">Team & permissions</button>' : '') +
       (me.role === 'admin' && canViewLessons() ? '<button class="btn btn-glass btn-block" type="button" id="lessons-btn">' + (can('edit_lessons') ? 'Edit lessons' : 'Lessons') + '</button>' : '') +
       (isOwner() ? '<button class="btn btn-glass btn-block" type="button" id="apps">Connected apps</button>' : '') +
+      (me.role === 'member' ? '<button class="btn btn-glass btn-block" type="button" id="certs-btn">' + ic('award') + 'My certificates</button>' : '') +
       '<button class="btn btn-glass btn-block" type="button" id="tour-btn">' + ic('sparkle') + 'How Researchette works</button>' +
       '<button class="btn btn-glass btn-block" type="button" id="chpw">Change password</button>' +
       '<button class="btn btn-glass btn-block" type="button" id="logout">Log out</button>' +
@@ -296,6 +298,7 @@
           });
         });
         el.querySelector('#chpw').addEventListener('click', function () { close(); passwordSheet(); });
+        var cb = el.querySelector('#certs-btn'); if (cb) cb.addEventListener('click', function () { close(); go('certificates'); });
         el.querySelector('#tour-btn').addEventListener('click', function () { close(); setTimeout(function () { tour(false); }, 300); });
         var tc = el.querySelector('#to-chat'); if (tc) tc.addEventListener('click', function () { close(); go('chat'); });
         var ap = el.querySelector('#apps'); if (ap) ap.addEventListener('click', function () { close(); appsSheet(); });
@@ -396,6 +399,7 @@
       else if (/^basics-/.test(r)) { view = vBasic(r.slice(7)); tab = 'basics'; }
       else if (r === 'chat' && can('chat')) { view = vMemberChat(); tab = r; }
       else if (/^class-/.test(r)) { view = vClassChat(r.slice(6)); tab = 'chat'; }
+      else if (r === 'certificates') { view = vCertificates(); tab = 'today'; }
       else { view = vToday(); tab = 'today'; if (r !== 'today') setHash('today'); }
     }
     /* instant feedback: highlight the tab and dim the page while the next one loads */
@@ -682,7 +686,7 @@
     var cur = st.filter(function (x) { return x.status !== 'approved'; })[0];
     var head = '<section class="page-head"><h1>' + greet() + ', ' + first(me.name) + '.</h1><p class="muted">' + today() + '</p></section>' + progSwitch(t);
     if (!cur) {
-      return { html: head + '<div class="glass card locked-box">' + ring(total, total) + '<span class="stamp">Programme complete!</span><h2>You’ve finished all ' + total + ' steps of ' + esc(tr.name) + '.</h2><p class="muted">Your mentor will help you with the final submission. Ready for the next one?</p><button class="btn btn-primary" type="button" data-prog>Choose another programme</button></div>',
+      return { html: head + '<div class="glass card locked-box">' + ring(total, total) + '<span class="stamp">Programme complete!</span><h2>You’ve finished all ' + total + ' steps of ' + esc(tr.name) + '.</h2><p class="muted">Your mentor will help you with the final submission. Your certificate is ready.</p><div class="row wrap" style="justify-content:center"><a class="btn btn-primary" href="#certificates">' + ic('award') + 'View your certificate</a><button class="btn btn-glass" type="button" data-prog>Choose another programme</button></div></div>',
         mount: function (m) { animateRing(m); bindProg(m); if (store('rt-done-' + me.id + '-' + t) === null) { store('rt-done-' + me.id + '-' + t, '1'); setTimeout(function () { confetti(m.querySelector('.stamp')); }, 700); } } };
     }
     var d = stepOf(t, cur.step);
@@ -1305,8 +1309,9 @@
           var text = fb.value.trim(), who = short(s.member.name);
           if (decision === 'revision' && !text) { err.textContent = 'Write what needs to change so the member knows how to fix it.'; err.hidden = false; fb.focus(); return; }
           if (!text) text = 'Well done. Approved.';
-          S.review(id, decision, text, me.id).then(function () {
+          S.review(id, decision, text, me.id).then(function (res) {
             go('reviews');
+            if (res && res.certificate) setTimeout(function () { toast('Certificate ' + res.certificate.code + ' issued to ' + who); }, 400);
             notifySheet(s.member, decision === 'approved' ? (s.step < total ? 'Approved. Step ' + (s.step + 1) + ' unlocked for ' + who : T(s.track).name + ' complete for ' + who) : 'Sent back to ' + who, reviewMessage(s, decision));
           }, function (e) { toast(e.message); });
         }
@@ -1429,6 +1434,107 @@
       load: function (after) { return S.chatWith(id, after); },
       send: function (text) { return S.sendChatTo(id, text); }
     });
+  }
+
+  /* ---------- certificates ----------
+     Issued by the server when every step of a programme is approved. The picture is drawn here, with a QR code
+     that opens the public check page (/verify?c=CODE). */
+  function verifyUrl(code) { return location.origin + '/verify?c=' + encodeURIComponent(code); }
+  function certDate(iso) { return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }); }
+  function drawCertificate(c) {
+    return new Promise(function (done) {
+      loadQr(function () { cardFonts().then(function () {
+        var W = 2000, H = 1414, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+        var g = cv.getContext('2d');
+        var F = { d: '"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif', b: '"Figtree", "Segoe UI", system-ui, sans-serif', m: '"IBM Plex Mono", ui-monospace, Menlo, monospace' };
+        function txt(t, x, y, font, color, align) { g.font = font; g.fillStyle = color; g.textAlign = align || 'center'; g.fillText(t, x, y); }
+        function fit(t, w, size, max) { do { g.font = w + ' ' + size + 'px ' + F.d; size -= 4; } while (g.measureText(t).width > max && size > 40); return size + 4; }
+        // paper and double border
+        g.fillStyle = '#FCFBF8'; g.fillRect(0, 0, W, H);
+        g.strokeStyle = '#3448D8'; g.lineWidth = 10; g.strokeRect(50, 50, W - 100, H - 100);
+        g.strokeStyle = 'rgba(52,72,216,.35)'; g.lineWidth = 3; g.strokeRect(80, 80, W - 160, H - 160);
+        // corner marks
+        g.fillStyle = '#3448D8'; [[80, 80], [W - 80, 80], [80, H - 80], [W - 80, H - 80]].forEach(function (p) { g.beginPath(); g.arc(p[0], p[1], 9, 0, 7); g.fill(); });
+        // logo
+        g.font = '800 64px ' + F.d; var tw = g.measureText('researchette').width, lx = W / 2 - (82 + 22 + tw) / 2;
+        g.save(); g.translate(lx - 7, 150); g.scale(3.4, 3.4);
+        g.beginPath(); g.moveTo(9, 2); g.arcTo(22, 2, 22, 22, 7); g.arcTo(22, 22, 2, 22, 7); g.arcTo(2, 22, 2, 2, 7); g.arcTo(2, 2, 22, 2, 7); g.closePath(); g.fillStyle = '#3448D8'; g.fill();
+        g.strokeStyle = '#fff'; g.lineWidth = 2; g.lineCap = g.lineJoin = 'round'; g.beginPath(); g.moveTo(5, 13); g.lineTo(8, 13); g.lineTo(10, 8); g.lineTo(13, 17); g.lineTo(15, 13); g.lineTo(19, 13); g.stroke(); g.restore();
+        txt('researchette', lx + 82 + 22, 222, '800 64px ' + F.d, '#18203D', 'left');
+        txt('CERTIFICATE OF COMPLETION', W / 2, 370, '700 40px ' + F.b, '#0B9E8C');
+        g.fillStyle = '#3448D8'; g.fillRect(W / 2 - 60, 404, 120, 5);
+        txt('This certifies that', W / 2, 500, '500 40px ' + F.b, '#5F6989');
+        var ns = fit(c.name, '800', 132, W - 420); txt(c.name, W / 2, 500 + ns + 30, '800 ' + ns + 'px ' + F.d, '#18203D');
+        var y = 500 + ns + 120;
+        txt('has successfully completed the', W / 2, y, '500 40px ' + F.b, '#5F6989');
+        var ps = fit(c.programme, '700', 76, W - 500); txt(c.programme, W / 2, y + 100, '700 ' + ps + 'px ' + F.d, '#3448D8');
+        txt('research mentorship programme, with every step reviewed and approved by a mentor.', W / 2, y + 170, '500 34px ' + F.b, '#5F6989');
+        // signatures
+        var sy = H - 260;
+        function sig(x, name, role) { g.strokeStyle = 'rgba(24,32,61,.35)'; g.lineWidth = 2; g.beginPath(); g.moveTo(x - 220, sy); g.lineTo(x + 220, sy); g.stroke(); txt(name, x, sy - 22, '700 38px ' + F.d, '#18203D'); txt(role, x, sy + 48, '500 28px ' + F.b, '#5F6989'); }
+        sig(470, certDate(c.issuedAt), 'Date of issue');
+        sig(1100, c.mentor || 'Zain Ramzan', c.mentor ? 'Mentor' : 'Founder, Researchette');
+        // QR and code
+        var qr = qrcode(0, 'M'); qr.addData(verifyUrl(c.code)); qr.make();
+        var n = qr.getModuleCount(), size = 230, cell = size / n, qx = W - 250 - size / 2, qy = sy - 190;
+        g.fillStyle = '#fff'; g.fillRect(qx - 14, qy - 14, size + 28, size + 28); g.fillStyle = '#18203D';
+        for (var r = 0; r < n; r++) for (var k = 0; k < n; k++) if (qr.isDark(r, k)) g.fillRect(qx + k * cell, qy + r * cell, Math.ceil(cell), Math.ceil(cell));
+        txt(c.code, qx + size / 2, qy + size + 58, '600 28px ' + F.m, '#18203D');
+        txt('Verify at ' + location.host + '/verify', qx + size / 2, qy + size + 98, '500 24px ' + F.b, '#5F6989');
+        done(cv);
+      }); });
+    });
+  }
+  function certSheet(c) {
+    sheet('<h2>' + esc(c.programme) + '</h2><p class="muted small">Certificate ' + esc(c.code) + ' · issued ' + certDate(c.issuedAt) + '</p><div class="idcard" id="cert-img"><span class="small muted">Making your certificate…</span></div><div class="stack" style="gap:8px" id="cert-acts"></div><button class="btn btn-quiet btn-block btn-sm" type="button" data-close>Close</button>',
+      function (el) {
+        drawCertificate(c).then(function (cv) {
+          var url = cv.toDataURL('image/png'), name = 'researchette-certificate-' + c.code + '.png';
+          el.querySelector('#cert-img').innerHTML = '<img src="' + url + '" alt="Certificate of completion for ' + esc(c.name) + '">';
+          var d = new Date(c.issuedAt);
+          var li = 'https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&name=' + encodeURIComponent(c.programme + ' research mentorship') + '&organizationName=Researchette&issueYear=' + d.getFullYear() + '&issueMonth=' + (d.getMonth() + 1) + '&certUrl=' + encodeURIComponent(verifyUrl(c.code)) + '&certId=' + encodeURIComponent(c.code);
+          cv.toBlob(function (blob) {
+            var file = blob && window.File ? new File([blob], name, { type: 'image/png' }) : null, canShare = !!(file && navigator.canShare && navigator.canShare({ files: [file] }));
+            var acts = el.querySelector('#cert-acts');
+            acts.innerHTML = '<a class="btn btn-primary btn-block" href="' + url + '" download="' + esc(name) + '">Download certificate</a>' +
+              (canShare ? '<button class="btn btn-glass btn-block" type="button" id="cert-share">Share</button>' : '') +
+              '<a class="btn btn-glass btn-block" href="' + esc(li) + '" target="_blank" rel="noopener">Add to LinkedIn profile</a>' +
+              '<button class="btn btn-glass btn-block" type="button" id="cert-link">Copy verification link</button>' +
+              '<p class="small muted">Anyone can check this certificate at <a href="' + esc(verifyUrl(c.code)) + '" target="_blank" rel="noopener">' + esc(location.host) + '/verify</a> or by scanning its QR code.</p>';
+            var sh = acts.querySelector('#cert-share'); if (sh) sh.addEventListener('click', function () { navigator.share({ files: [file], text: 'My Researchette certificate: ' + verifyUrl(c.code) }).catch(function () {}); });
+            acts.querySelector('#cert-link').addEventListener('click', function () { copy(verifyUrl(c.code)); });
+          }, 'image/png');
+        });
+      });
+  }
+  async function vCertificates() {
+    var list = await S.certificates();
+    var html = '<a class="back" href="#today">' + ic('back', 'chev') + 'Today</a><section class="page-head"><span class="eyebrow">Certificates</span><h1>Your certificates</h1><p class="muted">When every step of a programme is approved, you get a certificate with its own code. Anyone can check it on our website.</p></section>' +
+      (list.length ? '<div class="glass list">' + list.map(function (c, i) { return '<button class="li li-btn" type="button" data-cert="' + i + '"><span class="sicon approved">' + ic('award') + '</span><div class="li-main"><span class="li-title">' + esc(c.programme) + '</span><span class="li-sub">' + esc(c.code) + ' · ' + certDate(c.issuedAt) + '</span></div><div class="li-end"><span class="pill approved">View</span></div></button>'; }).join('') + '</div>'
+        : '<div class="glass empty">' + ic('award') + '<b>No certificates yet</b><span>Finish every step of a programme and your certificate will appear here.</span><a class="btn btn-glass btn-sm" href="#roadmap">See your roadmap</a></div>');
+    return { html: html, mount: function (m) { m.querySelectorAll('[data-cert]').forEach(function (b) { b.addEventListener('click', function () { certSheet(list[+b.dataset.cert]); }); }); } };
+  }
+  function memberCertsCard(box, u) {
+    if (!box) return;
+    S.memberCertificates(u.id).then(function (list) {
+      var issuable = u.tracks.filter(function (t) { return !list.some(function (c) { return c.track === t && !c.revoked; }); });
+      box.innerHTML = '<h3>Certificates</h3>' +
+        (list.length ? '<div class="list">' + list.map(function (c, i) {
+          return '<div class="li"><span class="sicon ' + (c.revoked ? 'revision' : 'approved') + '">' + ic('award') + '</span><div class="li-main"><span class="li-title">' + esc(c.programme) + '</span><span class="li-sub">' + esc(c.code) + ' · ' + certDate(c.issuedAt) + (c.revoked ? ' · revoked' : '') + '</span></div>' +
+            '<div class="li-end">' + (c.revoked ? '' : '<button class="btn btn-glass btn-sm" type="button" data-cv="' + i + '">View</button>' + (isOwner() ? '<button class="btn btn-quiet btn-sm" type="button" data-cr="' + i + '">Revoke</button>' : '')) + '</div></div>';
+        }).join('') + '</div>' : '<p class="small muted">' + esc(short(u.name)) + ' gets a certificate automatically when every step of a programme is approved.</p>') +
+        (isOwner() && issuable.length ? '<div class="row wrap"><select id="ci-track" style="flex:1;min-width:180px">' + issuable.map(function (t) { return '<option value="' + t + '">' + esc(T(t).name) + '</option>'; }).join('') + '</select><button class="btn btn-glass btn-sm" type="button" id="ci-go">Issue certificate</button></div><p class="small muted">Use this only if they finished the programme outside the portal.</p>' : '');
+      box.querySelectorAll('[data-cv]').forEach(function (b) { b.addEventListener('click', function () { certSheet(list[+b.dataset.cv]); }); });
+      box.querySelectorAll('[data-cr]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var c = list[+b.dataset.cr];
+          if (!b.dataset.armed) { b.dataset.armed = 1; b.textContent = 'Tap again to revoke'; return; }
+          S.revokeCertificate(c.code).then(function () { toast('Certificate revoked'); memberCertsCard(box, u); }, function (e) { toast(e.message); });
+        });
+      });
+      var go2 = box.querySelector('#ci-go');
+      if (go2) go2.addEventListener('click', function () { S.issueCertificate(u.id, box.querySelector('#ci-track').value).then(function (c) { toast('Certificate ' + c.code + ' issued'); memberCertsCard(box, u); certSheet(c); }, function (e) { toast(e.message); }); });
+    }, function () { box.innerHTML = '<h3>Certificates</h3><p class="small muted">Couldn’t load certificates.</p>'; });
   }
 
   /* ---------- classes: a group of members under one mentor, with one group chat ---------- */
@@ -1911,7 +2017,7 @@
     var fn = short(s.member.name), tr = T(s.track), d = stepOf(s.track, s.step), last = s.step >= tr.steps.length;
     var what = 'your ' + tr.name + ' Step ' + s.step + ' (' + d.title + ')';
     if (decision === 'approved') return 'Hi ' + fn + ', ' + what + ' has been approved on Researchette. ' +
-      (last ? 'That completes the whole ' + tr.name + ' programme. Well done!' : 'Step ' + (s.step + 1) + ' is now unlocked.') + '\n\nLog in to read the feedback: ' + portalUrl();
+      (last ? 'That completes the whole ' + tr.name + ' programme. Well done! Your certificate is ready in the portal, under My certificates.' : 'Step ' + (s.step + 1) + ' is now unlocked.') + '\n\nLog in to read the feedback: ' + portalUrl();
     return 'Hi ' + fn + ', I’ve reviewed ' + what + ' on Researchette and asked for a few changes. Log in to read the feedback and resubmit: ' + portalUrl();
   }
   function notifySheet(member, title, msg) {
@@ -2032,6 +2138,7 @@
             return null;
           } : null) + (can('edit_members') ? '<p class="small muted">Unlock any step to let ' + esc(fn) + ' start it now, without finishing the steps before it.</p>' : '') + '</div></details>';
       }).join('') +
+      '<div class="glass card stack" id="m-certs"><h3>Certificates</h3><p class="small muted">Loading…</p></div>' +
       '<div class="glass card stack">' +
         '<h3>Account</h3>' +
         '<div class="account-actions">' + (can('passwords') ? '<button class="btn btn-glass btn-sm" type="button" id="reset-pw">Reset password</button><button class="btn btn-glass btn-sm" type="button" id="set-pw">Set a password</button>' : '') +
@@ -2041,6 +2148,7 @@
       '</div>';
     return {
       html: html, mount: function (m) {
+        memberCertsCard(m.querySelector('#m-certs'), u);
         if (pend.length) {
           m.querySelector('#ch-skip').addEventListener('click', function () { delete changes[id]; render(); });
           m.querySelector('#ch-send').addEventListener('click', function () {

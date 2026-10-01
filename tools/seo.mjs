@@ -198,7 +198,7 @@ fs.writeFileSync('public/learn/index.html', page({
 }));
 
 /* sitemap */
-const sitemap = [['/', '1.0'], ['/learn/', '0.9'], ...urls, ['/guides', '0.8'], ['/mentors', '0.7'], ['/research', '0.7'], ['/reviews', '0.6'], ['/privacy', '0.2'], ['/terms', '0.2']];
+const sitemap = [['/', '1.0'], ['/learn/', '0.9'], ...urls, ['/guides', '0.8'], ['/mentors', '0.7'], ['/research', '0.7'], ['/reviews', '0.6'], ['/verify', '0.5'], ['/privacy', '0.2'], ['/terms', '0.2']];
 fs.writeFileSync('public/sitemap.xml', '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
   sitemap.map(([p, pr]) => `  <url><loc>${SITE}${p}</loc><lastmod>${today}</lastmod><priority>${pr}</priority></url>`).join('\n') + '\n</urlset>\n');
 console.log('wrote', urls.length + 1, 'learn pages and sitemap.xml with', sitemap.length, 'urls');

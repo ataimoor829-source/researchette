@@ -15,7 +15,7 @@
 <meta property="og:image" content="https://researchette.com/assets/og.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://researchette.com/assets/og.jpg">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Article","headline":"Structure of a research paper (IMRaD) and word count","description":"The parts of a research paper in order (IMRaD), which part to write first, and the ideal, minimum and maximum word count for each part.","url":"https://researchette.com/learn/structure-of-a-research-paper","inLanguage":"en","dateModified":"2026-10-01","author":{"@type":"Person","name":"Zain Ramzan"},"publisher":{"@type":"EducationalOrganization","name":"Researchette","url":"https://researchette.com/"},"isAccessibleForFree":true,"educationalLevel":"Beginner","about":"Medical research writing"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://researchette.com/"},{"@type":"ListItem","position":2,"name":"Learn research","item":"https://researchette.com/learn/"},{"@type":"ListItem","position":3,"name":"The shape of a paper","item":"https://researchette.com/learn/structure-of-a-research-paper"}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Article","headline":"Structure of a research paper (IMRaD) and word count","description":"The parts of a research paper in order (IMRaD), which part to write first, and the ideal, minimum and maximum word count for each part.","url":"https://researchette.com/learn/structure-of-a-research-paper","inLanguage":"en","dateModified":"2026-10-01","author":{"@type":"Person","name":"Zain Ramzan"},"publisher":{"@type":"EducationalOrganization","name":"Researchette","url":"https://researchette.com/"},"isAccessibleForFree":false,"educationalLevel":"Beginner","about":"Medical research writing"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://researchette.com/"},{"@type":"ListItem","position":2,"name":"Learn research","item":"https://researchette.com/learn/"},{"@type":"ListItem","position":3,"name":"The shape of a paper","item":"https://researchette.com/learn/structure-of-a-research-paper"}]}]}</script>
 <link rel="icon" href="/assets/icons/icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -134,6 +134,12 @@ dl.gloss dd { margin: 2px 0 0; }
 .hub a b { color: var(--ink); }
 .hub a span { color: var(--muted); font-size: .92rem; }
 .hub a small { color: var(--teal); font-weight: 600; }
+ul.locked { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+ul.locked li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; }
+ul.locked li::before { content: ""; width: 22px; height: 22px; margin-top: 1px; border-radius: 7px; background: var(--pen-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233448D8' stroke-width='2.4' stroke-linecap='round'%3E%3Crect x='5' y='11' width='14' height='10' rx='2'/%3E%3Cpath d='M8 11V8a4 4 0 0 1 8 0v3'/%3E%3C/svg%3E") center / 13px no-repeat; }
+.lock-tag { justify-self: start; font: 700 .72rem var(--f-mono, monospace); letter-spacing: .08em; text-transform: uppercase; padding: .35em .8em; border-radius: 99px; background: rgba(255,255,255,.18); }
+.cta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
+.cta-login { color: #fff; opacity: .9; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -159,29 +165,15 @@ dl.gloss dd { margin: 2px 0 0; }
 
 <main class="wrap">
   <section class="hero">
-    <span class="eyebrow">Start here</span>
+    <span class="eyebrow">Lesson preview</span>
     <h1>Structure of a research paper (IMRaD) and word count</h1>
   </section>
   <div class="learn-body">
     <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> › <a href="/learn/">Learn research</a> › <span>The shape of a paper</span></nav>
     <section class="glass card"><p class="lede" style="margin:0">Almost every research paper uses the same order, called IMRaD: Introduction, Methods, Results and Discussion. The title and abstract sit on top; the conclusion and references come at the end. Once you know the order, you always know what goes where.</p></section>
-    <section class="glass card"><h2>Word count for each part</h2><table class="budget"><thead><tr><th>Part</th><th>Min</th><th>Ideal</th><th>Max</th></tr></thead><tbody><tr><td>Title</td><td>8</td><td><b>12–15</b></td><td>20</td></tr><tr><td>Abstract</td><td>150</td><td><b>250</b></td><td>300</td></tr><tr><td>Introduction</td><td>250</td><td><b>350–450</b></td><td>600</td></tr><tr><td>Objectives</td><td>15</td><td><b>20–40</b></td><td>60</td></tr><tr><td>Methodology</td><td>350</td><td><b>500–700</b></td><td>900</td></tr><tr><td>Results</td><td>250</td><td><b>400–600</b></td><td>800</td></tr><tr><td>Discussion</td><td>500</td><td><b>700–1000</b></td><td>1200</td></tr><tr><td>Limitations</td><td>50</td><td><b>80–120</b></td><td>150</td></tr><tr><td>Conclusion</td><td>30</td><td><b>50–80</b></td><td>100</td></tr><tr><td>References (count)</td><td>10</td><td><b>15–30</b></td><td>40</td></tr></tbody></table><p class="muted">For the main text, from Introduction to Conclusion. The abstract, tables and references are counted separately. Always check your target journal’s own limit.</p></section>
-    <section class="glass card"><h2>The parts, in order</h2><ol class="steps"><li><div><b>Title and abstract</b><p>The shop window. Most people read only these, so they must tell the whole story in a few lines.</p></div></li><li><div><b>Introduction: why?</b><p>What is known, what is missing, and what you set out to find.</p></div></li><li><div><b>Methods: how?</b><p>Exactly what you did, so someone else could repeat it.</p></div></li><li><div><b>Results: what did you find?</b><p>Only the numbers and facts. No opinions yet.</p></div></li><li><div><b>Discussion: what does it mean?</b><p>Explain the results, compare with other studies, admit the limits.</p></div></li><li><div><b>Conclusion and references</b><p>The take-home message in 2 or 3 lines, then the list of papers you used.</p></div></li></ol></section>
-    <section class="glass card"><h2>Tips</h2><ul class="plain"><li>Write Methods first: it is the easiest, because you already know what you did.</li><li>Then Results, then Discussion, then Introduction.</li><li>Write the Abstract and Title last, once everything else is done.</li></ul></section>
-    <section class="glass card"><h2>The order, with word counts</h2><pre class="tpl">Title (12–15 words)
-Abstract (about 250 words: Objective · Methods · Results · Conclusion) + 3–6 keywords
-1. Introduction (350–450 words)
-2. Objectives (1–2 sentences)
-3. Methods (500–700 words)
-4. Results (400–600 words + 2–4 tables)
-5. Discussion (700–1000 words, ending with Limitations)
-6. Conclusion (50–80 words)
-References (15–30)
-
-Main text total: about 2500–3000 words.</pre></section>
-    <section class="glass card"><h2>Common mistakes to avoid</h2><ul class="miss"><li>Writing the abstract first, then having to rewrite it.</li><li>Putting results inside the Methods, or opinions inside the Results.</li><li>Mixing the order because a friend’s paper looked different. Check your target journal’s instructions.</li></ul></section>
-    <section class="cta-box"><h2>Want a mentor to check your paper?</h2><p>Researchette mentors guide medical students through their own study, step by step, and give feedback on every draft until it is ready to submit.</p><a class="btn" href="/#join">Apply for mentorship →</a></section>
-    <nav class="pager" aria-label="More guides"><a class="btn btn-glass" href="/learn/research-terms-explained">← Research words in plain English</a><a class="btn btn-primary" href="/learn/how-to-write-a-research-title">Next: Title →</a></nav>
+    <section class="glass card"><h2>What this lesson covers</h2><ul class="locked"><li>Every part of a paper, in order, and which part to write first</li><li>The ideal, minimum and maximum word count for every part</li><li>The 3 most common mistakes, and how to avoid them</li></ul></section>
+    <section class="cta-box"><span class="lock-tag">Members only</span><h2>The full lesson is in the Researchette programme</h2><p>Members get every lesson inside their portal, step by step, with a mentor who checks their paper and gives feedback until it is ready to submit.</p><div class="cta-row"><a class="btn" href="/#join">Apply to join →</a><a class="cta-login" href="/portal">Already a member? Log in</a></div></section>
+    <nav class="pager" aria-label="More lessons"><a class="btn btn-glass" href="/learn/research-terms-explained">← Research words in plain English</a><a class="btn btn-primary" href="/learn/how-to-write-a-research-title">Next: Title →</a></nav>
   </div>
 <section class="end">
     <div class="contact reveal">

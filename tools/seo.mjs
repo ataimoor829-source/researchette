@@ -87,6 +87,12 @@ dl.gloss dd { margin: 2px 0 0; }
 .hub a b { color: var(--ink); }
 .hub a span { color: var(--muted); font-size: .92rem; }
 .hub a small { color: var(--teal); font-weight: 600; }
+ul.locked { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+ul.locked li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; }
+ul.locked li::before { content: ""; width: 22px; height: 22px; margin-top: 1px; border-radius: 7px; background: var(--pen-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233448D8' stroke-width='2.4' stroke-linecap='round'%3E%3Crect x='5' y='11' width='14' height='10' rx='2'/%3E%3Cpath d='M8 11V8a4 4 0 0 1 8 0v3'/%3E%3C/svg%3E") center / 13px no-repeat; }
+.lock-tag { justify-self: start; font: 700 .72rem var(--f-mono, monospace); letter-spacing: .08em; text-transform: uppercase; padding: .35em .8em; border-radius: 99px; background: rgba(255,255,255,.18); }
+.cta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
+.cta-login { color: #fff; opacity: .9; font-weight: 600; }
 </style>`;
 
 function page({ path, title, description, h1, eyebrow, body, jsonld }) {
@@ -118,7 +124,7 @@ ${body}
 
 const crumbs = (items) => ({ '@type': 'BreadcrumbList', itemListElement: items.map((x, i) => ({ '@type': 'ListItem', position: i + 1, name: x[0], item: SITE + x[1] })) });
 const org = { '@type': 'EducationalOrganization', name: 'Researchette', url: SITE + '/' };
-const cta = (what) => `    <section class="cta-box"><h2>Want a mentor to check your ${esc(what)}?</h2><p>Researchette mentors guide medical students through their own study, step by step, and give feedback on every draft until it is ready to submit.</p><a class="btn" href="/#join">Apply for mentorship →</a></section>`;
+const cta_unused = (what) => `    <section class="cta-box"><h2>Want a mentor to check your ${esc(what)}?</h2><p>Researchette mentors guide medical students through their own study, step by step, and give feedback on every draft until it is ready to submit.</p><a class="btn" href="/#join">Apply for mentorship →</a></section>`;
 
 /* one page per guide */
 const order = W.map((w) => w.id).filter((id) => PAGES[id]);
@@ -126,28 +132,30 @@ const urls = [];
 order.forEach((id, i) => {
   const w = W.find((x) => x.id === id), [slug, title, description] = PAGES[id];
   const prev = order[i - 1], next = order[i + 1];
-  const words = w.words ? `    <section class="glass card"><h2>How long should it be?</h2><div class="wl"><div><span>Minimum</span><b>${esc(w.words.min)}</b></div><div class="ideal"><span>Ideal</span><b>${esc(w.words.ideal)}</b></div><div><span>Maximum</span><b>${esc(w.words.max)}</b></div></div><p class="muted">In ${esc(w.words.unit)}. ${esc(w.words.note || '')}</p></section>` : '';
-  const budget = w.budget ? `    <section class="glass card"><h2>Word count for each part</h2><table class="budget"><thead><tr><th>Part</th><th>Min</th><th>Ideal</th><th>Max</th></tr></thead><tbody>${W.filter((x) => !x.intro && x.words).map((x) => `<tr><td>${esc(x.title)}${x.words.unit === 'references' ? ' (count)' : ''}</td><td>${esc(x.words.min)}</td><td><b>${esc(x.words.ideal)}</b></td><td>${esc(x.words.max)}</td></tr>`).join('')}</tbody></table><p class="muted">${esc(w.words.note)}</p></section>` : '';
+  /* a preview only: what the lesson covers, never the lesson itself (the full lessons are for members, in the portal) */
+  const covers = w.terms ? [w.terms.length + ' research words explained in plain English', 'An everyday example for each word', 'When you will meet each word in your own study']
+    : [
+      w.pattern ? (w.intro ? 'Every part of a paper, in order, and which part to write first' : 'The pattern to follow, step by step (' + w.pattern.length + ' steps)') : '',
+      w.budget ? 'The ideal, minimum and maximum word count for every part' : w.words ? 'The ideal, minimum and maximum ' + (w.words.unit === 'references' ? 'number of references' : 'word count') : '',
+      w.starters && !w.intro ? 'Ready-made sentence starters' : '',
+      w.example ? 'A weak and a strong example, side by side' : '',
+      w.template && !w.intro ? 'A fill-in template you can copy' : '',
+      w.mistakes ? 'The ' + w.mistakes.length + ' most common mistakes, and how to avoid them' : ''
+    ].filter(Boolean);
   const body = [
     `    <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> › <a href="/learn/">Learn research</a> › <span>${esc(w.title)}</span></nav>`,
     `    <section class="glass card"><p class="lede" style="margin:0">${esc(w.what)}</p></section>`,
-    w.terms ? `    <section class="glass card"><h2>${w.terms.length} research words every beginner should know</h2><dl class="gloss">${w.terms.map((t) => `<div><dt>${esc(t[0])}</dt><dd>${esc(t[1])}</dd></div>`).join('')}</dl></section>` : '',
-    budget || words,
-    w.pattern ? `    <section class="glass card"><h2>${w.intro ? 'The parts, in order' : 'How to write it, step by step'}</h2><ol class="steps">${w.pattern.map((s) => `<li><div><b>${esc(s.h)}</b><p>${esc(s.p)}</p></div></li>`).join('')}</ol></section>` : '',
-    w.starters ? `    <section class="glass card"><h2>${w.intro ? 'Tips' : 'Sentence starters'}</h2><ul class="plain">${w.starters.map((s) => `<li>${esc(s)}</li>`).join('')}</ul></section>` : '',
-    w.example ? `    <section class="glass card"><h2>Example</h2><div class="ex weak"><small>Weak</small><p>${esc(w.example.weak)}</p></div><div class="ex strong"><small>Strong</small><p>${esc(w.example.strong)}</p></div></section>` : '',
-    w.template ? `    <section class="glass card"><h2>${w.intro ? 'The order, with word counts' : 'Template to fill in'}</h2><pre class="tpl">${esc(w.template)}</pre></section>` : '',
-    w.mistakes ? `    <section class="glass card"><h2>Common mistakes to avoid</h2><ul class="miss">${w.mistakes.map((m) => `<li>${esc(m)}</li>`).join('')}</ul></section>` : '',
-    cta(w.terms ? 'research' : w.intro ? 'paper' : w.title.toLowerCase()),
-    `    <nav class="pager" aria-label="More guides">${prev ? `<a class="btn btn-glass" href="/learn/${PAGES[prev][0]}">← ${esc(W.find((x) => x.id === prev).title)}</a>` : '<a class="btn btn-glass" href="/learn/">← All lessons</a>'}${next ? `<a class="btn btn-primary" href="/learn/${PAGES[next][0]}">Next: ${esc(W.find((x) => x.id === next).title)} →</a>` : '<a class="btn btn-primary" href="/learn/">All lessons →</a>'}</nav>`
-  ].filter(Boolean).join('\n');
+    `    <section class="glass card"><h2>What this lesson covers</h2><ul class="locked">${covers.map((c) => `<li>${esc(c)}</li>`).join('')}</ul></section>`,
+    `    <section class="cta-box"><span class="lock-tag">Members only</span><h2>The full lesson is in the Researchette programme</h2><p>Members get every lesson inside their portal, step by step, with a mentor who checks their ${esc(w.terms ? 'work' : w.intro ? 'paper' : w.title.toLowerCase())} and gives feedback until it is ready to submit.</p><div class="cta-row"><a class="btn" href="/#join">Apply to join →</a><a class="cta-login" href="/portal">Already a member? Log in</a></div></section>`,
+    `    <nav class="pager" aria-label="More lessons">${prev ? `<a class="btn btn-glass" href="/learn/${PAGES[prev][0]}">← ${esc(W.find((x) => x.id === prev).title)}</a>` : '<a class="btn btn-glass" href="/learn/">← All lessons</a>'}${next ? `<a class="btn btn-primary" href="/learn/${PAGES[next][0]}">Next: ${esc(W.find((x) => x.id === next).title)} →</a>` : '<a class="btn btn-primary" href="/learn/">All lessons →</a>'}</nav>`
+  ].join('\n');
   const path = '/learn/' + slug;
   const jsonld = { '@context': 'https://schema.org', '@graph': [
-    { '@type': 'Article', headline: title, description, url: SITE + path, inLanguage: 'en', dateModified: today, author: { '@type': 'Person', name: 'Zain Ramzan' }, publisher: org, isAccessibleForFree: true, educationalLevel: 'Beginner', about: 'Medical research writing' },
+    { '@type': 'Article', headline: title, description, url: SITE + path, inLanguage: 'en', dateModified: today, author: { '@type': 'Person', name: 'Zain Ramzan' }, publisher: org, isAccessibleForFree: false, educationalLevel: 'Beginner', about: 'Medical research writing' },
     crumbs([['Home', '/'], ['Learn research', '/learn/'], [w.title, path]])
   ] };
   fs.mkdirSync('public/learn', { recursive: true });
-  fs.writeFileSync('public/learn/' + slug + '.html', page({ path, title: title + ' · Researchette', description, h1: title, eyebrow: w.intro ? 'Start here' : 'Free lesson', body, jsonld }));
+  fs.writeFileSync('public/learn/' + slug + '.html', page({ path, title: title + ' · Researchette', description, h1: title, eyebrow: 'Lesson preview', body, jsonld }));
   urls.push([path, '0.8']);
 });
 
@@ -167,23 +175,23 @@ const faqs = [
   ['How long does it take to learn research?', 'You can learn the basics in a few weeks. Doing your first small study, from topic to submission, usually takes a few months at 30–60 minutes a day.'],
   ['Can medical students do research in first or second year?', 'Yes. Cross-sectional surveys, case reports and letters to the editor are good first projects, and they need no special equipment.'],
   ['What is research mentorship?', 'A mentor who has published research guides you through your own study, reviews each draft and tells you exactly what to fix, so you learn by doing.'],
-  ['Are these lessons free?', 'Yes. Every lesson and guide on this page is free. Researchette’s mentorship programme, with a personal mentor and feedback on every step, is paid; details are shared after you apply.']
+  ['How do I get the full lessons?', 'The full lessons are part of the Researchette programme. Apply to join, and once your place is confirmed you get every lesson in your portal, with a mentor who reviews each step of your own study.']
 ];
 const hubBody = [
-  `    <section class="glass card"><p class="lede" style="margin:0">A free, step-by-step path for medical and health students who want to learn research from zero: what each step means, how to do it, and how to write every part of your paper, with examples, templates and word counts.</p></section>`,
+  `    <section class="glass card"><p class="lede" style="margin:0">A step-by-step path for medical and health students who want to learn research from zero: the 7 steps from your first idea to a published paper, and the lessons that teach you to write every part of it.</p></section>`,
   `    <section class="glass card"><h2>How to learn research in 7 steps</h2><ol class="steps">${path.map((p) => `<li><div><b>${esc(p[0])}</b><p>${esc(p[1])} ${p[2].map((l) => `<a href="${l[1]}">${esc(l[0])}</a>`).join(' · ')}</p></div></li>`).join('')}</ol></section>`,
-  `    <section class="stack" style="display:grid;gap:12px"><h2>How to write each part of a research paper</h2><div class="hub">${order.map((id) => { const w = W.find((x) => x.id === id); return `<a class="glass" href="/learn/${PAGES[id][0]}"><b>${esc(PAGES[id][1])}</b><span>${esc(w.short)}</span>${w.words ? `<small>${esc(w.words.ideal)} ${esc(w.words.unit)}</small>` : ''}</a>`; }).join('')}</div></section>`,
-  `    <section class="glass card"><h2>More free guides</h2><p class="muted" style="margin:0">18 short guides on PubMed, reading papers, statistics, plagiarism, authorship, case reports, letters and meta-analyses. <a href="/guides">See all research guides →</a></p></section>`,
+  `    <section class="stack" style="display:grid;gap:12px"><h2>How to write each part of a research paper</h2><p class="muted" style="margin:0">Full lessons are for members. Tap one to see what it covers.</p><div class="hub">${order.map((id) => { const w = W.find((x) => x.id === id); return `<a class="glass" href="/learn/${PAGES[id][0]}"><b>${esc(PAGES[id][1])}</b><span>${esc(w.short)}</span><small>Members only</small></a>`; }).join('')}</div></section>`,
+  `    <section class="glass card"><h2>Free research guides</h2><p class="muted" style="margin:0">18 short guides on PubMed, reading papers, statistics, plagiarism, authorship, case reports, letters and meta-analyses. <a href="/guides">See all research guides →</a></p></section>`,
   `    <section class="glass card"><h2>Questions about learning research</h2>${faqs.map((f) => `<div><b>${esc(f[0])}</b><p class="muted" style="margin:4px 0 0">${esc(f[1])}</p></div>`).join('')}</section>`,
   `    <section class="cta-box"><h2>Learn research faster with a mentor</h2><p>Do your own study with a Researchette mentor: daily steps in your portal, and feedback on every draft from topic to journal submission.</p><a class="btn" href="/#join">Apply for mentorship →</a></section>`
 ].join('\n');
 fs.writeFileSync('public/learn/index.html', page({
-  path: '/learn/', title: 'Learn research for free: a step-by-step course for beginners · Researchette',
-  description: 'How to learn research from zero: a free step-by-step path for medical students, with lessons on writing the title, abstract, introduction, methods, results, discussion and references.',
-  h1: 'Learn research, step by step', eyebrow: 'Free course', body: hubBody,
+  path: '/learn/', title: 'Learn research step by step: a course for beginners · Researchette',
+  description: 'How to learn research from zero: a step-by-step path for medical students, with mentor-led lessons on writing the title, abstract, introduction, methods, results, discussion and references.',
+  h1: 'Learn research, step by step', eyebrow: 'Research course', body: hubBody,
   jsonld: { '@context': 'https://schema.org', '@graph': [
-    { '@type': 'Course', name: 'Learn research, step by step', description: 'A free beginner course on how to do and write medical research, from finding a research gap to submitting to a journal.', provider: org, url: SITE + '/learn/', inLanguage: 'en', isAccessibleForFree: true, educationalLevel: 'Beginner',
-      hasCourseInstance: { '@type': 'CourseInstance', courseMode: 'online', courseWorkload: 'PT2H' }, offers: { '@type': 'Offer', price: 0, priceCurrency: 'USD', category: 'Free' } },
+    { '@type': 'Course', name: 'Learn research, step by step', description: 'A mentor-led beginner course on how to do and write medical research, from finding a research gap to submitting to a journal.', provider: org, url: SITE + '/learn/', inLanguage: 'en', isAccessibleForFree: false, educationalLevel: 'Beginner',
+      hasCourseInstance: { '@type': 'CourseInstance', courseMode: 'online', courseWorkload: 'P3M' } },
     { '@type': 'FAQPage', mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f[0], acceptedAnswer: { '@type': 'Answer', text: f[1] } })) },
     crumbs([['Home', '/'], ['Learn research', '/learn/']])
   ] }

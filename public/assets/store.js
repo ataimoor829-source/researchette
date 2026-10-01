@@ -56,6 +56,11 @@ window.Store = (function () {
     chatWith: function (memberId, after) { return call('GET', '/api/admin/chat/' + q(memberId) + (after ? '?after=' + q(after) : '')); },
     sendChatTo: function (memberId, body) { return post('/api/admin/chat/' + q(memberId), { body: body }); },
     adminUnread: function () { return call('GET', '/api/admin/chats/unread'); },
+    /* certificates */
+    certificates: function () { return call('GET', '/api/certificates'); },
+    memberCertificates: function (memberId) { return call('GET', '/api/admin/certificates?member=' + q(memberId)); },
+    issueCertificate: function (memberId, track) { return post('/api/admin/certificates', { memberId: memberId, track: track }); },
+    revokeCertificate: function (code, reason) { return post('/api/admin/certificates/' + q(code) + '/revoke', { reason: reason || '' }); },
     /* classes: groups of members with one group chat */
     classes: function () { return call('GET', '/api/classes'); },
     classChat: function (id, after) { return call('GET', '/api/classes/' + q(id) + '/messages' + (after ? '?after=' + q(after) : '')); },

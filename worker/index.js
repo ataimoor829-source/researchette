@@ -155,6 +155,8 @@ const EXTRA_SCHEMA = [
   'CREATE INDEX IF NOT EXISTS trusted_devices_user ON trusted_devices (user_id)',
   'CREATE TABLE IF NOT EXISTS login_tickets (ticket_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, purpose TEXT NOT NULL, attempts INTEGER DEFAULT 0, expires TEXT NOT NULL)',
   'CREATE TABLE IF NOT EXISTS user_prefs (user_id TEXT PRIMARY KEY, welcomed_at TEXT)',
+  'CREATE TABLE IF NOT EXISTS certificates (code TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL, track TEXT NOT NULL, mentor_name TEXT DEFAULT \'\', issued_by TEXT, issued_at TEXT NOT NULL, revoked_at TEXT, revoke_reason TEXT DEFAULT \'\')',
+  'CREATE INDEX IF NOT EXISTS certificates_user ON certificates (user_id)',
   'CREATE TABLE IF NOT EXISTS session_kicks (token_hash TEXT PRIMARY KEY, kicked_at TEXT NOT NULL)',
   'CREATE TABLE IF NOT EXISTS classes (id TEXT PRIMARY KEY, name TEXT NOT NULL, mentor_id TEXT, created_by TEXT, created_at TEXT NOT NULL)',
   'CREATE TABLE IF NOT EXISTS class_members (class_id TEXT NOT NULL, user_id TEXT NOT NULL, added_at TEXT NOT NULL, PRIMARY KEY (class_id, user_id))',
@@ -276,6 +278,37 @@ async function unreadFor(env, reader) {
   const by = {}; let total = 0;
   results.forEach((r) => { by[r.member_id] = r.n; total += r.n; });
   return { total, by };
+}
+
+/* ---------- certificates ----------
+   When every step of a programme is approved, the student gets a certificate with a unique code
+   (like RT-2026-7KQ4-M9XD). Anyone can check a code at /verify. Owners can issue one by hand or revoke one. */
+const CERT_ABC = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+function certCode() {
+  const r = crypto.getRandomValues(new Uint8Array(8)); let x = '';
+  for (let i = 0; i < 8; i++) x += CERT_ABC[r[i] % 32];
+  return 'RT-' + new Date().getUTCFullYear() + '-' + x.slice(0, 4) + '-' + x.slice(4);
+}
+function pubCert(c) {
+  return { code: c.code, name: c.name, track: c.track, programme: trackName(c.track), mentor: c.mentor_name || '', issuedAt: c.issued_at, revoked: !!c.revoked_at, revokedAt: c.revoked_at || null, reason: c.revoke_reason || '' };
+}
+async function completedTrack(env, userId, track) {
+  const n = TRACK_STEPS[track]; if (!n) return false;
+  const r = await env.DB.prepare("SELECT COUNT(DISTINCT step) AS n FROM submissions WHERE user_id = ? AND track = ? AND status = 'approved'").bind(userId, track).first();
+  return r && r.n >= n;
+}
+async function issueCert(env, ctx, userId, track, by) {
+  await ensureSchema(env);
+  const have = await env.DB.prepare('SELECT * FROM certificates WHERE user_id = ? AND track = ? AND revoked_at IS NULL').bind(userId, track).first();
+  if (have) return { cert: pubCert(have), created: false };
+  const u = await env.DB.prepare('SELECT u.name, m.name AS mentor FROM users u LEFT JOIN users m ON m.id = u.mentor_id WHERE u.id = ?').bind(userId).first();
+  if (!u) throw new HttpError(404, 'Member not found.');
+  let code = certCode();
+  for (let i = 0; i < 3 && (await env.DB.prepare('SELECT 1 FROM certificates WHERE code = ?').bind(code).first()); i++) code = certCode();
+  const t = now();
+  await env.DB.prepare('INSERT INTO certificates (code, user_id, name, track, mentor_name, issued_by, issued_at) VALUES (?, ?, ?, ?, ?, ?, ?)').bind(code, userId, u.name, track, u.mentor || '', by ? by.id : null, t).run();
+  record(env, ctx, 'certificate.issued', 'Certificate ' + code + ' issued to ' + u.name + ' for ' + trackName(track), [['Certificate', code], ['Member', u.name], ['Programme', trackName(track)]], 'member-' + userId, by ? by.id : null, userId);
+  return { cert: pubCert({ code, name: u.name, track, mentor_name: u.mentor || '', issued_at: t }), created: true };
 }
 
 /* ---------- classes ----------
@@ -826,6 +859,21 @@ async function route(request, env, url, ctx) {
     return json({ unread: a.total + b });
   }
 
+  /* certificates: anyone can verify a code; members see their own */
+  if ((m = path.match(/^\/api\/verify\/([A-Za-z0-9-]{6,30})$/)) && method === 'GET') {
+    await ensureSchema(env);
+    const c = await DB.prepare('SELECT * FROM certificates WHERE code = ?').bind(m[1].toUpperCase()).first();
+    if (!c) return json({ valid: false }, 404);
+    const x = pubCert(c);
+    return json({ valid: !x.revoked, code: x.code, name: x.name, programme: x.programme, mentor: x.mentor, issuedAt: x.issuedAt, revoked: x.revoked, revokedAt: x.revokedAt });
+  }
+  if (path === '/api/certificates' && method === 'GET') {
+    const u = await requireUser(request, env);
+    await ensureSchema(env);
+    const { results } = await DB.prepare('SELECT * FROM certificates WHERE user_id = ? AND revoked_at IS NULL ORDER BY issued_at DESC').bind(u.id).all();
+    return json(results.map(pubCert));
+  }
+
   /* classes: members see and chat in their own classes */
   if (path === '/api/classes' && method === 'GET') {
     const u = await requireUser(request, env);
@@ -921,6 +969,30 @@ async function route(request, env, url, ctx) {
   if (path === '/api/admin/chats/unread' && method === 'GET') {
     const [a, b] = await Promise.all([unreadFor(env, admin), classUnread(env, admin)]);
     return json({ unread: a.total + b });
+  }
+
+  /* certificates: mentors see them on a member's page; owners issue by hand and revoke */
+  if (path === '/api/admin/certificates' && method === 'GET') {
+    const u = await memberFor(env, admin, str(url.searchParams.get('member'), 40));
+    const { results } = await DB.prepare('SELECT * FROM certificates WHERE user_id = ? ORDER BY issued_at DESC').bind(u.id).all();
+    return json(results.map(pubCert));
+  }
+  if (path === '/api/admin/certificates' && method === 'POST') {
+    needOwner(admin);
+    const b = await body(request), u = await memberFor(env, admin, str(b.memberId, 40)), track = str(b.track, 20);
+    if (!TRACK_STEPS[track]) throw bad('Pick a programme.');
+    const res = await issueCert(env, ctx, u.id, track, admin);
+    if (!res.created) throw bad(u.name + ' already has a certificate for ' + trackName(track) + ' (' + res.cert.code + ').');
+    return json(res.cert, 201);
+  }
+  if ((m = path.match(/^\/api\/admin\/certificates\/([A-Za-z0-9-]{6,30})\/revoke$/)) && method === 'POST') {
+    needOwner(admin);
+    const c = await DB.prepare('SELECT * FROM certificates WHERE code = ?').bind(m[1].toUpperCase()).first();
+    if (!c) throw new HttpError(404, 'Certificate not found.');
+    const reason = str((await body(request)).reason, 200);
+    await DB.prepare('UPDATE certificates SET revoked_at = ?, revoke_reason = ? WHERE code = ?').bind(now(), reason, c.code).run();
+    record(env, ctx, 'certificate.revoked', admin.name + ' revoked certificate ' + c.code + ' (' + c.name + ')', [['Certificate', c.code], ['Reason', reason || 'None given']], 'member-' + c.user_id, admin.id, c.user_id);
+    return json({ ok: true });
   }
 
   /* classes: owners make them; the class's mentor and owners chat in them */
@@ -1141,7 +1213,9 @@ async function route(request, env, url, ctx) {
     const r = await DB.prepare('SELECT s.user_id, s.track, s.step, u.name FROM submissions s JOIN users u ON u.id = s.user_id WHERE s.id = ?').bind(m[1]).first();
     if (r) record(env, ctx, 'review.' + decision, admin.name + (decision === 'approved' ? ' approved ' : ' requested changes on ') + r.name + '’s ' + trackName(r.track) + ', Step ' + r.step,
       [['Submission', m[1]], ['Member', r.name], ['Feedback', feedback]], 'review-' + m[1], admin.id, r.user_id);
-    return json({ ok: true });
+    let certificate = null;
+    if (r && decision === 'approved' && (await completedTrack(env, r.user_id, r.track))) certificate = (await issueCert(env, ctx, r.user_id, r.track, admin)).cert;
+    return json({ ok: true, certificate });
   }
   if (path === '/api/admin/members' && method === 'GET') {
     const [names, { results: users }, { results: subs }] = await Promise.all([

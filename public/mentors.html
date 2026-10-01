@@ -18,13 +18,13 @@
 <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&family=Caveat:wght@600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
 <link rel="stylesheet" href="assets/portal.css">
 <style>
 /* Layout: a quiet letter-like page; one glass card per mentor, facts on the left, their message on the right. */
 body { font-size: 1.0625rem; line-height: 1.65; }
 .wrap { width: 100%; max-width: 1100px; margin-inline: auto; padding-inline: 22px; }
-.nav { position: sticky; top: 0; z-index: 40; padding-top: env(safe-area-inset-top, 0px); background: var(--glass); -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%); border-bottom: 1px solid var(--line); box-shadow: 0 10px 30px -26px rgba(24,32,61,.45); }
+.nav { position: sticky; top: 0; z-index: 40; padding-top: env(safe-area-inset-top, 0px); background: var(--glass); -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%); border-bottom: 1px solid var(--line); box-shadow: 0 10px 30px -26px rgba(28, 28, 26,.45); }
 .nav .wrap { max-width: none; padding-inline: clamp(16px, 3vw, 44px); }
 .letter { scroll-margin-top: 90px; }
 .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 10px; }
@@ -44,7 +44,7 @@ body { font-size: 1.0625rem; line-height: 1.65; }
 .mentor-list { display: grid; gap: clamp(20px, 3vw, 28px); }
 .letter { padding: clamp(26px, 4.5vw, 52px); display: grid; grid-template-columns: .8fr 1.2fr; gap: clamp(28px, 5vw, 64px); }
 .who { display: grid; gap: 18px; align-content: start; }
-.who .avatar { width: 84px; height: 84px; font-size: 1.6rem; box-shadow: 0 0 0 5px var(--glass-strong), 0 16px 30px -14px #3448D8; }
+.who .avatar { width: 84px; height: 84px; font-size: 1.6rem; box-shadow: 0 0 0 5px var(--glass-strong), 0 16px 30px -14px #1F4E3D; }
 .who h2 { font-size: clamp(1.6rem, 1.3rem + 1.2vw, 2.2rem); letter-spacing: -.03em; }
 .who .role { color: var(--teal); font-family: var(--f-mono); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; line-height: 1.5; }
 .facts { list-style: none; margin: 0; padding: 0; display: grid; }
@@ -54,8 +54,8 @@ body { font-size: 1.0625rem; line-height: 1.65; }
 .msg::before { content: "“"; position: absolute; top: -.35em; left: -.08em; font: 800 6rem/1 var(--f-display); color: var(--pen-soft); pointer-events: none; }
 .msg p { font-family: var(--f-display); font-weight: 500; font-size: clamp(1.12rem, 1rem + .5vw, 1.32rem); line-height: 1.55; letter-spacing: -.01em; position: relative; }
 .msg .sign { font: 700 2rem/1 var(--f-hand); color: var(--pen); margin-top: 6px; }
-.letter.alt .avatar { background: linear-gradient(135deg, #0B9E8C, #5A9BFF); }
-.letter.warm .avatar { background: linear-gradient(135deg, #DD4460, #F2A65A); }
+.letter.alt .avatar { background: linear-gradient(135deg, #2E6B52, #6E8F7F); }
+.letter.warm .avatar { background: linear-gradient(135deg, #B3412E, #C08A3E); }
 @media (max-width: 820px) { .letter { grid-template-columns: 1fr; } }
 
 
@@ -77,6 +77,7 @@ body { font-size: 1.0625rem; line-height: 1.65; }
 @media (prefers-reduced-motion: reduce) { .js .reveal { opacity: 1; transform: none; filter: none; } }
 </style>
 <link rel="stylesheet" href="assets/liquid.css">
+<link rel="stylesheet" href="assets/editorial.css">
 </head>
 <body>
 <script>document.body.classList.add('js');</script>
@@ -86,7 +87,7 @@ body { font-size: 1.0625rem; line-height: 1.65; }
   <div class="wrap">
     <div class="nav-inner">
       <a class="logo" href="index.html" aria-label="Researchette home">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="7" fill="#3448D8"/><path d="M5 13h3l2-5 3 9 2-4h4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" fill="#1F4E3D"/><path d="M9 17V7h3.6a2.9 2.9 0 0 1 0 5.8H9m3.3 0L15.6 17" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span>research<i>ette</i></span>
       </a>
       <nav class="nav-links" aria-label="Main">
@@ -194,13 +195,13 @@ body { font-size: 1.0625rem; line-height: 1.65; }
     <div class="contact reveal">
       <span class="eyebrow">Contact</span>
       <div class="contact-grid">
-        <a data-tilt class="contact-item glass" href="mailto:itszainr1@gmail.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M22 6l-10 7L2 6"/></svg><span>Email</span><b>itszainr1@gmail.com</b></a>
-        <a data-tilt class="contact-item glass" href="https://wa.me/923395888444" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-13.4 7.8L3 21l1.3-4.4A9 9 0 1 1 21 12z"/></svg><span>WhatsApp</span><b>0339 5888444</b></a>
-        <a data-tilt class="contact-item glass" href="tel:+923395888444"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg><span>Call</span><b>0339 5888444</b></a>
+        <a class="contact-item glass" href="mailto:itszainr1@gmail.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M22 6l-10 7L2 6"/></svg><span>Email</span><b>itszainr1@gmail.com</b></a>
+        <a class="contact-item glass" href="https://wa.me/923395888444" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-13.4 7.8L3 21l1.3-4.4A9 9 0 1 1 21 12z"/></svg><span>WhatsApp</span><b>0339 5888444</b></a>
+        <a class="contact-item glass" href="tel:+923395888444"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg><span>Call</span><b>0339 5888444</b></a>
       </div>
     </div>
     <div class="foot-row">
-      <a class="logo" href="index.html"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="7" fill="#3448D8"/><path d="M5 13h3l2-5 3 9 2-4h4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>research<i>ette</i></span></a>
+      <a class="logo" href="index.html"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" fill="#1F4E3D"/><path d="M9 17V7h3.6a2.9 2.9 0 0 1 0 5.8H9m3.3 0L15.6 17" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg><span>research<i>ette</i></span></a>
       <a class="legal" href="learn/">Learn research</a>
       <a class="legal" href="guides.html">Free guides</a>
       <a class="legal" href="privacy.html">Privacy</a>

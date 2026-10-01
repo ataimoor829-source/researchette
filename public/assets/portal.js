@@ -1480,7 +1480,7 @@
         g.fillStyle = '#fff'; g.fillRect(qx - 14, qy - 14, size + 28, size + 28); g.fillStyle = '#18203D';
         for (var r = 0; r < n; r++) for (var k = 0; k < n; k++) if (qr.isDark(r, k)) g.fillRect(qx + k * cell, qy + r * cell, Math.ceil(cell), Math.ceil(cell));
         txt(c.code, qx + size / 2, qy + size + 58, '600 28px ' + F.m, '#18203D');
-        txt('Verify at ' + location.host + '/verify', qx + size / 2, qy + size + 98, '500 24px ' + F.b, '#5F6989');
+        g.font = '500 24px ' + F.b; var vt = 'Verify at ' + location.host + '/verify', vs = Math.min(24, Math.floor(24 * 300 / g.measureText(vt).width)); txt(vt, qx + size / 2, qy + size + 98, '500 ' + vs + 'px ' + F.b, '#5F6989');
         done(cv);
       }); });
     });
@@ -1967,7 +1967,7 @@
   }
   function cardFonts() {
     if (!document.fonts || !document.fonts.load) return Promise.resolve();
-    return Promise.all(['800 40px "Bricolage Grotesque"', '700 20px "Figtree"', '600 20px "Figtree"', '500 20px "Figtree"', '500 20px "IBM Plex Mono"'].map(function (f) { return document.fonts.load(f).catch(function () {}); }));
+    return Promise.all(['800 40px "Bricolage Grotesque"', '700 40px "Bricolage Grotesque"', '600 20px "IBM Plex Mono"', '700 20px "Figtree"', '600 20px "Figtree"', '500 20px "Figtree"', '500 20px "IBM Plex Mono"'].map(function (f) { return document.fonts.load(f).catch(function () {}); }));
   }
   function credentialsSheet(u, pw, title, note) {
     var reset = /password/i.test(title), msg = welcomeMessage(u, pw, reset), num = waNumber(u.phone), fn = short(u.name);

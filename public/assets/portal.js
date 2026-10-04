@@ -1908,9 +1908,10 @@
       'Your first small task is already waiting for you. Take it one step a day and don’t worry about getting it perfect. That’s what your mentor is here for.\n\n' +
       'See you inside!\nTeam Researchette';
   }
-  /* ---------- welcome card: a picture of a student (or mentor) card with the login on it, to send on WhatsApp ---------- */
+  /* ---------- welcome card: a picture of a student (or mentor) card with just their name, to send on WhatsApp.
+     The login itself goes in the text message, never on the picture ---------- */
   function cardId(u) { var h = 0, x = String(u.id || u.email); for (var i = 0; i < x.length; i++) h = (h * 31 + x.charCodeAt(i)) >>> 0; return 'RT-' + String(new Date(u.joined || Date.now()).getFullYear()).slice(2) + '-' + ('000' + (h % 10000)).slice(-4); }
-  function drawCard(u, pw, reset) {
+  function drawCard(u, reset) {
     var W = 1280, H = 800, c = document.createElement('canvas'); c.width = W; c.height = H;
     var g = c.getContext('2d'), mentor = u.role === 'admin';
     var F = { d: '"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif', b: '"Figtree", "Segoe UI", system-ui, sans-serif', m: '"IBM Plex Mono", ui-monospace, Menlo, monospace' };
@@ -1955,14 +1956,12 @@
       });
       y += 44;
     }
-    // login box
-    var by = H - 50 - 40 - 232; rr(X, by, R - X, 232, 22); g.fillStyle = '#F4F7FC'; g.fill(); g.strokeStyle = 'rgba(24,32,61,.08)'; g.lineWidth = 2; g.stroke();
-    txt(reset ? 'Your new login' : 'Your portal login', X + 28, by + 46, '700 22px ' + F.b, '#18203D');
-    txt('Email', X + 28, by + 92, '500 20px ' + F.b, '#5F6989');
-    var es = fit(u.email, '600 #px ' + F.b, 26, R - X - 200); txt(u.email, X + 180, by + 92, '600 ' + es + 'px ' + F.b, '#18203D');
-    txt(reset ? 'New password' : 'Password', X + 28, by + 140, '500 20px ' + F.b, '#5F6989');
-    txt(pw, X + 180, by + 141, '600 28px ' + F.m, '#3448D8');
-    txt('Log in at ' + location.host + location.pathname.replace(/\.html$/, '') + '  ·  change this password after you log in', X + 28, by + 196, '500 18px ' + F.b, '#5F6989');
+    // welcome box: no login details on the picture, those go in the message
+    var by = H - 50 - 40 - 196; rr(X, by, R - X, 196, 22); g.fillStyle = '#F4F7FC'; g.fill(); g.strokeStyle = 'rgba(24,32,61,.08)'; g.lineWidth = 2; g.stroke();
+    txt(reset ? 'Your password has been reset' : (mentor ? 'Welcome to the team' : 'Welcome aboard'), X + 28, by + 52, '700 26px ' + F.b, '#18203D');
+    var line = reset ? 'Your new login details are in the message with this card.' : mentor ? 'Thank you for guiding our students. Your login is in the message.' : 'One small step a day, from your first idea to a published paper.';
+    var ls = fit(line, '500 #px ' + F.b, 22, R - X - 56); txt(line, X + 28, by + 96, '500 ' + ls + 'px ' + F.b, '#5F6989');
+    txt(location.host + location.pathname.replace(/\.html$/, ''), X + 28, by + 152, '600 22px ' + F.m, '#3448D8');
     return c;
   }
   function cardFonts() {
@@ -1970,41 +1969,31 @@
     return Promise.all(['800 40px "Bricolage Grotesque"', '700 40px "Bricolage Grotesque"', '600 20px "IBM Plex Mono"', '700 20px "Figtree"', '600 20px "Figtree"', '500 20px "Figtree"', '500 20px "IBM Plex Mono"'].map(function (f) { return document.fonts.load(f).catch(function () {}); }));
   }
   function credentialsSheet(u, pw, title, note) {
-    var reset = /password/i.test(title), msg = welcomeMessage(u, pw, reset), num = waNumber(u.phone), fn = short(u.name);
-    var caption = (reset ? 'Hi ' + fn + ', here is your new Researchette login.' : 'Welcome to Researchette, ' + fn + '! Here is your ' + (u.role === 'admin' ? 'mentor' : 'student') + ' card with your portal login.') + ' Log in: ' + location.href.split('#')[0];
+    var reset = /password/i.test(title), msg = welcomeMessage(u, pw, reset), num = waNumber(u.phone), fn = short(u.name), kind = u.role === 'admin' ? 'mentor' : 'student';
     sheet('<span class="stamp">' + esc(title) + '</span><h2>' + (reset ? 'New login for ' : 'Welcome card for ') + esc(u.name) + '</h2><p class="muted">' + esc(note) + ' For security, the password is only shown once.</p>' +
       '<div class="idcard" id="idcard"><span class="small muted">Making the card…</span></div>' +
-      '<div class="stack" style="gap:8px" id="card-actions"></div>' +
-      '<details class="wg"><summary><span class="li-main"><b>Send as text instead</b><span class="small muted">The login details as a WhatsApp message</span></span>' + ic('chev', 'chev') + '</summary><div class="wg-body stack">' +
-        '<pre class="paper small" id="msg" style="margin:0;font-family:var(--f-body)">' + esc(msg) + '</pre>' +
-        (num ? waButton(num, msg, 'Send text on WhatsApp', 'btn-block') : '') +
-        '<button class="btn btn-glass btn-block" type="button" id="cp">Copy message</button></div></details>' +
+      '<a class="btn btn-wa btn-block" id="c-wa" href="' + esc(waLink(num, msg)) + '" target="_blank" rel="noopener">' + ic('wa') + (num ? 'Send to ' + esc(fn) + ' on WhatsApp' : 'Send on WhatsApp') + '</a>' +
+      '<p class="small muted" id="c-note">' + (num ? 'Opens ' + esc(fn) + '’s chat' : 'Opens WhatsApp (pick the chat)') + ' with the login message ready to send. The card is copied too: paste it in the same chat and send.</p>' +
+      '<div class="row" style="gap:8px"><a class="btn btn-glass btn-sm" id="c-dl" style="flex:1">Download card</a><button class="btn btn-glass btn-sm" type="button" id="cp" style="flex:1">Copy message</button></div>' +
+      '<details class="wg"><summary><span class="li-main"><b>See the message</b><span class="small muted">Email, password and login link</span></span>' + ic('chev', 'chev') + '</summary><div class="wg-body">' +
+        '<pre class="paper small" id="msg" style="margin:0;font-family:var(--f-body)">' + esc(msg) + '</pre></div></details>' +
       '<button class="btn btn-quiet btn-block btn-sm" type="button" data-close>Done</button>',
       function (el) {
+        var blob = null, note = el.querySelector('#c-note');
         el.querySelector('#cp').addEventListener('click', function () { copy(msg, el.querySelector('#msg')); });
         el.querySelector('[data-close]').addEventListener('click', render);
+        // one tap: the link opens the chat with the message; the picture goes on the clipboard in the same tap
+        el.querySelector('#c-wa').addEventListener('click', function () {
+          if (!blob || !navigator.clipboard || !window.ClipboardItem) return;
+          try { navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).catch(function () {}); } catch (e) {}
+        });
         cardFonts().then(function () {
-          var canvas = drawCard(u, pw, reset), url = canvas.toDataURL('image/png'), box = el.querySelector('#idcard'), acts = el.querySelector('#card-actions');
-          box.innerHTML = '<img src="' + url + '" alt="' + esc((u.role === 'admin' ? 'Mentor' : 'Student') + ' card for ' + u.name) + '">';
-          var name = 'researchette-' + (u.role === 'admin' ? 'mentor' : 'student') + '-card-' + String(u.name).toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.png';
-          canvas.toBlob(function (blob) {
-            var file = blob && window.File ? new File([blob], name, { type: 'image/png' }) : null;
-            var canShare = !!(file && navigator.canShare && navigator.canShare({ files: [file] }));
-            var canCopy = !!(blob && navigator.clipboard && window.ClipboardItem);
-            acts.innerHTML =
-              (canShare ? '<button class="btn btn-wa btn-block" type="button" id="c-share">' + ic('wa') + 'Share card on WhatsApp</button>' : '') +
-              (!canShare && canCopy ? '<button class="btn btn-wa btn-block" type="button" id="c-copy">' + ic('wa') + 'Copy card and open WhatsApp</button>' : '') +
-              '<a class="btn btn-glass btn-block" id="c-dl" href="' + url + '" download="' + esc(name) + '">Download card</a>' +
-              (!canShare ? '<p class="small muted">The card is copied as a picture: paste it into the WhatsApp chat (Ctrl+V or ⌘V), then send.</p>' : '<p class="small muted">Pick WhatsApp, then ' + esc(fn) + '’s chat. The caption with the login link is added for you.</p>');
-            var sh = acts.querySelector('#c-share');
-            if (sh) sh.addEventListener('click', function () { navigator.share({ files: [file], text: caption }).catch(function () {}); });
-            var cc = acts.querySelector('#c-copy');
-            if (cc) cc.addEventListener('click', function () {
-              navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function () {
-                toast('Card copied. Paste it in the chat.');
-                if (num) window.open(waLink(num, caption), '_blank', 'noopener'); else window.open('https://web.whatsapp.com/', '_blank', 'noopener');
-              }, function () { toast('Couldn’t copy the picture. Use Download card instead.'); });
-            });
+          var canvas = drawCard(u, reset), url = canvas.toDataURL('image/png'), dl = el.querySelector('#c-dl');
+          el.querySelector('#idcard').innerHTML = '<img src="' + url + '" alt="' + esc((kind === 'mentor' ? 'Mentor' : 'Student') + ' card for ' + u.name) + '">';
+          dl.href = url; dl.download = 'researchette-' + kind + '-card-' + String(u.name).toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.png';
+          canvas.toBlob(function (b) {
+            blob = b;
+            if (!b || !navigator.clipboard || !window.ClipboardItem) note.textContent = (num ? 'Opens ' + fn + '’s chat' : 'Opens WhatsApp (pick the chat)') + ' with the login message ready to send. To add the card, tap Download card and attach it in the same chat.';
           }, 'image/png');
         });
       });

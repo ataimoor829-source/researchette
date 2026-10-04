@@ -1908,94 +1908,21 @@
       'Your first small task is already waiting for you. Take it one step a day and don’t worry about getting it perfect. That’s what your mentor is here for.\n\n' +
       'See you inside!\nTeam Researchette';
   }
-  /* ---------- welcome card: a picture of a student (or mentor) card with just their name, to send on WhatsApp.
-     The login itself goes in the text message, never on the picture ---------- */
-  function cardId(u) { var h = 0, x = String(u.id || u.email); for (var i = 0; i < x.length; i++) h = (h * 31 + x.charCodeAt(i)) >>> 0; return 'RT-' + String(new Date(u.joined || Date.now()).getFullYear()).slice(2) + '-' + ('000' + (h % 10000)).slice(-4); }
-  function drawCard(u, reset) {
-    var W = 1280, H = 800, c = document.createElement('canvas'); c.width = W; c.height = H;
-    var g = c.getContext('2d'), mentor = u.role === 'admin';
-    var F = { d: '"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif', b: '"Figtree", "Segoe UI", system-ui, sans-serif', m: '"IBM Plex Mono", ui-monospace, Menlo, monospace' };
-    function rr(x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
-    function fit(text, font, size, max) { do { g.font = font.replace('#', size); size -= 2; } while (g.measureText(text).width > max && size > 20); return size + 2; }
-    function txt(t, x, y, font, color, align) { g.font = font; g.fillStyle = color; g.textAlign = align || 'left'; g.fillText(t, x, y); }
-    // page
-    g.fillStyle = '#F7F5F0'; g.fillRect(0, 0, W, H);
-    // card with a soft shadow
-    g.save(); g.shadowColor = 'rgba(24,32,61,.18)'; g.shadowBlur = 40; g.shadowOffsetY = 14; rr(60, 50, W - 120, H - 100, 36); g.fillStyle = '#fff'; g.fill(); g.restore();
-    g.save(); rr(60, 50, W - 120, H - 100, 36); g.clip();
-    // left band
-    g.fillStyle = '#3448D8'; g.fillRect(60, 50, 380, H - 100);
-    g.fillStyle = 'rgba(255,255,255,.08)'; for (var dx = 0; dx < 380; dx += 26) for (var dy = 0; dy < H - 100; dy += 26) { g.beginPath(); g.arc(76 + dx, 66 + dy, 2, 0, 7); g.fill(); }
-    g.restore();
-    // logo
-    g.save(); g.translate(100, 92); g.scale(2.2, 2.2); rr(2, 2, 20, 20, 7); g.fillStyle = '#fff'; g.fill();
-    g.strokeStyle = '#3448D8'; g.lineWidth = 2; g.lineCap = g.lineJoin = 'round'; g.beginPath(); g.moveTo(5, 13); g.lineTo(8, 13); g.lineTo(10, 8); g.lineTo(13, 17); g.lineTo(15, 13); g.lineTo(19, 13); g.stroke(); g.restore();
-    txt('researchette', 166, 132, '800 34px ' + F.d, '#fff');
-    // avatar
-    var cx = 250, cy = 380; g.beginPath(); g.arc(cx, cy, 118, 0, 7); g.fillStyle = 'rgba(255,255,255,.16)'; g.fill();
-    g.beginPath(); g.arc(cx, cy, 100, 0, 7); g.fillStyle = mentor ? '#0B9E8C' : '#F2A65A'; g.fill();
-    var ini = String(u.name || '?').split(/\s+/).map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
-    txt(ini, cx, cy + 26, '800 76px ' + F.d, '#fff', 'center');
-    txt(mentor ? 'MENTOR' : 'STUDENT', cx, 566, '700 26px ' + F.b, '#fff', 'center');
-    txt(cardId(u), cx, 606, '500 24px ' + F.m, 'rgba(255,255,255,.8)', 'center');
-    var since = new Date(u.joined || Date.now()).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
-    txt('Member since ' + since, cx, 700, '500 22px ' + F.b, 'rgba(255,255,255,.75)', 'center');
-    // right side
-    var X = 500, R = W - 110;
-    txt((mentor ? 'MENTOR CARD' : 'STUDENT CARD') + (reset ? ' · NEW PASSWORD' : ''), X, 132, '700 22px ' + F.b, '#0B9E8C');
-    var ns = fit(u.name, '800 #px ' + F.d, 66, R - X); txt(u.name, X, 132 + ns + 14, '800 ' + ns + 'px ' + F.d, '#18203D');
-    var sub = mentor ? (u.title || 'Researchette mentor') : [u.college, u.level].filter(Boolean).join(' · ');
-    var y = 132 + ns + 64;
-    if (sub) { var ss = fit(sub, '500 #px ' + F.b, 28, R - X); txt(sub, X, y, '500 ' + ss + 'px ' + F.b, '#5F6989'); y += 22; }
-    // programme chips
-    if (!mentor) {
-      var tx = X; y += 26;
-      (u.tracks || [u.activeTrack || 'original']).slice(0, 3).forEach(function (id) {
-        var name = (T(id) || {}).short || (T(id) || {}).name || id; g.font = '600 22px ' + F.b; var w = g.measureText(name).width + 36;
-        if (tx + w > R) return; rr(tx, y, w, 44, 22); g.fillStyle = 'rgba(52,72,216,.09)'; g.fill(); txt(name, tx + 18, y + 30, '600 22px ' + F.b, '#3448D8'); tx += w + 10;
-      });
-      y += 44;
-    }
-    // welcome box: no login details on the picture, those go in the message
-    var by = H - 50 - 40 - 196; rr(X, by, R - X, 196, 22); g.fillStyle = '#F4F7FC'; g.fill(); g.strokeStyle = 'rgba(24,32,61,.08)'; g.lineWidth = 2; g.stroke();
-    txt(reset ? 'Your password has been reset' : (mentor ? 'Welcome to the team' : 'Welcome aboard'), X + 28, by + 52, '700 26px ' + F.b, '#18203D');
-    var line = reset ? 'Your new login details are in the message with this card.' : mentor ? 'Thank you for guiding our students. Your login is in the message.' : 'One small step a day, from your first idea to a published paper.';
-    var ls = fit(line, '500 #px ' + F.b, 22, R - X - 56); txt(line, X + 28, by + 96, '500 ' + ls + 'px ' + F.b, '#5F6989');
-    txt(location.host + location.pathname.replace(/\.html$/, ''), X + 28, by + 152, '600 22px ' + F.m, '#3448D8');
-    return c;
-  }
   function cardFonts() {
     if (!document.fonts || !document.fonts.load) return Promise.resolve();
     return Promise.all(['800 40px "Bricolage Grotesque"', '700 40px "Bricolage Grotesque"', '600 20px "IBM Plex Mono"', '700 20px "Figtree"', '600 20px "Figtree"', '500 20px "Figtree"', '500 20px "IBM Plex Mono"'].map(function (f) { return document.fonts.load(f).catch(function () {}); }));
   }
   function credentialsSheet(u, pw, title, note) {
-    var reset = /password/i.test(title), msg = welcomeMessage(u, pw, reset), num = waNumber(u.phone), fn = short(u.name), kind = u.role === 'admin' ? 'mentor' : 'student';
-    sheet('<span class="stamp">' + esc(title) + '</span><h2>' + (reset ? 'New login for ' : 'Welcome card for ') + esc(u.name) + '</h2><p class="muted">' + esc(note) + ' For security, the password is only shown once.</p>' +
-      '<div class="idcard" id="idcard"><span class="small muted">Making the card…</span></div>' +
-      '<a class="btn btn-wa btn-block" id="c-wa" href="' + esc(waLink(num, msg)) + '" target="_blank" rel="noopener">' + ic('wa') + (num ? 'Send to ' + esc(fn) + ' on WhatsApp' : 'Send on WhatsApp') + '</a>' +
-      '<p class="small muted" id="c-note">' + (num ? 'Opens ' + esc(fn) + '’s chat' : 'Opens WhatsApp (pick the chat)') + ' with the login message ready to send. The card is copied too: paste it in the same chat and send.</p>' +
-      '<div class="row" style="gap:8px"><a class="btn btn-glass btn-sm" id="c-dl" style="flex:1">Download card</a><button class="btn btn-glass btn-sm" type="button" id="cp" style="flex:1">Copy message</button></div>' +
-      '<details class="wg"><summary><span class="li-main"><b>See the message</b><span class="small muted">Email, password and login link</span></span>' + ic('chev', 'chev') + '</summary><div class="wg-body">' +
-        '<pre class="paper small" id="msg" style="margin:0;font-family:var(--f-body)">' + esc(msg) + '</pre></div></details>' +
+    var reset = /password/i.test(title), msg = welcomeMessage(u, pw, reset), num = waNumber(u.phone), fn = short(u.name);
+    sheet('<span class="stamp">' + esc(title) + '</span><h2>' + (reset ? 'New login for ' : 'Login for ') + esc(u.name) + '</h2><p class="muted">' + esc(note) + ' For security, the password is only shown once.</p>' +
+      '<a class="btn btn-wa btn-block" href="' + esc(waLink(num, msg)) + '" target="_blank" rel="noopener">' + ic('wa') + (num ? 'Send to ' + esc(fn) + ' on WhatsApp' : 'Send on WhatsApp') + '</a>' +
+      (num ? '' : '<p class="small muted">No phone number saved, so WhatsApp will ask you to pick the chat.</p>') +
+      '<button class="btn btn-glass btn-block" type="button" id="cp">Copy message</button>' +
+      '<pre class="paper small" id="msg" style="margin:0;font-family:var(--f-body)">' + esc(msg) + '</pre>' +
       '<button class="btn btn-quiet btn-block btn-sm" type="button" data-close>Done</button>',
       function (el) {
-        var blob = null, note = el.querySelector('#c-note');
         el.querySelector('#cp').addEventListener('click', function () { copy(msg, el.querySelector('#msg')); });
         el.querySelector('[data-close]').addEventListener('click', render);
-        // one tap: the link opens the chat with the message; the picture goes on the clipboard in the same tap
-        el.querySelector('#c-wa').addEventListener('click', function () {
-          if (!blob || !navigator.clipboard || !window.ClipboardItem) return;
-          try { navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).catch(function () {}); } catch (e) {}
-        });
-        cardFonts().then(function () {
-          var canvas = drawCard(u, reset), url = canvas.toDataURL('image/png'), dl = el.querySelector('#c-dl');
-          el.querySelector('#idcard').innerHTML = '<img src="' + url + '" alt="' + esc((kind === 'mentor' ? 'Mentor' : 'Student') + ' card for ' + u.name) + '">';
-          dl.href = url; dl.download = 'researchette-' + kind + '-card-' + String(u.name).toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.png';
-          canvas.toBlob(function (b) {
-            blob = b;
-            if (!b || !navigator.clipboard || !window.ClipboardItem) note.textContent = (num ? 'Opens ' + fn + '’s chat' : 'Opens WhatsApp (pick the chat)') + ' with the login message ready to send. To add the card, tap Download card and attach it in the same chat.';
-          }, 'image/png');
-        });
       });
   }
 

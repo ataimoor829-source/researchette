@@ -461,18 +461,15 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
   *, *::before, *::after { animation-duration: .001s !important; animation-iteration-count: 1 !important; transition-duration: .001s !important; }
   .js .reveal { opacity: 1; transform: none; filter: none; }
 }
-/* ---------- hero: a quick check from the portal, in front of the manuscript ---------- */
-.qc { position: absolute; left: -44px; bottom: -150px; width: min(300px, 78%); padding: 16px; display: grid; gap: 8px; border-radius: 18px; z-index: 2; animation: fadeup .9s 1.1s var(--ease) both; }
-.qc-k { font: 600 .66rem var(--f-body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-.qc-q { font: 700 1rem/1.3 var(--f-display); letter-spacing: -.01em; margin-bottom: 2px; }
-.qc-o { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--line); font-size: .86rem; line-height: 1.3; }
-.qc-o i { flex: none; width: 24px; height: 24px; border-radius: 8px; display: grid; place-items: center; font: 700 .72rem var(--f-display); font-style: normal; background: var(--pen-soft); color: var(--pen); }
-.qc-o i svg { width: 13px; height: 13px; }
-.qc-o.dim { opacity: .55; }
-.qc-o.ok { border-color: var(--teal); background: var(--teal-soft); }
-.qc-o.ok i { background: var(--teal); color: #fff; }
-.hero-visual { margin-bottom: 150px; }
-@media (max-width: 900px) { .hero-visual { display: grid; margin: 0 0 8px; } .qc { position: relative; left: auto; bottom: auto; margin: -34px 0 0 auto; width: min(300px, 86%); } .hero-visual::before, .hero-visual::after { display: none; } }
+/* ---------- mentors, compact: name, one line and a link ---------- */
+.mentors.compact { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.mentors.compact .mentor { padding: 20px; gap: 14px; align-content: space-between; }
+.mentors.compact .mentor h3 { font-size: 1.12rem; }
+.mentors.compact .mentor .role { font-size: .84rem; line-height: 1.45; }
+.mentors.compact .msg-btn { padding: 0; border: 0 !important; background: none !important; font-size: .88rem; color: var(--pen); }
+.mentors.compact .msg-btn svg { display: none; }
+@media (max-width: 960px) { .mentors.compact { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .mentors.compact { grid-template-columns: 1fr; } .mentors.compact .mentor { padding: 16px 18px; } }
 /* ---------- portal preview: the lesson player ---------- */
 .pl-seg { display: flex; gap: 4px; }
 .pl-seg i { flex: 1; height: 5px; border-radius: 9px; background: var(--pen-soft); }
@@ -568,12 +565,6 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
         </div>
         <div class="ms-foot"><span class="avatar" aria-hidden="true">ZR</span><span>Reviewed by Zain</span></div>
       </figure>
-      <div class="qc glass" aria-hidden="true">
-        <span class="qc-k">Quick check · Step 1</span>
-        <b class="qc-q">Which topic is small enough for a first study?</b>
-        <span class="qc-o dim"><i>A</i>The diet of students in Pakistan</span>
-        <span class="qc-o ok"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i>Breakfast skipping at our college</span>
-      </div>
     </div>
   </div>
 
@@ -815,29 +806,21 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
       <span class="eyebrow">Mentors</span>
       <h2>Reviewed by people who publish.</h2>
     </div>
-    <div class="mentors">
+    <div class="mentors compact">
       <article class="mentor glass reveal">
         <div class="mentor-top"><div><h3>Zain Ramzan</h3><span class="role">Founder &amp; lead mentor · MBBS</span></div></div>
-        <p>Published researcher and reviewer for national and international journals, who has guided more than 50 students to publication. Now mentoring a new batch.</p>
-        <div class="mentor-facts"><div><b>50+</b><span>students mentored</span></div><div><b>Reviewer</b><span>national &amp; international journals</span></div></div>
         <a class="btn btn-glass btn-sm msg-btn" href="mentors.html#zain" aria-label="Read Zain’s message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Read message <span class="btn-arrow" aria-hidden="true">→</span></a>
       </article>
       <article class="mentor glass alt reveal" style="--d:.1s">
         <div class="mentor-top"><div><h3>Dr Maha Arshad</h3><span class="role">Mentor · MD, UCLA · Orthopaedics resident, Stanford</span></div></div>
-        <p>MD from UCLA, now an orthopaedics resident at Stanford.</p>
-        <div class="mentor-facts"><div><b>MD</b><span>UCLA</span></div><div><b>Orthopaedics</b><span>resident, Stanford</span></div></div>
         <a class="btn btn-glass btn-sm msg-btn" href="mentors.html#maha" aria-label="Read Dr Maha Arshad’s message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Read message <span class="btn-arrow" aria-hidden="true">→</span></a>
       </article>
       <article class="mentor glass reveal">
         <div class="mentor-top"><div><h3>Dr Sobia Ramzan</h3><span class="role">Senior mentor · PhD Biochemistry · Oncology</span></div></div>
-        <p>PhD in Biochemistry with a specialisation in oncology, and a reviewer for national and international journals. Has worked on hundreds of research projects and mentored many students through theses and publications.</p>
-        <div class="mentor-facts"><div><b>PhD</b><span>Biochemistry, oncology</span></div><div><b>Reviewer</b><span>national &amp; international journals</span></div></div>
         <a class="btn btn-glass btn-sm msg-btn" href="mentors.html#sobia" aria-label="Read Dr Sobia Ramzan’s message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Read message <span class="btn-arrow" aria-hidden="true">→</span></a>
       </article>
       <article class="mentor glass alt reveal" style="--d:.1s">
         <div class="mentor-top"><div><h3>Dr Alina</h3><span class="role">Mentor · MBBS · Radiology resident, Huntsman Cancer Institute, USA</span></div></div>
-        <p>MBBS, now a radiology resident at Huntsman Cancer Institute in the USA.</p>
-        <div class="mentor-facts"><div><b>MBBS</b><span>medical degree</span></div><div><b>Radiology</b><span>resident, Huntsman Cancer Institute</span></div></div>
         <a class="btn btn-glass btn-sm msg-btn" href="mentors.html#alina" aria-label="Read Dr Alina’s message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Read message <span class="btn-arrow" aria-hidden="true">→</span></a>
       </article>
     </div>

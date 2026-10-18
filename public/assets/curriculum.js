@@ -16,7 +16,7 @@ var ORIGINAL = {
         { h: 'Start with something you noticed', p: 'Look around you: in class, in the hostel, on the wards. Anything that made you curious is a good start. For example: “A lot of my classmates skip breakfast.”' },
         { h: 'Make it small', p: 'A first study should be small: one group of people, one place and one thing to count. Small topics get finished and published. Big ones get stuck.' },
         { h: 'Break it into PICO', p: 'Write who you will study (P), what you are looking at (I), who you compare them with (C, often not needed) and what you will count (O). If you can fill in P and O, you have a topic.' },
-        { h: 'Check it with FINER', p: 'FINER is five questions to ask about your topic. You want a “yes” to all five. If any answer is “no”, change the topic a little and ask again. The cards above explain each letter.' },
+        { h: 'Check it with FINER', p: 'FINER is five questions to ask about your topic. You want a “yes” to all five. If any answer is “no”, change the topic a little and ask again. The FINER cards in this lesson explain each letter.' },
         { h: 'Write it as one sentence', p: 'Put it together in one simple sentence, for example: “How many MBBS students at our college skip breakfast?”' }
       ],
       example: {
@@ -106,7 +106,7 @@ var ORIGINAL = {
       n: 7, phase: 2, title: 'Statistical analysis', summary: 'Turning answers into results', minutes: 35,
       lesson: [
         { h: 'First, describe', p: 'Count and give percentages for groups, like “164 of 400 students (41%) skip breakfast”. For numbers like age, give the average (mean) and how spread out they are (standard deviation, SD).' },
-        { h: 'Then, compare with the right test', p: 'A test tells you if a difference between groups is real or just luck. Use the chart above to pick one. Example: to compare skipping breakfast between 1st and 5th years, use the chi-square test.' },
+        { h: 'Then, compare with the right test', p: 'A test tells you if a difference between groups is real or just luck. The “Which test should I use?” chart in this lesson helps you pick one. Example: to compare skipping breakfast between 1st and 5th years, use the chi-square test.' },
         { h: 'Understand the p-value', p: 'The p-value is the chance that the difference happened by luck alone. If p is less than 0.05 (5 in 100), we call the difference “significant”, which means it is probably real.' },
         { h: 'Use free or college software', p: 'SPSS (often on college computers) or free tools like Jamovi run the tests for you. You only need to choose the right test and read the result.' }
       ],
@@ -136,7 +136,7 @@ var ORIGINAL = {
       n: 9, phase: 3, title: 'Referencing', summary: 'Giving credit with Vancouver style and Zotero', minutes: 20,
       lesson: [
         { h: 'Number your sources in order', p: 'Every time you use someone else’s finding, add a number, like [1]. The first source you mention is 1, the next new one is 2, and so on. This is called Vancouver style.' },
-        { h: 'Write each reference the same way', p: 'At the end, list them in number order: authors, title, journal, then year;volume(issue):pages. The picture above shows each part.' },
+        { h: 'Write each reference the same way', p: 'At the end, list them in number order: authors, title, journal, then year;volume(issue):pages. The picture in this lesson shows each part.' },
         { h: 'Let Zotero do it for you', p: 'Zotero is a free app that saves papers with one click and writes the reference list in Word for you. Never type references by hand.' },
         { h: 'Use your own words', p: 'Don’t copy sentences from papers. Write the idea in your own words and add the number. Journals check copying with software, and HEC generally accepts a similarity score up to 19%.' }
       ],
@@ -492,7 +492,7 @@ var ORIGINAL = {
     template: 'My research topic (one sentence):\n\nP: Who will I study?\nI: What am I looking at?\nC: Compared with whom? (write “not needed” if none)\nO: What will I count or measure?\n\nFINER check:\nF (Feasible):\nI (Interesting):\nN (Novel):\nE (Ethical):\nR (Relevant):'
   });
   add('original:2', {
-    intro: 'Before you start, look at what other people have already found about your topic. This is called a literature search (“literature” just means published papers). It shows you what is already known, gives you ideas for your own study, and shows the gap your study will fill. You will use PubMed: a free website with millions of medical papers. Don’t worry if it looks confusing at first: follow the five steps and the picture below.',
+    intro: 'Before you start, look at what other people have already found about your topic. This is called a literature search (“literature” just means published papers). It shows you what is already known, gives you ideas for your own study, and shows the gap your study will fill. You will use PubMed: a free website with millions of medical papers. Don’t worry if it looks confusing at first: follow the five steps and the pictures in this lesson.',
     visuals: [
       { type: 'flow', title: 'Your first search in 5 steps', steps: [
         ['Write 2–3 key words', 'The main words of your topic. For “skipping breakfast in medical students”: breakfast, and medical students.'],
@@ -558,7 +558,7 @@ var ORIGINAL = {
     template: 'Rationale:\n\nAim(s):\n1.\n\nOperational definition of what I will count:'
   });
   add('original:5', {
-    intro: 'Sample size is how many people you need so your answer can be trusted. Ask too few and your result could just be luck; ask too many and you waste time. You don’t guess it: you work it out from a similar earlier study, with a free calculator like OpenEpi. The formula below is what the calculator does for you.',
+    intro: 'Sample size is how many people you need so your answer can be trusted. Ask too few and your result could just be luck; ask too many and you waste time. You don’t guess it: you work it out from a similar earlier study, with a free calculator like OpenEpi. The formula in this lesson is what the calculator does for you.',
     visuals: [
       { type: 'flow', title: 'Using OpenEpi (the easy way)', steps: [
         ['Find a starting percentage', 'From a similar study, e.g. “40% of students skipped breakfast”.'],
@@ -580,7 +580,7 @@ var ORIGINAL = {
     template: 'Starting percentage (p): ___% from reference: ___\nConfidence: 95%   Margin of error: 5%\nNumber needed: ___\nAfter adding 10%: ___\n\nHow I will pick people:\nWhy:'
   });
   add('original:6', {
-    intro: 'A proforma is the form or questionnaire each person fills in your study. A good one is short, clear and asks about facts people can remember. Afterwards you type all the answers into a spreadsheet so you can count them. The picture below shows what that sheet looks like.',
+    intro: 'A proforma is the form or questionnaire each person fills in your study. A good one is short, clear and asks about facts people can remember. Afterwards you type all the answers into a spreadsheet so you can count them. The picture in this lesson shows what that sheet looks like.',
     visuals: [
       { type: 'flow', title: 'The parts of a simple proforma', steps: [
         ['Consent', 'A short line: the study’s purpose, that it is voluntary and anonymous, and a tick box to agree.'],
@@ -598,7 +598,7 @@ var ORIGINAL = {
     template: 'Proforma sections:\n1. Consent:\n2. Basic details:\n3. Main questions:\n4. Other questions:\n\nReady-made questionnaire and reference (if any):\n\nHow I will collect the answers:'
   });
   add('original:7', {
-    intro: 'Statistics turns your spreadsheet into answers. First you describe: how many, what percentage, what average. Then, if you compare groups, a test tells you if the difference is real or just luck. You don’t need to be good at maths: the software does the calculating. You only need to pick the right test, and the chart below helps.',
+    intro: 'Statistics turns your spreadsheet into answers. First you describe: how many, what percentage, what average. Then, if you compare groups, a test tells you if the difference is real or just luck. You don’t need to be good at maths: the software does the calculating. You only need to pick the right test, and the chart in this lesson helps.',
     visuals: [
       { type: 'table', title: 'How to show each kind of answer', head: ['Kind of answer', 'Example', 'Show it as'], rows: [
         ['Groups (categories)', 'Gender, year, skips breakfast yes/no', 'Number and percentage: 164 (41%)'], ['Numbers', 'Age, hours of sleep', 'Average and spread: mean ± SD'], ['Numbers with a few very high or low values', 'Days in hospital', 'Middle value: median (IQR)']] },
@@ -811,7 +811,7 @@ var ORIGINAL = {
     template: 'The problem:\n\nWhy it matters:'
   });
   add('thesis:3', {
-    intro: 'The literature review shows what is already known. Group the studies by theme and compare them, instead of summarising one paper after another. A literature matrix (a table of all your papers, like the one below) makes this much easier.',
+    intro: 'The literature review shows what is already known. Group the studies by theme and compare them, instead of summarising one paper after another. A literature matrix (a table of all your papers, like the one in this lesson) makes this much easier.',
     visuals: [{ type: 'sheet', title: 'A literature matrix: fill it before you write', cols: ['Author, year', 'Place', 'People', 'Main finding', 'Weak point'], rows: [['Ali 2021', 'Lahore', '300', '32% had it', 'One hospital'], ['Khan 2019', 'Karachi', '520', '48% had it', 'Self-reported']], note: 'One row per paper. Reading down a column shows you the themes: where studies agree and where they differ.' }],
     mistakes: ['One paragraph per paper.', 'No comparison between studies.', 'Not ending with the gap.'],
     include: ['One themed section of at least 300 words', 'At least 5 references'],

@@ -1,0 +1,154 @@
+/* Researchette public site: the finishing layer. Loaded last on every public page (not the portal).
+   The idea: fewer effects, more craft. Flat paper surfaces with hairline edges instead of glossy
+   glass, solid colour instead of gradients, buttons that don't glow or jump, one quiet label style,
+   and a clear type scale. Blue stays the brand colour; dark mode stays neutral charcoal. */
+:root {
+  --surface: #FFFFFF;
+  --surface-2: #FBFAF7;
+  --hair: rgba(24, 32, 61, .09);
+  --hair-strong: rgba(24, 32, 61, .16);
+  --band: #141B3D;
+  --band-ink: #F4F6FC;
+  --band-muted: rgba(244, 246, 252, .68);
+  --band-hair: rgba(255, 255, 255, .12);
+  --pen-hover: #2A3CC7;
+  --lift: 0 1px 2px rgba(24, 32, 61, .04);
+  --float: 0 1px 2px rgba(24, 32, 61, .05), 0 24px 48px -28px rgba(24, 32, 61, .28);
+  --r: 20px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --surface: #17181D; --surface-2: #141519; --hair: rgba(255, 255, 255, .075); --hair-strong: rgba(255, 255, 255, .14);
+    --band: #1B1D25; --band-ink: #ECEDF1; --band-muted: rgba(236, 237, 241, .66); --band-hair: rgba(255, 255, 255, .09);
+    --pen-hover: #A3B1FF; --lift: none; --float: 0 24px 48px -28px rgba(0, 0, 0, .7);
+  }
+}
+:root[data-theme="dark"] {
+  --surface: #17181D; --surface-2: #141519; --hair: rgba(255, 255, 255, .075); --hair-strong: rgba(255, 255, 255, .14);
+  --band: #1B1D25; --band-ink: #ECEDF1; --band-muted: rgba(236, 237, 241, .66); --band-hair: rgba(255, 255, 255, .09);
+  --pen-hover: #A3B1FF; --lift: none; --float: 0 24px 48px -28px rgba(0, 0, 0, .7);
+}
+
+/* ---------- type ---------- */
+body { font-feature-settings: "ss01", "cv11"; text-rendering: optimizeLegibility; }
+h1 { font-weight: 700; letter-spacing: -.045em; line-height: .98; }
+h2 { font-weight: 700; letter-spacing: -.038em; line-height: 1.04; }
+h3 { letter-spacing: -.018em; }
+.hero h1 { font-weight: 700; letter-spacing: -.045em; }
+.lede { color: var(--muted); font-size: clamp(1.06rem, 1rem + .3vw, 1.2rem); line-height: 1.55; }
+::selection { background: color-mix(in srgb, var(--pen) 22%, transparent); }
+/* headings arrive as one piece, not word by word */
+.word { animation: none !important; opacity: 1 !important; transform: none !important; }
+/* no highlighter pen: the key words simply take the brand colour */
+.hl { background: none !important; color: var(--pen); padding: 0; margin: 0; }
+
+/* one quiet label style: small caps in ink-grey with a blue tick in front */
+.eyebrow { display: inline-flex !important; align-items: center; color: var(--muted) !important; font-weight: 600; font-size: .72rem; letter-spacing: .14em; gap: 10px; }
+.eyebrow::before { content: ""; width: 14px; height: 2px; border-radius: 2px; background: var(--pen); box-shadow: none !important; flex: none; }
+.pubs-band .eyebrow, .price .eyebrow, .phase.last .eyebrow { color: var(--band-muted) !important; }
+.pubs-band .eyebrow::before, .price .eyebrow::before { background: var(--band-ink); }
+
+/* ---------- surfaces: paper sheets with a hairline edge ---------- */
+.glass {
+  background: var(--surface) !important;
+  border: 1px solid var(--hair) !important;
+  box-shadow: var(--lift) !important;
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+}
+.glass .glass { box-shadow: none !important; }
+.sheet.glass, .chip.glass { -webkit-backdrop-filter: blur(24px) saturate(160%) !important; backdrop-filter: blur(24px) saturate(160%) !important; }
+
+/* the top bar: paper with a hairline, frosted only where content slides under it */
+.nav { background: color-mix(in srgb, var(--paper) 84%, transparent) !important; box-shadow: none !important; border-bottom: 1px solid transparent !important; transition: border-color .25s ease, background-color .25s ease; }
+html.scrolled .nav { border-bottom-color: var(--hair) !important; }
+.nav::after { display: none !important; }
+.theme-btn, .menu-btn { background: transparent !important; border: 1px solid var(--hair) !important; box-shadow: none !important; }
+.theme-btn:hover, .menu-btn:hover { background: var(--surface) !important; border-color: var(--hair-strong) !important; }
+.theme-btn:hover { transform: none; }
+
+/* ---------- buttons: solid, calm, no glow and no jumping ---------- */
+.btn { letter-spacing: -.005em; }
+.btn:hover { transform: none !important; }
+.btn:active { transform: scale(.98) !important; }
+.btn-primary { background: var(--pen) !important; background-image: none !important; color: var(--on-pen); border-color: transparent; box-shadow: 0 1px 0 rgba(255, 255, 255, .14) inset, 0 1px 2px rgba(24, 32, 61, .18) !important; }
+.btn-primary:hover { background: var(--pen-hover) !important; }
+.btn-glass { background: var(--surface) !important; border: 1px solid var(--hair-strong) !important; box-shadow: none !important; color: var(--ink); }
+.btn-glass:hover { border-color: color-mix(in srgb, var(--ink) 30%, transparent) !important; }
+.btn .btn-arrow { transition: transform .3s var(--ease); }
+
+/* ---------- cards: no lifting on hover; the edge answers instead ---------- */
+.track, .mentor, .contact-item, .guides-more, .pubs-band, .reviews-cta, a.glass, .cat, .letter { transition: border-color .25s ease, background-color .25s ease !important; }
+.track:hover, .mentor:hover, .contact-item:hover, .guides-more:hover, .pubs-band:hover, .js .track.reveal.in:hover, .js .mentor.reveal.in:hover { transform: none !important; }
+a.glass:hover, .track:hover, .mentor:hover, .guides-more:hover, .contact-item:hover { border-color: var(--hair-strong) !important; }
+.track .icon, .ot-icon { background: transparent !important; color: var(--ink) !important; border: 1px solid var(--hair-strong); }
+.track .std, .ms-label, .phase-num, .new-tag { color: var(--muted) !important; }
+.new-tag { background: transparent !important; border: 1px solid var(--hair-strong); }
+.list .plus { background: transparent !important; border: 1px solid var(--hair-strong); color: var(--ink) !important; }
+.list details[open] .plus { background: var(--ink) !important; color: var(--paper) !important; border-color: var(--ink); }
+
+/* dark bands: one solid deep colour, no gradients */
+.pubs-band, .price, .phase.last .phase-inner, .cta-band.dark { background: var(--band) !important; background-image: none !important; color: var(--band-ink) !important; border: 1px solid var(--band-hair) !important; box-shadow: none !important; }
+.phase.last .phase-num { color: var(--band-muted) !important; }
+.price > ul li::before { color: var(--band-ink) !important; opacity: .7; }
+.pb-btn { box-shadow: none !important; }
+.pb-ic { background: rgba(255, 255, 255, .08) !important; border: 1px solid var(--band-hair); }
+.phase:not(.last) .phase-inner.glass { background: var(--surface) !important; box-shadow: 0 -18px 36px -30px rgba(24, 32, 61, .35) !important; }
+
+/* ---------- hero (landing) ---------- */
+.chip { display: none !important; }
+.manuscript { transform: none !important; box-shadow: var(--float) !important; }
+/* a small stack of pages under the manuscript, like a draft on a desk */
+.hero-visual::before, .hero-visual::after { content: ""; position: absolute; inset: 0; border-radius: var(--r); background: var(--surface); border: 1px solid var(--hair); z-index: -1; }
+.hero-visual::before { transform: translate(14px, 14px) rotate(1.4deg); opacity: .7; }
+.hero-visual::after { transform: translate(28px, 26px) rotate(2.8deg); opacity: .4; }
+.hero-visual { isolation: isolate; }
+.ticker { border-color: var(--hair) !important; }
+.ticker-track span { color: var(--muted); font-weight: 500; }
+
+/* ---------- forms ---------- */
+input, select, textarea { background: var(--surface) !important; border: 1px solid var(--hair-strong) !important; box-shadow: none; }
+input:focus, select:focus, textarea:focus { border-color: var(--pen) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--pen) 16%, transparent) !important; }
+.cc-show { background: var(--surface) !important; border-color: var(--hair-strong) !important; }
+.chips label { background: var(--surface) !important; border-color: var(--hair-strong) !important; }
+.chips label:has(input:checked) { background: var(--ink) !important; border-color: var(--ink) !important; color: var(--paper) !important; }
+
+/* ---------- menu ---------- */
+.menu-panel { background: var(--surface) !important; border: 1px solid var(--hair) !important; box-shadow: var(--float) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+.menu-panel .mi { background: transparent !important; border: 1px solid var(--hair-strong); color: var(--ink) !important; }
+.menu-panel a.pub { background: transparent !important; color: var(--ink) !important; }
+.menu-panel a.pub .mi { background: var(--pen) !important; border-color: var(--pen); color: #fff !important; }
+
+/* ---------- chat launcher: smaller, solid ---------- */
+.rc-btn { width: 52px !important; height: 52px !important; background: var(--ink) !important; color: var(--paper) !important; box-shadow: 0 10px 24px -12px rgba(24, 32, 61, .5) !important; }
+.rc-btn:hover { transform: none !important; }
+.rc-btn svg { width: 22px !important; height: 22px !important; }
+.rc-dot { width: 10px !important; height: 10px !important; top: 4px !important; right: 4px !important; }
+
+/* ---------- footer: contact as one tidy row, links underneath ---------- */
+.contact-grid { gap: 0 !important; border: 1px solid var(--hair); border-radius: var(--r); background: var(--surface); overflow: hidden; }
+.contact-item { background: transparent !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
+.contact-item + .contact-item { border-left: 1px solid var(--hair) !important; }
+.contact-item:hover { background: var(--surface-2) !important; }
+.contact-item svg { color: var(--ink) !important; }
+@media (max-width: 640px) { .contact-item + .contact-item { border-left: 0 !important; border-top: 1px solid var(--hair) !important; } }
+.foot-row { border-top-color: var(--hair) !important; }
+.foot-row a.legal, .foot-row .legal { text-decoration: none; color: var(--muted); transition: color .2s; }
+.foot-row a.legal:hover { color: var(--ink); }
+
+/* ---------- small things ---------- */
+.progress-bar span { height: 2px !important; }
+.reviews-cta .stars { color: var(--ink) !important; }
+.cookie-note { background: var(--surface) !important; border-color: var(--hair) !important; }
+a:not(.btn):not(.logo):not(.legal) { text-underline-offset: .18em; text-decoration-thickness: 1px; }
+@media (prefers-reduced-motion: reduce) { .hero-visual::before, .hero-visual::after { transform: none; } }
+
+/* ---------- inner pages ---------- */
+.who .role { color: var(--muted) !important; font-family: var(--f-body) !important; font-weight: 600; letter-spacing: .1em !important; }
+.msg::before { color: var(--hair-strong) !important; }
+.msg .sign { font-family: var(--f-display) !important; font-weight: 700 !important; font-size: 1.5rem !important; letter-spacing: -.02em; }
+.letter .avatar { background: var(--pen) !important; }
+.cta-box { background: var(--band) !important; color: var(--band-ink) !important; border: 1px solid var(--band-hair); }
+.cta-box .btn { color: var(--band) !important; }
+.empty-wall .ic { background: transparent !important; border: 1px solid var(--hair-strong); color: var(--ink) !important; }
+.cat h2, .cat h3 { letter-spacing: -.025em; }
+.vf-badge { box-shadow: none !important; }

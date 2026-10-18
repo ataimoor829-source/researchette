@@ -461,9 +461,49 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
   *, *::before, *::after { animation-duration: .001s !important; animation-iteration-count: 1 !important; transition-duration: .001s !important; }
   .js .reveal { opacity: 1; transform: none; filter: none; }
 }
+/* ---------- mentors, compact: name, one line and a link ---------- */
+.mentors.compact { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.mentors.compact .mentor { padding: 20px; gap: 14px; align-content: space-between; }
+.mentors.compact .mentor h3 { font-size: 1.12rem; }
+.mentors.compact .mentor .role { font-size: .84rem; line-height: 1.45; }
+.mentors.compact .msg-btn { padding: 0; border: 0 !important; background: none !important; font-size: .88rem; color: var(--pen); }
+.mentors.compact .msg-btn svg { display: none; }
+@media (max-width: 960px) { .mentors.compact { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .mentors.compact { grid-template-columns: 1fr; } .mentors.compact .mentor { padding: 16px 18px; } }
+/* ---------- portal preview: the lesson player ---------- */
+.pl-seg { display: flex; gap: 4px; }
+.pl-seg i { flex: 1; height: 5px; border-radius: 9px; background: var(--pen-soft); }
+.pl-seg i.d { background: var(--teal); } .pl-seg i.o { background: var(--pen); }
+.pl-card { position: relative; overflow: hidden; display: grid; gap: 10px; padding: 20px; border-radius: 16px; border: 1px solid var(--line); min-height: 170px; align-content: start; }
+.pl-k { font: 600 .66rem var(--f-body); letter-spacing: .12em; text-transform: uppercase; color: var(--teal); }
+.pl-card h3 { font-size: 1.35rem; letter-spacing: -.025em; }
+.pl-card p { color: var(--muted); font-size: .94rem; line-height: 1.6; max-width: 40ch; }
+.pl-n { position: absolute; right: 14px; bottom: -6px; font: 700 4.4rem/1 var(--f-display); letter-spacing: -.05em; color: var(--pen); opacity: .08; }
+.pl-nav { display: grid; grid-template-columns: 44px 1fr; gap: 8px; }
+.pl-b { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; color: var(--muted); }
+.pl-b svg { width: 18px; height: 18px; }
+.pl-c { display: grid; place-items: center; height: 44px; border-radius: 999px; background: var(--pen); color: var(--on-pen); font-weight: 600; font-size: .92rem; }
+.submission b { color: var(--teal); }
+/* ---------- why: an editorial block ---------- */
+@media (min-width: 900px) {
+  .why { grid-template-columns: minmax(0, 1.6fr) minmax(0, .7fr); grid-template-areas: "eye eye" "quote stats" "sig stats"; column-gap: clamp(40px, 6vw, 96px); align-items: start; }
+  .why > .eyebrow { grid-area: eye; } .why-quote { grid-area: quote; max-width: none; } .why .sig { grid-area: sig; }
+  .why .stats { grid-area: stats; grid-template-columns: 1fr; border-top: 0; padding-top: 0; gap: 0; align-self: center; }
+  .why .stat { padding: 18px 0; } .why .stat + .stat { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); }
+}
+.why-quote { font-size: clamp(1.45rem, 1.1rem + 1.5vw, 2.3rem); line-height: 1.22; letter-spacing: -.03em; }
+/* ---------- join: what happens next ---------- */
+.next { display: grid; gap: 14px; padding-top: 22px; border-top: 1px solid rgba(255,255,255,.12); }
+.next-h { font: 600 .7rem var(--f-body); letter-spacing: .14em; text-transform: uppercase; opacity: .65; }
+.next ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; counter-reset: n; }
+.next li { counter-increment: n; display: grid; grid-template-columns: 30px 1fr; column-gap: 12px; }
+.next li::before { content: counter(n); grid-row: span 2; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.25); font: 700 .8rem var(--f-display); }
+.next li b { font-weight: 600; }
+.next li span { font-size: .9rem; opacity: .7; }
 </style>
 <link rel="stylesheet" href="assets/liquid.css">
 <link rel="stylesheet" href="assets/chat.css">
+<link rel="stylesheet" href="assets/site.css">
 </head>
 <body>
 <script>document.body.classList.add('js');</script>
@@ -525,8 +565,6 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
         </div>
         <div class="ms-foot"><span class="avatar" aria-hidden="true">ZR</span><span>Reviewed by Zain</span></div>
       </figure>
-      <span class="chip glass chip-1" aria-hidden="true"><b>✓</b> STROBE checklist</span>
-      <span class="chip glass chip-2" aria-hidden="true"><b>✚</b> Vancouver style</span>
     </div>
   </div>
 
@@ -651,12 +689,13 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
     <div class="reveal" style="display:grid;gap:36px">
       <div class="section-head" style="margin:0">
         <span class="eyebrow">Member portal</span>
-        <h2>One task a day. Real feedback.</h2>
+        <h2>One small step a day. Real feedback.</h2>
       </div>
       <ol class="loop">
-        <li><span class="dot">1</span><div><b>Learn</b><span>A short lesson with real examples.</span></div></li>
-        <li><span class="dot">2</span><div><b>Write</b><span>Do the task and submit it.</span></div></li>
-        <li><span class="dot">3</span><div><b>Get corrected</b><span>A mentor reviews it within 48 hours.</span></div></li>
+        <li><span class="dot">1</span><div><b>Learn</b><span>Short cards in plain words, one idea at a time.</span></div></li>
+        <li><span class="dot">2</span><div><b>Check</b><span>A quick question so you know it clicked.</span></div></li>
+        <li><span class="dot">3</span><div><b>Write</b><span>Do the task for your own study and submit it.</span></div></li>
+        <li><span class="dot">4</span><div><b>Get corrected</b><span>A mentor reviews it, usually within 48 hours.</span></div></li>
       </ol>
     </div>
 
@@ -666,22 +705,15 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
         <span class="who"><span>Eeman</span><span class="avatar" aria-hidden="true">E</span></span>
       </div>
       <div class="app-body">
-        <div>
-          <div class="p-top"><span>Your roadmap</span><span>Step 2 of 10</span></div>
-          <div class="bar"><i></i></div>
+        <div class="pl-seg" aria-hidden="true"><i class="d"></i><i class="d"></i><i class="d"></i><i class="o"></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="pl-card">
+          <span class="pl-k">Lesson 2 of 5 · Research topic</span>
+          <h3>Make it small</h3>
+          <p>A first study should be small: one group of people, one place and one thing to count. Small topics get finished and published.</p>
+          <span class="pl-n" aria-hidden="true">02</span>
         </div>
-        <div class="task">
-          <div class="task-head"><h3>Build your PubMed search</h3><span class="pill">Today</span></div>
-        </div>
-        <div class="divider"></div>
-        <div class="task">
-          <div class="task-head"><h3>Research topic</h3><span class="pill ok">Approved</span></div>
-          <div class="submission">
-            <span>How many MBBS students at our college skip breakfast on most days?</span>
-            <small>Reviewed by Zain · Tuesday</small>
-          </div>
-          <p class="feedback">Clear and measurable. On to the search!</p>
-        </div>
+        <div class="pl-nav" aria-hidden="true"><span class="pl-b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span><span class="pl-c">Continue</span></div>
+        <div class="submission"><span><b>Approved</b> · Research topic</span><small>“Clear and measurable. On to the search!” · Zain</small></div>
       </div>
     </div>
   </div>
@@ -774,29 +806,21 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
       <span class="eyebrow">Mentors</span>
       <h2>Reviewed by people who publish.</h2>
     </div>
-    <div class="mentors">
+    <div class="mentors compact">
       <article class="mentor glass reveal">
         <div class="mentor-top"><div><h3>Zain Ramzan</h3><span class="role">Founder &amp; lead mentor · MBBS</span></div></div>
-        <p>Published researcher and reviewer for national and international journals, who has guided more than 50 students to publication. Now mentoring a new batch.</p>
-        <div class="mentor-facts"><div><b>50+</b><span>students mentored</span></div><div><b>Reviewer</b><span>national &amp; international journals</span></div></div>
         <a class="btn btn-glass btn-sm msg-btn" href="mentors.html#zain" aria-label="Read Zain’s message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Read message <span class="btn-arrow" aria-hidden="true">→</span></a>
       </article>
       <article class="mentor glass alt reveal" style="--d:.1s">
         <div class="mentor-top"><div><h3>Dr Maha Arshad</h3><span class="role">Mentor · MD, UCLA · Orthopaedics resident, Stanford</span></div></div>
-        <p>MD from UCLA, now an orthopaedics resident at Stanford.</p>
-        <div class="mentor-facts"><div><b>MD</b><span>UCLA</span></div><div><b>Orthopaedics</b><span>resident, Stanford</span></div></div>
         <a class="btn btn-glass btn-sm msg-btn" href="mentors.html#maha" aria-label="Read Dr Maha Arshad’s message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Read message <span class="btn-arrow" aria-hidden="true">→</span></a>
       </article>
       <article class="mentor glass reveal">
         <div class="mentor-top"><div><h3>Dr Sobia Ramzan</h3><span class="role">Senior mentor · PhD Biochemistry · Oncology</span></div></div>
-        <p>PhD in Biochemistry with a specialisation in oncology, and a reviewer for national and international journals. Has worked on hundreds of research projects and mentored many students through theses and publications.</p>
-        <div class="mentor-facts"><div><b>PhD</b><span>Biochemistry, oncology</span></div><div><b>Reviewer</b><span>national &amp; international journals</span></div></div>
         <a class="btn btn-glass btn-sm msg-btn" href="mentors.html#sobia" aria-label="Read Dr Sobia Ramzan’s message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Read message <span class="btn-arrow" aria-hidden="true">→</span></a>
       </article>
       <article class="mentor glass alt reveal" style="--d:.1s">
         <div class="mentor-top"><div><h3>Dr Alina</h3><span class="role">Mentor · MBBS · Radiology resident, Huntsman Cancer Institute, USA</span></div></div>
-        <p>MBBS, now a radiology resident at Huntsman Cancer Institute in the USA.</p>
-        <div class="mentor-facts"><div><b>MBBS</b><span>medical degree</span></div><div><b>Radiology</b><span>resident, Huntsman Cancer Institute</span></div></div>
         <a class="btn btn-glass btn-sm msg-btn" href="mentors.html#alina" aria-label="Read Dr Alina’s message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Read message <span class="btn-arrow" aria-hidden="true">→</span></a>
       </article>
     </div>
@@ -831,7 +855,14 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
         <li>Mentor review on every task</li>
         <li>Templates and checklists</li>
       </ul>
-      <p class="fine">Apply with the form and we’ll email you everything you need to get started.</p>
+      <div class="next">
+        <span class="next-h">What happens next</span>
+        <ol>
+          <li><b>Apply</b><span>Three short questions, about two minutes.</span></li>
+          <li><b>We get in touch</b><span>Payment details by email.</span></li>
+          <li><b>You’re in</b><span>Your portal login on WhatsApp, and step 1 is waiting.</span></li>
+        </ol>
+      </div>
     </div>
 
     <form id="join-form" class="glass reveal" style="--d:.1s" novalidate>
@@ -1019,15 +1050,7 @@ footer .wrap { display: grid; gap: 28px; justify-items: center; text-align: cent
   }
 
 
-  /* hero card tilt (mouse only) */
-  var hv = document.getElementById('hero-visual'), ms = document.getElementById('manuscript');
-  if (!reduce && matchMedia('(hover: hover)').matches) {
-    hv.addEventListener('pointermove', function (e) {
-      var r = hv.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
-      ms.style.transform = 'rotateY(' + (x * 8).toFixed(2) + 'deg) rotateX(' + (-y * 8).toFixed(2) + 'deg)';
-    });
-    hv.addEventListener('pointerleave', function () { ms.style.transform = ''; });
-  }
+  var hv = document.getElementById('hero-visual');
 
   /* pause the ticker while it is off screen, so scrolling has less to draw */
   if ('IntersectionObserver' in window) {

@@ -110,7 +110,7 @@ function page({ path, title, description, h1, eyebrow, body, jsonld }) {
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="${SITE}/assets/og.jpg">
 <script type="application/ld+json">${JSON.stringify(jsonld)}</script>
-` + absolute(headEnd).replace('</head>', extraCss + '\n</head>') +
+` + absolute(headEnd).replace(/(<link rel="stylesheet" href="\/assets\/site\.css">\n)?<\/head>/, (m, site) => extraCss + '\n' + (site || '') + '</head>') +
     `<main class="wrap">
   <section class="hero">
     <span class="eyebrow">${esc(eyebrow)}</span>

@@ -363,10 +363,9 @@
   async function render() {
     var token = ++busy;
     stopChat();
-    var oc = document.getElementById('coach'); if (oc) oc.remove();
     if (meKnown) me = meCache; else { me = meCache = await S.me(); meKnown = true; }
     var r = (location.hash || '').slice(1);
-    if (!me) { app.dataset.shell = ''; if (r !== 'login') setHash('login'); return loginView(); }
+    if (!me) { document.documentElement.classList.remove('focus'); app.dataset.shell = ''; if (r !== 'login') setHash('login'); return loginView(); }
     if (r === 'login' || !r) { r = me.role === 'admin' ? 'overview' : 'today'; setHash(r); }
     await loadLessons();
 
@@ -393,6 +392,7 @@
     } else {
       var sm = /^step-([a-z]+)-(\d+)$/.exec(r);
       if (sm) { view = vStep(sm[1], +sm[2]); tab = 'roadmap'; }
+      else if (/^start-[a-z]+$/.test(r)) { view = vStart(r.slice(6)); tab = 'today'; }
       else if (r === 'roadmap') { view = vRoadmap(); tab = r; }
       else if (r === 'feedback') { view = vFeedback(); tab = r; }
       else if (r === 'basics') { view = vBasics(); tab = r; }
@@ -413,6 +413,7 @@
     }
     if (token !== busy) return;
     ensureShell();
+    document.documentElement.classList.toggle('focus', me.role === 'member' && /^(step|start)-/.test(r));
     currentTab = tab; setTabs(tab, badges);
     var main = document.getElementById('view');
     main.classList.remove('is-loading');
@@ -485,9 +486,9 @@
     if (me.role === 'member') return [
       { icon: 'sparkle', tone: 'pen', hand: 'so glad you’re here!', title: 'Welcome, ' + fn + '!', text: 'This is your research home. Together we’ll go from an idea in your head to a published paper, one small step at a time. No rush, no stress.' },
       pwSlide,
-      { icon: 'today', tone: 'teal', hand: 'one cup of chai', title: 'One small task a day', text: 'Open <b>Today</b> and your step is waiting: a short lesson, an example and a task. Most take 20 to 40 minutes.' },
-      { icon: 'pen', tone: 'amber', hand: 'drafts save by themselves', title: 'Learn, peek, write', text: 'Read <b>Learn</b>, peek at the <b>Example</b> to see what good looks like, then write your answer in <b>Task</b>. Stop any time; your draft is kept.' },
-      { icon: 'send', tone: 'pen', hand: 'you’re never on your own', title: 'Your mentor reads it all', text: 'Tap <b>Send to mentor</b>. You’ll hear back within about 48 hours. <b>Approved</b>? The next step unlocks. <b>Needs changes</b>? Totally normal. Every researcher rewrites. Fix it and send again.' },
+      { icon: 'book', tone: 'teal', hand: '10 minutes', title: 'New to research? Start here', text: 'On <b>Today</b>, tap <b>Start here: the basics</b>. A few short cards explain what research is, the words you’ll hear and how each step works.' },
+      { icon: 'pen', tone: 'amber', hand: 'we remember where you were', title: 'One card at a time', text: 'Each step is a short run of cards: a lesson, a quick check, an example, then your task. Tap <b>Continue</b> or swipe. Most steps take 20 to 40 minutes, and your draft saves by itself.' },
+      { icon: 'send', tone: 'pen', hand: 'you’re never on your own', title: 'Your mentor reads it all', text: 'Tap <b>Submit for review</b>. You’ll hear back within about 48 hours. <b>Approved</b>? The next step unlocks. <b>Needs changes</b>? Totally normal. Every researcher rewrites. Fix it and send again.' },
       can('chat') ? { icon: 'msgs', tone: 'teal', hand: 'no silly questions', title: 'Stuck? Just ask', text: 'Tap <b>Chat</b>, or <b>Ask your mentor</b> under today’s task. Your mentor sees which step you’re on.' } : null,
       { icon: 'map', tone: 'amber', hand: 'watch it fill up', title: 'See how far you’ve come', text: '<b>Roadmap</b> shows every step, <b>Writing</b> teaches how to write each part of a paper, and <b>Feedback</b> keeps all your mentor’s comments in one place.' },
       { icon: 'phone', tone: 'pen', hand: 'one tap away', title: 'Keep it on your phone', text: 'Add Researchette to your home screen and it opens like an app. On iPhone: tap <b>Share</b>, then <b>Add to Home Screen</b>.', last: 'Let’s begin' }
@@ -690,13 +691,17 @@
         mount: function (m) { animateRing(m); bindProg(m); if (store('rt-done-' + me.id + '-' + t) === null) { store('rt-done-' + me.id + '-' + t, '1'); setTimeout(function () { confetti(m.querySelector('.stamp')); }, 700); } } };
     }
     var d = stepOf(t, cur.step);
-    /* one calm card for today's step: progress, what it is, and one button into the step */
-    var rs = {}; try { rs = JSON.parse(store('rt-read-' + me.id + '-' + t + '-' + cur.step) || '{}'); } catch (e) {}
-    var readN = d.lesson.filter(function (l, i) { return rs[i]; }).length;
-    var go = cur.status === 'revision' ? ['See what to change', 'Your mentor asked for a few changes.'] : cur.status === 'review' ? ['View your answer', 'Sent. Your mentor is reviewing it.'] : [readN ? 'Continue' : 'Start this step', d.minutes + ' min · ' + (readN ? readN + ' of ' + d.lesson.length + ' points read' : d.lesson.length + ' short points to read')];
+    /* one calm card for today's step: where they are in it, what it is, and one button into it */
+    var pr = stepProgress(t, cur.step, st), started = cur.status === 'current' && pr.at > 0;
+    var cta = cur.status === 'revision' ? ['See what to change', 'Your mentor asked for a few changes.'] : cur.status === 'review' ? ['View your answer', 'Sent. Your mentor is reviewing it.'] : [started ? 'Continue' : 'Start this step', d.minutes + ' min · ' + (started ? 'part ' + (pr.at + 1) + ' of ' + pr.len : pr.len + ' short parts')];
     var stepHref = '#step-' + t + '-' + cur.step;
-    var summary = '<a class="glass card today-step" href="' + stepHref + '"><div class="ts-top">' + ring(done, total) + '<div class="ts-txt"><span class="eyebrow">Step ' + cur.step + ' of ' + total + '</span><h2>' + esc(d.title) + '</h2><p class="muted">' + esc(d.summary) + '</p></div></div>' +
-      '<div class="ts-foot"><span class="small muted">' + esc(go[1]) + '</span><span class="btn btn-primary btn-sm">' + esc(go[0]) + ' →</span></div></a>';
+    var summary = '<a class="glass card today-step" href="' + stepHref + '"><div class="ts-top">' + ring(done, total) + '<div class="ts-txt"><span class="eyebrow">Step ' + cur.step + ' of ' + total + '</span><h2>' + esc(d.title) + '</h2><p class="muted">' + esc(d.goal ? 'You’ll finish with: ' + d.goal.charAt(0).toLowerCase() + d.goal.slice(1) : d.summary) + '</p></div></div>' +
+      (started ? '<div class="ts-prog" aria-hidden="true"><i style="width:' + Math.round((pr.at + 1) / pr.len * 100) + '%"></i></div>' : '') +
+      '<div class="ts-foot"><span class="small muted">' + esc(cta[1]) + '</span><span class="btn btn-primary btn-sm">' + esc(cta[0]) + ' →</span></div></a>';
+    /* newcomers: the basics come first */
+    var startCard = store(startKey(t)) === null && done === 0 ? '<a class="glass card start-card" href="#start-' + t + '"><span class="sc-art">' + ic('book') + '</span><div class="li-main"><span class="eyebrow">New to research?</span><b>Start here: the basics</b><span class="small muted">10 minutes. What research is, the words you’ll hear and how each step works.</span></div>' + ic('chev', 'chev') + '</a>' : '';
+    var journey = '<a class="glass journey" href="#roadmap"><div class="jr-head"><b>Your journey</b><span class="small muted">' + done + ' of ' + total + ' steps approved</span></div><div class="jr-track" aria-hidden="true">' +
+      st.map(function (x) { return '<i class="' + x.status + '">' + (x.status === 'approved' ? ic('check') : x.step) + '</i>'; }).join('') + '</div></a>';
     var help = can('chat') ? '<button class="glass help-row m-only" type="button" data-ask><span class="sc-ic">' + ic('msgs') + '</span><span class="li-main"><b>Stuck? Ask your mentor</b><span class="small muted">They’ll see which step you’re on.</span></span>' + ic('chev', 'chev') + '</button>' : '';
     /* wide screens: a calm dashboard (three tiles, today's step, and a slim side panel); phones keep the summary card */
     var inReview = st.filter(function (x) { return x.status === 'review'; }).length, fix = st.filter(function (x) { return x.status === 'revision'; }).length;
@@ -717,21 +722,15 @@
       }).join('') + '</div>' : '') +
     '</aside>';
     var mhead = '<div class="ov-top w-only"><div><h1>' + greet() + ', ' + first(me.name) + ' ' + wave() + '</h1><p class="muted">' + today() + ' · ' + esc(tr.name) + '</p></div></div>';
-    return { html: '<div class="ov mv"><div class="ov-main stack-lg"><div class="m-only stack-lg">' + head + '</div>' + mhead + tiles + summary + help + '</div>' + side + '</div>', mount: function (m) {
+    return { html: '<div class="ov mv"><div class="ov-main stack-lg"><div class="m-only stack-lg">' + head + '</div>' + mhead + tiles + startCard + summary + journey + help + '</div>' + side + '</div>', mount: function (m) {
       animateRing(m); bindProg(m);
       m.querySelectorAll('[data-ask]').forEach(function (b) { b.addEventListener('click', function () { chatContext = tr.name + ' · Step ' + cur.step + ': ' + d.title; go('chat'); }); });
       m.querySelectorAll('[data-acct]').forEach(function (b) { b.addEventListener('click', accountSheet); });
     } };
   }
 
-  async function vStep(t, n) {
-    if (!C.tracks.some(function (x) { return x.id === t; }) || !(n >= 1 && n <= T(t).steps.length)) { setHash('roadmap'); return vRoadmap(); }
-    var st = await S.stepStates(me.id, t), body = stepCard(t, n, st);
-    return { html: '<a class="back" href="#roadmap">' + ic('back', 'chev') + 'Roadmap</a>' + body.html, mount: body.mount };
-  }
-
   /* charts and diagrams inside lessons */
-  function vizLabel(v) { return { table: 'Table', flow: 'Steps in order', choose: 'Which one to pick', pyramid: 'Picture', formula: 'Formula, worked out', letters: 'Memory aid', funnel: 'Picture', venn: 'Picture', screen: 'What you’ll see on screen', sheet: 'Spreadsheet', forest: 'Forest plot' }[v.type] || 'Picture'; }
+  function vizLabel(v) { return { table: 'Table', flow: 'Steps in order', choose: 'Which one to pick', pyramid: 'Picture', formula: 'Formula, worked out', letters: 'Memory aid', funnel: 'Picture', venn: 'Picture', screen: 'What you’ll see on screen', sheet: 'Spreadsheet', forest: 'Forest plot', terms: 'Tap to learn' }[v.type] || 'Picture'; }
   function visual(v) {
     var body = '';
     if (v.type === 'table') {
@@ -793,6 +792,11 @@
         '<tr class="hd"><th>1</th>' + v.cols.map(function (c) { return '<td>' + esc(c) + '</td>'; }).join('') + '</tr>' +
         v.rows.map(function (r, i) { return '<tr><th>' + (i + 2) + '</th>' + r.map(function (c) { return '<td>' + esc(c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>' +
         (v.note ? '<p class="small muted">' + esc(v.note) + '</p>' : '');
+    } else if (v.type === 'terms') {
+      /* word cards: tap to turn one over and see what the word means */
+      body = '<div class="viz-terms">' + v.items.map(function (x) {
+        return '<button class="term" type="button" aria-pressed="false"><span class="tf"><b>' + esc(x[0]) + '</b><small>Tap to see</small></span><span class="tb"><b>' + esc(x[0]) + '</b><span>' + esc(x[1]) + '</span>' + (x[2] ? '<small>For example: ' + esc(x[2]) + '</small>' : '') + '</span></button>';
+      }).join('') + '</div>';
     } else if (v.type === 'forest') {
       /* a forest plot: each study's result as a square with a line (its range), the combined result as a diamond */
       var lo = v.min || 0.1, hi = v.max || 10, W = 300, X0 = 82, X1 = 290, rowH = 26, top = 26, n2 = v.rows.length;
@@ -814,197 +818,303 @@
   }
   var vennId = 0;
 
-  function stepCard(t, n, st, preview) {
-    var x = st[n - 1], d = stepOf(t, n), ph = phaseOf(t, n), sub = x.submission, total = st.length;
-    if (x.status === 'locked') {
-      var open = st.filter(function (s) { return s.status !== 'approved'; })[0];
-      return { html: '<div class="glass card locked-box">' + ic('lock') + '<h2>Step ' + n + ' · ' + esc(d.title) + '</h2><p class="muted">This step unlocks when step ' + (n - 1) + ' is approved.</p><a class="btn btn-glass" href="#step-' + t + '-' + open.step + '">Go to step ' + open.step + '</a></div>', mount: function () {} };
-    }
-    var tab = x.status === 'current' ? 0 : 2;
-    var html = '<article class="glass card stack-lg" id="stepcard">' +
-      '<div class="step-head"><div class="row spread wrap"><span class="eyebrow">' + esc(T(t).short) + ' · ' + esc(ph.name) + '</span>' + pill(x.status) + '</div>' +
-      '<h2>Step ' + n + ' · ' + esc(d.title) + '</h2><div class="step-meta">' + ic('clock', 'chev') + '<span>' + d.minutes + ' min · ' + esc(d.summary) + '</span></div>' +
-        (x.unlocked && !preview && x.status === 'current' && n > 1 && st[n - 2].status !== 'approved' ? '<p class="small unlocked-note">' + ic('check') + 'Your mentor unlocked this step for you, so you can start it now.</p>' : '') + '</div>' +
-      '<div class="seg" role="tablist" style="--n:3;--i:' + tab + '"><button type="button" role="tab" data-t="0">Learn</button><button type="button" role="tab" data-t="1">Example</button><button type="button" role="tab" data-t="2">Task</button></div>' +
-      '<div id="panel"></div></article>';
-
-    var readKey = 'rt-read-' + me.id + '-' + t + '-' + n, quizKey = 'rt-quiz-' + me.id + '-' + t + '-' + n, lastTab = -1;
-    function readSet() { try { return JSON.parse(store(readKey) || '{}'); } catch (e) { return {}; } }
-    function readCount() { var r = readSet(), c = d.lesson.filter(function (l, i) { return r[i]; }).length; return c === d.lesson.length ? 'All ' + c + ' read ✓' : 'Tap to tick · ' + c + ' of ' + d.lesson.length; }
-    function panel(k) {
-      if (k === 0) return '<div class="panel stack-lg">' +
-        (d.intro ? '<div class="note simple"><span class="eyebrow">In simple words</span><p>' + esc(d.intro) + '</p></div>' : '') +
-        '<div class="stack"><div class="row spread wrap"><span class="eyebrow">Step by step</span>' + (preview ? '' : '<span class="pt-count small muted" aria-live="polite">' + readCount() + '</span>') + '</div>' +
-        '<ol class="lesson' + (preview ? '' : ' ticks') + '">' + d.lesson.map(function (l, i) {
-          var on = !preview && readSet()[i];
-          return '<li' + (preview ? '' : ' class="' + (on ? 'done' : '') + '" data-pt="' + i + '" role="checkbox" tabindex="0" aria-checked="' + !!on + '"') + '><span class="n">' + (on ? ic('check') : i + 1) + '</span><div><b>' + esc(l.h) + '</b><p>' + esc(l.p) + '</p></div></li>';
-        }).join('') + '</ol></div>' +
-        ((d.visuals || []).length || d.mistakes || stepGuides(t, n) ? '<div class="stack more"><span class="eyebrow">More help</span><div class="folds">' +
-          (d.visuals || []).map(function (v) { return fold(v.title, vizLabel(v), visual(v), '', 'pic'); }).join('') +
-          (d.mistakes ? fold('Common mistakes', d.mistakes.length + ' to avoid', '<ul class="mlist">' + d.mistakes.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul>', '', 'warn') : '') +
-          stepGuides(t, n) + '</div></div>' : '') +
-        '<button class="btn btn-glass" type="button" data-goto="1">See an example →</button></div>';
-      if (k === 1 && !preview && store(quizKey) === null) {
-        var strongFirst = Math.random() < .5, pick = function (strong) { return '<button type="button" class="ex-box ex-pick" data-strong="' + (strong ? 1 : 0) + '"><span class="lbl"></span><p>' + esc(strong ? d.example.strong : d.example.weak) + '</p></button>'; };
-        return '<div class="panel ex quiz"><p class="quiz-q"><b>Quick check:</b> which one is stronger? Tap it.</p>' + pick(strongFirst) + pick(!strongFirst) +
-          '<p class="quiz-msg" aria-live="polite"></p><div class="quiz-after" hidden><p class="why"><b>Why it works:</b> ' + esc(d.example.why) + '</p>' +
-          ((x.status === 'current' || x.status === 'revision') ? '<button class="btn btn-primary" type="button" data-goto="2">Start the task →</button>' : '') + '</div></div>';
-      }
-      if (k === 1) return '<div class="panel ex">' +
-        '<div class="ex-box ex-weak"><span class="lbl">Weak</span><p>' + esc(d.example.weak) + '</p></div>' +
-        '<div class="ex-box ex-strong"><span class="lbl">Strong</span><p>' + esc(d.example.strong) + '</p></div>' +
-        '<p class="why"><b>Why it works:</b> ' + esc(d.example.why) + '</p>' +
-        ((x.status === 'current' || x.status === 'revision') ? '<button class="btn btn-primary" type="button" data-goto="2">' + (preview ? 'See the task →' : 'Start the task →') + '</button>' : '') + '</div>';
-      var by = function (s) { return s && s.reviewer ? '<div class="by"><span class="avatar">' + initials(s.reviewer.name) + '</span>' + esc(s.reviewer.name) + ' · ' + rel(s.reviewedAt) + '</div>' : ''; };
-      var out = '<div class="panel stack"><span class="eyebrow">Your task</span><p class="prompt">' + esc(d.task.prompt) + '</p>' +
-        (d.include ? '<div class="include"><b class="small">What to include</b><ul>' + d.include.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>' : '');
-      if (preview) return out + (d.template ? '<div class="stack"><span class="eyebrow">Template students can start from</span><div class="paper">' + esc(d.template) + '</div></div>' : '') +
-        '<p class="small muted">Students write their answer here and submit it for review.</p></div>';
-      if (x.status === 'revision') out += '<div class="note red"><span class="small"><b>Your mentor asked for changes</b></span><p class="fb">' + esc(sub.feedback) + '</p>' + by(sub) + '</div>';
-      if (x.status === 'current' || x.status === 'revision') {
-        out += '<div class="field"><div class="row spread wrap"><label for="answer">Your answer</label>' + (d.template ? '<button class="btn btn-quiet btn-sm" type="button" id="use-tpl">Use a template</button>' : '') + '</div><textarea id="answer" placeholder="Write your answer here. Your draft saves automatically."></textarea></div>' +
-          '<div class="row spread wrap"><span class="counter" id="counter"></span><button class="btn btn-primary" type="button" id="send" disabled>' + (x.status === 'revision' ? 'Resubmit' : 'Submit for review') + '</button></div>';
-      }
-      if (x.status === 'review') out += '<div class="note amber"><b class="small">Submitted ' + rel(sub.createdAt) + '</b><span class="small muted">Your mentor will review it within 48 hours. You’ll see their feedback here.</span></div><div class="paper">' + esc(sub.text) + '</div>';
-      if (x.status === 'approved') out += '<div><span class="stamp">Approved</span></div>' + (sub.feedback ? '<div class="note teal"><p class="fb">' + esc(sub.feedback) + '</p>' + by(sub) + '</div>' : '') +
-        '<details><summary class="small muted" style="cursor:pointer">Your approved answer</summary><div class="paper" style="margin-top:10px">' + esc(sub.text) + '</div></details>' +
-        (n < total ? '<a class="btn btn-primary" href="#step-' + t + '-' + (n + 1) + '">Go to step ' + (n + 1) + ' →</a>' : '');
-      return out + '</div>';
-    }
-
+  /* ---------- the lesson player ----------
+     A step (and the "Start here" basics) is a short run of cards, one idea per card: an overview, the
+     big picture, each lesson point, the pictures, a quick check, the weak/strong example, common mistakes
+     and finally the task. Continue and Back (or a swipe, or the arrow keys) move through them, and the
+     place is remembered so the student carries on where they left off. */
+  function playerKey(kind, t, n) { return 'rt-pos-' + me.id + '-' + kind + '-' + t + (n ? '-' + n : ''); }
+  function startKey(t) { return 'rt-start-' + me.id + '-' + t; }
+  function foundKey() { return 'rt-found-' + me.id; }
+  function player(o) {
+    var slides = o.slides, n = slides.length;
+    var html = '<div class="pl' + (o.preview ? ' preview' : '') + '" id="pl">' +
+      '<div class="pl-top">' + (o.close ? '<a class="pl-x" href="' + o.close + '" aria-label="Close">' + ic('back') + '</a>' : '') +
+        '<div class="pl-bar" aria-hidden="true">' + slides.map(function () { return '<i></i>'; }).join('') + '</div>' +
+        '<button class="pl-count" type="button" aria-label="All parts"></button></div>' +
+      '<div class="pl-stage" id="pl-stage"></div>' +
+      '<div class="pl-nav"><button class="pl-prev" type="button" aria-label="Back">' + ic('back') + '</button><button class="btn btn-primary pl-next" type="button"></button></div>' +
+    '</div>';
     function mount(root) {
-      var card = root.querySelector('#stepcard'), seg = card.querySelector('.seg'), box = card.querySelector('#panel');
-      function show(k) {
-        seg.style.setProperty('--i', k);
-        seg.querySelectorAll('button').forEach(function (b) { var on = +b.dataset.t === k; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
-        box.innerHTML = panel(k);
-        var pn = box.firstElementChild; if (pn && lastTab >= 0 && k !== lastTab) pn.classList.add(k > lastTab ? 'from-right' : 'from-left'); lastTab = k;
-        box.querySelectorAll('[data-goto]').forEach(function (b) { b.addEventListener('click', function () { show(+b.dataset.goto); }); });
-        bindGuides(box);
-        box.querySelectorAll('[data-pt]').forEach(function (li) {
-          var toggle = function () {
-            var r = readSet(), i = li.dataset.pt, on = !r[i];
-            if (on) r[i] = 1; else delete r[i];
-            store(readKey, JSON.stringify(r));
-            li.classList.toggle('done', on); li.setAttribute('aria-checked', on);
-            li.querySelector('.n').innerHTML = on ? ic('check') : (+i + 1);
-            if (on) { li.classList.remove('pop'); void li.offsetWidth; li.classList.add('pop'); }
-            box.querySelector('.pt-count').textContent = readCount();
-            if (on && d.lesson.every(function (l, j) { return r[j]; })) {
-              var nb = box.querySelector('[data-goto="1"]'); confetti(li.querySelector('.n'));
-              if (nb) { nb.classList.remove('nudge'); void nb.offsetWidth; nb.classList.add('nudge'); }
-            }
-          };
-          li.addEventListener('click', toggle);
-          li.addEventListener('keydown', function (e) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggle(); } });
-        });
-        box.querySelectorAll('.ex-pick').forEach(function (b) {
-          b.addEventListener('click', function () {
-            var right = b.dataset.strong === '1', msg = box.querySelector('.quiz-msg');
-            store(quizKey, right ? '1' : '0');
-            box.querySelectorAll('.ex-pick').forEach(function (o) {
-              var strong = o.dataset.strong === '1';
-              o.disabled = true; o.classList.add(strong ? 'ex-strong' : 'ex-weak'); o.querySelector('.lbl').textContent = strong ? 'Strong' : 'Weak';
-            });
-            b.classList.add('chosen', right ? 'right' : 'wrong');
-            msg.textContent = right ? 'Yes! That’s the stronger one.' : 'Not quite. The other one is stronger. Here’s why:';
-            msg.className = 'quiz-msg ' + (right ? 'ok' : 'no');
-            box.querySelector('.quiz-after').hidden = false;
-            if (right) confetti(b);
-          });
-        });
-        var ta = box.querySelector('#answer');
-        if (ta) {
-          var key = 'rt-draft-' + me.id + '-' + t + '-' + n, cnt = box.querySelector('#counter'), send = box.querySelector('#send');
-          ta.value = store(key) || (t === 'original' && store('rt-draft-' + me.id + '-' + n)) || (x.status === 'revision' ? sub.text : '');
-          var upd = function () {
-            var w = words(ta.value), ok = ta.value.trim().length > 0;
-            cnt.textContent = w ? w + ' word' + (w === 1 ? '' : 's') : 'Draft saves automatically'; send.disabled = !ok;
-          };
-          var tpl = box.querySelector('#use-tpl');
-          if (tpl) tpl.addEventListener('click', function () {
-            if (ta.value.trim() && ta.value.trim() !== d.template.trim()) { ta.value = ta.value.replace(/\s*$/, '') + '\n\n' + d.template; } else ta.value = d.template;
-            store(key, ta.value); upd(); ta.focus();
-          });
-          ta.addEventListener('input', function () { store(key, ta.value); upd(); }); upd();
-          send.addEventListener('click', function () {
-            send.disabled = true; send.textContent = 'Sending…';
-            S.submit(me.id, t, n, ta.value.trim()).then(function () {
-              store(key, null); send.classList.add('sent'); send.innerHTML = ic('check') + 'Sent!'; confetti(send);
-              toast('Sent to your mentor'); setTimeout(render, 900);
-            }, function (e) { toast(e.message); send.disabled = false; send.textContent = x.status === 'revision' ? 'Resubmit' : 'Submit for review'; });
-          });
-        }
+      var el = root.querySelector('#pl'), stage = el.querySelector('#pl-stage'), bars = el.querySelectorAll('.pl-bar i');
+      var prev = el.querySelector('.pl-prev'), next = el.querySelector('.pl-next'), count = el.querySelector('.pl-count');
+      var i = Math.max(0, Math.min(n - 1, o.start || 0)), max = Math.max(i, +store(o.key + '-max') || 0);
+      var api = { update: nav, next: function () { go(i + 1); }, go: function (k) { go(k); } };
+      function nav() {
+        var s = slides[i], ok = !s.gate || s.gate();
+        prev.style.visibility = i === 0 ? 'hidden' : '';
+        next.hidden = !!s.last && !s.onNext;
+        next.disabled = !ok;
+        next.textContent = ok ? (s.nextLabel || 'Continue') : (s.gateLabel || 'Pick an answer to continue');
+        count.textContent = (i + 1) + ' / ' + n;
+        bars.forEach(function (b, k) { b.className = k < i ? 'done' : k === i ? 'on' : k <= max ? 'seen' : ''; });
       }
-      seg.querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { show(+b.dataset.t); }); });
-      show(tab);
-      if (!preview && x.status !== 'approved') coach();
-
-      /* "What to do next": a small pill that always shows the next action on this step; tap it for the whole
-         checklist. It ticks things off as the student does them, and opens by itself the first time. */
-      function coach() {
-        var guides = (WSTEPS[t] || {})[n] || [], gKey = 'rt-wg-' + me.id + '-' + t + '-' + n, seenKey = 'rt-coach-' + me.id + '-' + t + '-' + n, fbKey = 'rt-fbseen-' + (sub ? sub.id : '');
-        var draftKey = 'rt-draft-' + me.id + '-' + t + '-' + n;
-        var el = document.createElement('div'); el.className = 'coach'; el.id = 'coach';
-        document.body.appendChild(el);
-        var open = false, lastNext = null;
-        function draftWords() { var ta = box.querySelector('#answer'); return words(ta ? ta.value : (store(draftKey) || '')); }
-        function items() {
-          if (x.status === 'review') return [
-            { id: 'sent', h: 'Submitted for review', p: 'Well done! Your mentor usually replies within 48 hours.', done: true },
-            { id: 'wait', h: 'While you wait', p: 'Read the Writing basics, so the next steps feel easy.', go: function () { location.hash = '#basics'; }, btn: 'Open' }
-          ];
-          var r = readSet(), read = d.lesson.filter(function (l, i) { return r[i]; }).length, list = [];
-          if (x.status === 'revision') list.push({ id: 'notes', h: 'Read your mentor’s notes', p: 'They’re at the top of the Task tab.', done: store(fbKey) !== null, go: function () { goTo(2, '.note.red'); store(fbKey, '1'); refresh(); } });
-          list.push({ id: 'learn', h: 'Read the lesson', p: 'Tap each point once you’ve read it · ' + read + ' of ' + d.lesson.length, done: read === d.lesson.length, go: function () { goTo(0, '.lesson.ticks li:not(.done)'); } });
-          if (guides.length) list.push({ id: 'guide', h: 'Open the writing guide', p: guides.map(function (g) { var w = guide(g); return w ? w.title : ''; }).filter(Boolean).slice(0, 3).join(', ') + (guides.length > 3 ? '…' : '') + ': what to write and how many words', done: store(gKey) !== null, go: function () { goTo(0, '.wg.guide', function (dt) { dt.open = true; }); } });
-          list.push({ id: 'example', h: 'Look at the example', p: 'Pick the stronger answer of the two', done: store(quizKey) !== null, go: function () { goTo(1, '.panel'); } });
-          var w = draftWords();
-          list.push({ id: 'write', h: x.status === 'revision' ? 'Fix your answer' : 'Write your answer', p: (d.template ? 'Stuck? Tap “Use a template” to start. ' : '') + (w ? w + ' words so far' : 'Your draft saves by itself'), done: w >= 20, go: function () { goTo(2, '#answer', function (ta) { ta.focus({ preventScroll: true }); }); } });
-          list.push({ id: 'send', h: x.status === 'revision' ? 'Resubmit it' : 'Submit it for review', p: 'Your mentor replies within 48 hours', done: false, go: function () { goTo(2, '#send'); } });
-          return list;
-        }
-        function goTo(k, sel, then) {
-          setOpen(false);
-          if (lastTab !== k) show(k);
-          requestAnimationFrame(function () {
-            var target = box.querySelector(sel) || card;
-            if (then) then(target);
-            target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
-            target.classList.remove('coach-flash'); void target.offsetWidth; target.classList.add('coach-flash');
-          });
-        }
-        function draw() {
-          var list = items(), done = list.filter(function (i) { return i.done; }).length, next = list.filter(function (i) { return !i.done; })[0];
-          var pill = '<button class="coach-pill" type="button" aria-expanded="' + open + '" aria-controls="coach-card"><span class="coach-n">' + (next ? done + '/' + list.length : ic('check')) + '</span><span class="coach-t"><b>' + (next ? 'Next: ' : '') + esc(next ? next.h : list[list.length - 1].h) + '</b></span></button>';
-          var sheetHtml = '<div class="coach-card" id="coach-card" role="dialog" aria-label="What to do on this step"' + (open ? '' : ' hidden') + '><div class="coach-head"><b>Your plan for this step</b><span class="small muted">' + done + ' of ' + list.length + ' done</span><button class="coach-x" type="button" aria-label="Close">×</button></div>' +
-            '<ol class="coach-list">' + list.map(function (i, k) {
-              var cur = i === next || (i.btn && !next);
-              return '<li class="' + (i.done ? 'done' : cur ? 'cur' : '') + '"><span class="coach-dot">' + (i.done ? ic('check') : k + 1) + '</span><div><b>' + esc(i.h) + '</b>' + (cur ? '<span>' + esc(i.p) + '</span>' : '') + '</div>' + (i.go && cur ? '<button class="btn btn-primary btn-sm" type="button" data-go="' + k + '">' + (i.btn || 'Go') + '</button>' : '') + '</li>';
-            }).join('') + '</ol></div>';
-          el.innerHTML = sheetHtml + pill;
-          if (next && lastNext && next.id !== lastNext) { var pl = el.querySelector('.coach-pill'); pl.classList.add('bump'); }
-          lastNext = next ? next.id : 'all';
-          el.querySelector('.coach-pill').addEventListener('click', function () { setOpen(!open); });
-          el.querySelector('.coach-x').addEventListener('click', function () { setOpen(false); });
-          el.querySelectorAll('[data-go]').forEach(function (b) { b.addEventListener('click', function () { list[+b.dataset.go].go(); }); });
-        }
-        function setOpen(v) { if (v === open) return; open = v; draw(); if (v) store(seenKey, '1'); }
-        var refresh = function () { if (el.isConnected) draw(); };
-        draw();
-        /* things the student does on the page tick the list */
-        card.addEventListener('click', function (e) { if (e.target.closest('[data-pt], .ex-pick, .seg button, #use-tpl')) setTimeout(refresh, 30); });
-        card.addEventListener('toggle', function (e) { if (e.target.classList && e.target.classList.contains('guide') && e.target.open) { store(gKey, '1'); refresh(); } }, true);
-        var tm; card.addEventListener('input', function () { clearTimeout(tm); tm = setTimeout(refresh, 400); });
-        if (x.status === 'revision') card.addEventListener('click', function (e) { if (e.target.closest('.seg [data-t="2"]')) { store(fbKey, '1'); setTimeout(refresh, 30); } });
-        if (store(seenKey) === null && x.status !== 'review') setTimeout(function () { if (el.isConnected && !document.querySelector('.tour, .sheet-bg')) setOpen(true); }, 900);
+      function show(k, dir) {
+        i = k; if (!o.preview) { store(o.key, String(i)); if (i > max) { max = i; store(o.key + '-max', String(max)); } }
+        var s = slides[i];
+        stage.innerHTML = '<section class="pl-slide glass card' + (s.cls ? ' ' + s.cls : '') + (dir ? ' from-' + dir : '') + '" aria-label="Part ' + (i + 1) + ' of ' + n + '">' + s.html() + '</section>';
+        var sec = stage.firstElementChild;
+        sec.querySelectorAll('.term').forEach(function (b) { b.addEventListener('click', function () { var on = !b.classList.contains('flip'); b.classList.toggle('flip', on); b.setAttribute('aria-pressed', on); }); });
+        bindGuides(sec);
+        if (s.mount) s.mount(sec, api);
+        nav();
       }
-      if (!preview && x.status === 'approved' && sub && store('rt-cele-' + sub.id) === null) {
-        store('rt-cele-' + sub.id, '1');
-        setTimeout(function () { confetti(card.querySelector('.stamp') || card.querySelector('.pill')); }, 650);
+      function go(k) {
+        if (k < 0 || k >= n || k === i) return;
+        if (k > i && slides[i].gate && !slides[i].gate()) return;
+        show(k, k > i ? 'right' : 'left');
+        var top = el.getBoundingClientRect().top + scrollY - 12;
+        if (scrollY > top || o.preview) scrollTo({ top: Math.max(0, top - (o.preview ? 70 : 0)), behavior: reduce ? 'auto' : 'smooth' });
       }
+      next.addEventListener('click', function () { var s = slides[i]; if (s.onNext) s.onNext(api); else go(i + 1); });
+      prev.addEventListener('click', function () { go(i - 1); });
+      count.addEventListener('click', function () {
+        sheet('<h2>' + esc(o.title || 'This lesson') + '</h2><p class="small muted">Jump to any part.</p><div class="glass list pl-toc">' + slides.map(function (s, k) {
+          var cls = k === i ? 'current' : k <= max ? 'approved' : 'locked', locked = !o.preview && k > max + 1 && slides.slice(0, k).some(function (x) { return x.gate && !x.gate(); });
+          return '<button class="li li-btn" type="button" data-k="' + k + '"' + (locked ? ' disabled' : '') + '><span class="sicon ' + cls + '">' + (k < i && k <= max ? ic('check') : k + 1) + '</span><div class="li-main"><span class="li-title">' + esc(s.title) + '</span>' + (s.sub ? '<span class="li-sub">' + esc(s.sub) + '</span>' : '') + '</div></button>';
+        }).join('') + '</div><button class="btn btn-quiet btn-block btn-sm" type="button" data-close>Close</button>',
+          function (sh, close) { sh.querySelectorAll('[data-k]').forEach(function (b) { b.addEventListener('click', function () { close(); var k = +b.dataset.k; if (k !== i) show(k, k > i ? 'right' : 'left'); }); }); });
+      });
+      /* swipe left or right on a phone (not while scrolling a wide table or typing) */
+      var sx = 0, sy = 0, st0 = 0;
+      stage.addEventListener('touchstart', function (e) { var t = e.touches[0]; sx = t.clientX; sy = t.clientY; st0 = Date.now(); }, { passive: true });
+      stage.addEventListener('touchend', function (e) {
+        if (e.target.closest('.viz-scroll, textarea, input, .viz-screen')) return;
+        var t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+        if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.6 && Date.now() - st0 < 700) { if (dx < 0) { var s = slides[i]; if (!s.last && !s.onNext) go(i + 1); } else go(i - 1); }
+      }, { passive: true });
+      function key(e) {
+        if (!el.isConnected) { removeEventListener('keydown', key); return; }
+        if (e.target.closest && e.target.closest('textarea, input, select, [contenteditable]') || document.querySelector('.sheet-bg') || e.altKey || e.metaKey || e.ctrlKey) return;
+        if (e.key === 'ArrowRight' && !slides[i].last) go(i + 1); else if (e.key === 'ArrowLeft') go(i - 1);
+      }
+      if (!o.preview) addEventListener('keydown', key);
+      show(i);
     }
     return { html: html, mount: mount };
+  }
+
+  /* pieces shared by steps and the basics */
+  function kick(t) { return '<span class="pl-kick">' + t + '</span>'; }
+  function pointsHtml(points) {
+    return '<div class="pl-points">' + points.map(function (p, k) { return '<div class="pl-pt"><span class="pl-pn">' + (k + 1) + '</span><div><b>' + esc(p[0]) + '</b><p>' + esc(p[1]) + '</p></div></div>'; }).join('') + '</div>';
+  }
+  function checkSlide(c, key, title, preview) {
+    var pick = function () { return store(key); };
+    return { title: title || 'Quick check', sub: c.q, cls: 'pl-check', gate: function () { return preview || pick() !== null; },
+      html: function () {
+        var a = pick(), done = a !== null, right = done && +a === c.answer;
+        return kick('Quick check') + '<h2 class="pl-h">' + esc(c.q) + '</h2><div class="pl-opts" role="group">' + c.options.map(function (o, k) {
+          var cls = !done ? '' : k === c.answer ? ' right' : k === +a ? ' wrong' : ' dim';
+          return '<button class="pl-opt' + cls + '" type="button" data-k="' + k + '"' + (done ? ' disabled' : '') + '><span class="pl-ol">' + (done && k === c.answer ? ic('check') : 'ABCD'[k]) + '</span><span>' + esc(o) + '</span></button>';
+        }).join('') + '</div><div class="pl-why' + (done && !right ? ' no' : '') + '"' + (done ? '' : ' hidden') + ' aria-live="polite"><b>' + (done ? (right ? 'Correct!' : 'Not quite.') : '') + '</b> <span>' + esc(c.why || '') + '</span></div>';
+      },
+      mount: function (el, api) {
+        el.querySelectorAll('.pl-opt').forEach(function (b) {
+          b.addEventListener('click', function () {
+            if (pick() !== null) return;
+            var k = +b.dataset.k, right = k === c.answer; store(key, String(k));
+            el.querySelectorAll('.pl-opt').forEach(function (x) { var j = +x.dataset.k; x.disabled = true; x.classList.add(j === c.answer ? 'right' : j === k ? 'wrong' : 'dim'); if (j === c.answer) x.querySelector('.pl-ol').innerHTML = ic('check'); });
+            var w = el.querySelector('.pl-why'); w.hidden = false; w.classList.toggle('no', !right); w.querySelector('b').textContent = right ? 'Correct!' : 'Not quite.';
+            if (right) confetti(b);
+            api.update();
+          });
+        });
+      } };
+  }
+
+  /* ---------- a step, card by card ---------- */
+  function stepSlides(t, n, st, preview) {
+    var x = st[n - 1], d = stepOf(t, n), ph = phaseOf(t, n), total = st.length, base = (preview ? 'preview' : me.id) + '-' + t + '-' + n, out = [];
+    var live = !preview && (x.status === 'current' || x.status === 'revision');
+    out.push({ title: 'Overview', sub: d.summary, cls: 'pl-cover', nextLabel: live && x.status === 'current' ? 'Start the lesson' : 'Go through the lesson',
+      html: function () {
+        var parts = d.lesson.length + (d.visuals || []).length;
+        return kick(esc(T(t).short) + ' · Step ' + n + ' of ' + total + ' · ' + esc(ph.name)) +
+          '<h1 class="pl-title">' + esc(d.title) + '</h1><p class="pl-lead">' + esc(d.summary) + '</p>' +
+          '<div class="pl-meta"><span>' + ic('clock') + d.minutes + ' min</span><span>' + ic('book') + parts + ' short parts</span><span>' + ic('pen') + '1 task</span></div>' +
+          (d.goal ? '<div class="pl-goal"><span class="eyebrow">By the end you’ll have</span><b>' + esc(d.goal) + '</b></div>' : '') +
+          (!preview && x.status !== 'current' ? '<div class="pl-status">' + pill(x.status) + '<span class="small muted">' + ({ review: 'Your answer is with your mentor.', approved: 'Approved. You can read it again any time.', revision: 'Your mentor asked for a few changes. They’re on the task card.' })[x.status] + '</span></div>' : '') +
+          (!preview && x.unlocked && x.status === 'current' && n > 1 && st[n - 2].status !== 'approved' ? '<p class="small unlocked-note">' + ic('check') + 'Your mentor unlocked this step for you, so you can start it now.</p>' : '') +
+          (preview || x.status !== 'current' ? '<button class="btn btn-quiet btn-sm" type="button" data-jump style="justify-self:start">Skip to the task →</button>' : '');
+      },
+      mount: function (el, api) { var j = el.querySelector('[data-jump]'); if (j) j.addEventListener('click', function () { api.go(out.length - 1); }); } });
+    if (d.intro) out.push({ title: 'The big picture', cls: 'pl-simple', html: function () { return kick('The big picture') + '<h2 class="pl-h">In simple words</h2><p class="pl-p big">' + esc(d.intro) + '</p>'; } });
+    d.lesson.forEach(function (l, k) {
+      out.push({ title: l.h, sub: 'Lesson ' + (k + 1) + ' of ' + d.lesson.length, html: function () {
+        return '<span class="pl-num" aria-hidden="true">' + ('0' + (k + 1)).slice(-2) + '</span>' + kick('Lesson ' + (k + 1) + ' of ' + d.lesson.length) + '<h2 class="pl-h">' + esc(l.h) + '</h2><p class="pl-p">' + esc(l.p) + '</p>';
+      } });
+    });
+    (d.visuals || []).forEach(function (v) {
+      out.push({ title: v.title, sub: 'Picture', cls: 'pl-pic', html: function () { return kick('See it · ' + vizLabel(v)) + '<h2 class="pl-h sm">' + esc(v.title) + '</h2>' + visual(v); } });
+    });
+    if (d.check) out.push(checkSlide(d.check, 'rt-chk-' + base, null, preview));
+    if (d.example) {
+      var qk = 'rt-quiz-' + base, strongFirst = n % 2 === 0;
+      out.push({ title: 'Weak or strong?', sub: 'Spot the better answer', cls: 'pl-check', gate: function () { return preview || store(qk) !== null; },
+        gateLabel: 'Tap the stronger one to continue',
+        html: function () {
+          var done = preview || store(qk) !== null, right = store(qk) === '1';
+          var box = function (strong) {
+            var txt = esc(strong ? d.example.strong : d.example.weak);
+            if (done) return '<div class="ex-box ' + (strong ? 'ex-strong' : 'ex-weak') + '"><span class="lbl">' + (strong ? 'Strong' : 'Weak') + '</span><p>' + txt + '</p></div>';
+            return '<button type="button" class="ex-box ex-pick" data-strong="' + (strong ? 1 : 0) + '"><span class="lbl"></span><p>' + txt + '</p></button>';
+          };
+          return kick('Spot the difference') + '<h2 class="pl-h">Which answer is stronger?</h2>' + (done ? '' : '<p class="muted">Tap the one you think is better.</p>') +
+            '<div class="ex">' + box(strongFirst) + box(!strongFirst) + '</div>' +
+            '<p class="quiz-msg ' + (done && !preview ? (right ? 'ok' : 'no') : '') + '" aria-live="polite">' + (done && !preview ? (right ? 'Yes! That’s the stronger one.' : 'Not quite. The other one is stronger.') : '') + '</p>' +
+            '<div class="pl-why"' + (done ? '' : ' hidden') + '><b>Why it works:</b> ' + esc(d.example.why) + '</div>';
+        },
+        mount: function (el, api) {
+          el.querySelectorAll('.ex-pick').forEach(function (b) {
+            b.addEventListener('click', function () {
+              var right = b.dataset.strong === '1', msg = el.querySelector('.quiz-msg');
+              store(qk, right ? '1' : '0');
+              el.querySelectorAll('.ex-pick').forEach(function (o) { var s = o.dataset.strong === '1'; o.disabled = true; o.classList.add(s ? 'ex-strong' : 'ex-weak'); o.querySelector('.lbl').textContent = s ? 'Strong' : 'Weak'; });
+              b.classList.add('chosen', right ? 'right' : 'wrong');
+              msg.textContent = right ? 'Yes! That’s the stronger one.' : 'Not quite. The other one is stronger.'; msg.className = 'quiz-msg ' + (right ? 'ok' : 'no');
+              el.querySelector('.pl-why').hidden = false;
+              if (right) confetti(b);
+              api.update();
+            });
+          });
+        } });
+    }
+    if (d.mistakes) out.push({ title: 'Common mistakes', sub: d.mistakes.length + ' to avoid', cls: 'pl-warn', nextLabel: 'Go to your task', html: function () {
+      return kick('Watch out') + '<h2 class="pl-h">Common mistakes</h2><p class="muted">Students often slip on these. Check your work for them.</p><ul class="pl-mist">' + d.mistakes.map(function (m) { return '<li><span>' + ic('alert') + '</span>' + esc(m) + '</li>'; }).join('') + '</ul>';
+    } });
+    else if (out.length) out[out.length - 1].nextLabel = 'Go to your task';
+    out.push(taskSlide(t, n, st, preview));
+    return out;
+  }
+
+  /* the task card: what to write, what to include, the guides, the answer box and the result */
+  function taskSlide(t, n, st, preview) {
+    var x = st[n - 1], d = stepOf(t, n), sub = x.submission, total = st.length;
+    var guides = ((WSTEPS[t] || {})[n] || []).map(guide).filter(Boolean);
+    var incKey = 'rt-inc-' + (preview ? 'preview' : me.id) + '-' + t + '-' + n;
+    var incSet = function () { try { return JSON.parse(store(incKey) || '{}'); } catch (e) { return {}; } };
+    var by = function (s) { return s && s.reviewer ? '<div class="by"><span class="avatar">' + initials(s.reviewer.name) + '</span>' + esc(s.reviewer.name) + ' · ' + rel(s.reviewedAt) + '</div>' : ''; };
+    var live = !preview && (x.status === 'current' || x.status === 'revision');
+    return { title: 'Your task', sub: d.task.prompt, cls: 'pl-task', last: true,
+      html: function () {
+        var inc = incSet();
+        var out = kick('Your task') + '<h2 class="pl-h">' + (live ? (x.status === 'revision' ? 'Make the changes' : 'Now it’s your turn') : preview ? 'The task' : 'Your answer') + '</h2>';
+        if (!preview && x.status === 'revision') out += '<div class="note red"><span class="small"><b>Your mentor asked for changes</b></span><p class="fb">' + esc(sub.feedback) + '</p>' + by(sub) + '</div>';
+        if (!preview && x.status === 'approved') out += '<div><span class="stamp">Approved</span></div>' + (sub && sub.feedback ? '<div class="note teal"><p class="fb">' + esc(sub.feedback) + '</p>' + by(sub) + '</div>' : '');
+        out += '<p class="pl-prompt">' + esc(d.task.prompt) + '</p>';
+        if (d.include) out += '<div class="pl-inc"><b class="small">' + (live ? 'Tick each one as you add it' : 'What to include') + '</b>' + d.include.map(function (it, k) {
+          return live ? '<label class="pl-tick"><input type="checkbox" data-inc="' + k + '"' + (inc[k] ? ' checked' : '') + '><span class="bx">' + ic('check') + '</span><span>' + esc(it) + '</span></label>' : '<div class="pl-tick ro"><span class="bx">' + ic('check') + '</span><span>' + esc(it) + '</span></div>';
+        }).join('') + '</div>';
+        if (guides.length && x.status !== 'approved') out += '<div class="pl-guides"><span class="small muted">How to write it</span><div class="chips">' + guides.map(function (w) { return '<button class="chip pl-g" type="button" data-guide="' + w.id + '">' + ic('book') + esc(w.title) + (w.words ? ' <small>' + esc(wordsLabel(w)) + '</small>' : '') + '</button>'; }).join('') + '</div></div>';
+        if (preview) return out + (d.template ? '<div class="stack" style="gap:8px"><span class="eyebrow">Template students can start from</span><div class="paper">' + esc(d.template) + '</div></div>' : '') + '<p class="small muted">Students write their answer here and submit it for review.</p>';
+        if (live) out += '<div class="field"><div class="row spread wrap"><label for="answer">Your answer</label>' + (d.template ? '<button class="btn btn-quiet btn-sm" type="button" id="use-tpl">' + ic('paper') + 'Use a template</button>' : '') + '</div>' +
+          '<textarea id="answer" placeholder="Write your answer here. It saves by itself, so you can stop and come back."></textarea></div>' +
+          '<div class="pl-send"><span class="counter" id="counter"></span><button class="btn btn-primary" type="button" id="send" disabled>' + (x.status === 'revision' ? 'Resubmit' : 'Submit for review') + '</button></div>' +
+          (can('chat') ? '<button class="btn btn-quiet btn-sm pl-ask" type="button" data-ask>' + ic('msgs') + 'Stuck? Ask your mentor</button>' : '');
+        if (x.status === 'review') out += '<div class="note amber"><b class="small">Submitted ' + rel(sub.createdAt) + '</b><span class="small muted">Your mentor usually replies within 48 hours. You’ll see their feedback here.</span></div><div class="paper">' + esc(sub.text) + '</div>';
+        if (x.status === 'approved') out += '<details class="wg"><summary><span class="li-main"><b>Your approved answer</b></span>' + ic('chev', 'chev') + '</summary><div class="wg-body"><div class="paper">' + esc(sub.text) + '</div></div></details>' +
+          (n < total ? '<a class="btn btn-primary btn-block" href="#step-' + t + '-' + (n + 1) + '">Go to step ' + (n + 1) + ' →</a>' : '<a class="btn btn-primary btn-block" href="#today">Back to today</a>');
+        return out;
+      },
+      mount: function (el) {
+        el.querySelectorAll('[data-guide]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            var w = guide(b.dataset.guide);
+            sheet('<span class="eyebrow">How to write it</span><h2>' + esc(w.title) + '</h2><p class="small muted">' + esc(w.short) + '</p>' + guideBody(w) + '<button class="btn btn-quiet btn-block btn-sm" type="button" data-close>Close</button>', function (sh) { bindGuides(sh); });
+          });
+        });
+        el.querySelectorAll('[data-inc]').forEach(function (c) {
+          c.addEventListener('change', function () { var s = incSet(); if (c.checked) s[c.dataset.inc] = 1; else delete s[c.dataset.inc]; store(incKey, JSON.stringify(s)); });
+        });
+        el.querySelectorAll('[data-ask]').forEach(function (b) { b.addEventListener('click', function () { chatContext = T(t).name + ' · Step ' + n + ': ' + d.title; go('chat'); }); });
+        if (!preview && x.status === 'approved' && sub && store('rt-cele-' + sub.id) === null) { store('rt-cele-' + sub.id, '1'); setTimeout(function () { confetti(el.querySelector('.stamp')); }, 450); }
+        var ta = el.querySelector('#answer');
+        if (!ta) return;
+        var key = 'rt-draft-' + me.id + '-' + t + '-' + n, cnt = el.querySelector('#counter'), send = el.querySelector('#send'), aim = d.task.minWords || 0;
+        ta.value = store(key) || (t === 'original' && store('rt-draft-' + me.id + '-' + n)) || (x.status === 'revision' ? sub.text : '');
+        var upd = function () {
+          var w = words(ta.value);
+          cnt.textContent = w ? w + ' word' + (w === 1 ? '' : 's') + (aim && w < aim ? ' · aim for ' + aim + '+' : '') : 'Saves by itself';
+          cnt.classList.toggle('ok', !!aim && w >= aim);
+          send.disabled = !ta.value.trim();
+        };
+        var tpl = el.querySelector('#use-tpl');
+        if (tpl) tpl.addEventListener('click', function () {
+          if (ta.value.trim() && ta.value.trim() !== d.template.trim()) ta.value = ta.value.replace(/\s*$/, '') + '\n\n' + d.template; else ta.value = d.template;
+          store(key, ta.value); upd(); ta.focus();
+        });
+        ta.addEventListener('input', function () { store(key, ta.value); upd(); }); upd();
+        send.addEventListener('click', function () {
+          send.disabled = true; send.textContent = 'Sending…';
+          S.submit(me.id, t, n, ta.value.trim()).then(function () {
+            store(key, null); send.classList.add('sent'); send.innerHTML = ic('check') + 'Sent!'; confetti(send);
+            toast('Sent to your mentor'); setTimeout(render, 900);
+          }, function (e) { toast(e.message); send.disabled = false; send.textContent = x.status === 'revision' ? 'Resubmit' : 'Submit for review'; });
+        });
+      } };
+  }
+
+  async function vStep(t, n) {
+    if (!C.tracks.some(function (x) { return x.id === t; }) || !(n >= 1 && n <= T(t).steps.length)) { setHash('roadmap'); return vRoadmap(); }
+    var st = await S.stepStates(me.id, t), x = st[n - 1], d = stepOf(t, n);
+    if (x.status === 'locked') {
+      var open = st.filter(function (s) { return s.status !== 'approved'; })[0];
+      return { html: '<a class="back" href="#roadmap">' + ic('back', 'chev') + 'Roadmap</a><div class="glass card locked-box">' + ic('lock') + '<h2>Step ' + n + ' · ' + esc(d.title) + '</h2><p class="muted">This step opens when step ' + (n - 1) + ' is approved.</p><a class="btn btn-glass" href="#step-' + t + '-' + open.step + '">Go to step ' + open.step + '</a></div>' };
+    }
+    var slides = stepSlides(t, n, st), key = playerKey('step', t, n), saved = store(key);
+    var start = x.status === 'current' ? (saved === null ? 0 : +saved) : slides.length - 1;
+    return player({ slides: slides, key: key, start: start, close: '#roadmap', title: 'Step ' + n + ' · ' + d.title });
+  }
+  function stepProgress(t, n, st) {
+    var len = stepSlides(t, n, st).length, at = +store(playerKey('step', t, n)) || 0;
+    return { len: len, at: Math.min(at, len - 1) };
+  }
+
+  /* ---------- "Start here": the basics before step 1 ---------- */
+  function trackMap(t) {
+    var tr = T(t);
+    return '<div class="pl-map">' + tr.phases.map(function (ph, k) {
+      return '<div class="pm-ph"><span class="eyebrow">Phase ' + (k + 1) + ' · ' + esc(ph.name) + '</span><ol>' + tr.steps.filter(function (s) { return s.phase === ph.id; }).map(function (s) {
+        return '<li><span>' + s.n + '</span><div><b>' + esc(s.title) + '</b><small>' + esc(s.summary) + '</small></div></li>';
+      }).join('') + '</ol></div>';
+    }).join('') + '</div>';
+  }
+  function startSlides(t, st) {
+    var F = window.RT_FOUNDATIONS || [], TS = (window.RT_TRACK_START || {})[t] || [], tr = T(t), out = [], firstTrack = 0;
+    var cur = st.filter(function (x) { return x.status !== 'approved'; })[0] || st[0];
+    var cards = F.map(function (c, k) { return { c: c, kick: 'Research basics · ' + (k + 1) + ' of ' + F.length, key: 'rt-chk-' + me.id + '-found-' + k }; })
+      .concat(TS.map(function (c, k) { return { c: c, kick: esc(tr.short) + ' · ' + (k + 1) + ' of ' + TS.length, key: 'rt-chk-' + me.id + '-' + t + '-start-' + k, track: true }; }));
+    out.push({ title: 'Start here', sub: 'What this is and how it works', cls: 'pl-cover', nextLabel: 'Let’s begin', html: function () {
+      return kick('Start here') + '<h1 class="pl-title">New to research? Start with the basics.</h1>' +
+        '<p class="pl-lead">A few short cards before step 1: what research is, the words you’ll hear, and what ' + esc({ original: 'an original article', case: 'a case report', letter: 'a letter to the editor', synopsis: 'a synopsis', thesis: 'a thesis', meta: 'a systematic review' }[t] || 'a paper') + ' looks like.</p>' +
+        '<div class="pl-meta"><span>' + ic('clock') + 'About 10 min</span><span>' + ic('book') + cards.length + ' short cards</span><span>' + ic('done') + 'No task to submit</span></div>' +
+        '<div class="pl-goal"><span class="eyebrow">By the end you’ll know</span><b>What research is, how a paper is built, and exactly what you’ll do in each step</b></div>';
+    } });
+    cards.forEach(function (x) {
+      if (x.track && !firstTrack) firstTrack = out.length;
+      out.push({ title: x.c.h, sub: x.track ? tr.name : 'Research basics', cls: x.c.visual || x.c.map ? 'pl-pic' : '', html: function () {
+        return kick(x.kick) + '<h2 class="pl-h">' + esc(x.c.h) + '</h2><p class="pl-p">' + esc(x.c.p) + '</p>' +
+          (x.c.points ? pointsHtml(x.c.points) : '') + (x.c.visual ? visual(x.c.visual) : '') + (x.c.map ? trackMap(t) : '') +
+          (x.c.note ? '<div class="pl-note">' + ic('alert') + '<span>' + esc(x.c.note) + '</span></div>' : '');
+      } });
+      if (x.c.check) out.push(checkSlide(x.c.check, x.key));
+    });
+    out.push({ title: 'You’re ready', cls: 'pl-cover pl-done', last: true, nextLabel: cur.status === 'approved' ? 'Back to today' : cur.step === 1 ? 'Start step 1' : 'Go to step ' + cur.step,
+      html: function () {
+        return '<div class="pl-done-art" aria-hidden="true">' + ic('check') + '</div>' + kick('All done') + '<h1 class="pl-title">You’re ready.</h1>' +
+          '<p class="pl-lead">That’s the hard part: knowing what research is. From here it’s one small step at a time, and your mentor checks each one.</p>';
+      },
+      mount: function (el) { if (store(startKey(t)) === null) setTimeout(function () { confetti(el.querySelector('.pl-done-art')); }, 300); store(startKey(t), '1'); store(foundKey(), '1'); },
+      onNext: function () { go(cur.status === 'approved' ? 'today' : 'step-' + t + '-' + cur.step); } });
+    return { slides: out, firstTrack: firstTrack };
+  }
+  async function vStart(t) {
+    if (!C.tracks.some(function (x) { return x.id === t; })) { setHash('today'); return vToday(); }
+    var st = await S.stepStates(me.id, t), r = startSlides(t, st), key = playerKey('start', t), saved = store(key);
+    var start = saved !== null ? +saved : store(foundKey()) !== null ? r.firstTrack : 0;
+    if (start >= r.slides.length - 1 && store(startKey(t)) !== null) start = 0;
+    return player({ slides: r.slides, key: key, start: start, close: '#today', title: 'Start here' });
   }
 
   /* ---------- member: roadmap ---------- */
@@ -1022,10 +1132,26 @@
     }).join('');
   }
   async function vRoadmap() {
-    var t = me.activeTrack || 'original', st = await S.stepStates(me.id, t), total = st.length;
-    var done = st.filter(function (x) { return x.status === 'approved'; }).length;
-    var html = '<section class="page-head"><span class="eyebrow">Roadmap</span><h1>' + esc(T(t).name) + '</h1><div class="row"><div class="bar" style="flex:1"><i style="width:' + Math.round(done / total * 100) + '%"></i></div><span class="small muted">' + done + ' of ' + total + '</span></div></section>' +
-      progSwitch(t) + roadmapList(t, st, function (x) { return x.status === 'locked' ? '' : '#step-' + t + '-' + x.step; });
+    var t = me.activeTrack || 'original', tr = T(t), st = await S.stepStates(me.id, t), total = st.length;
+    var done = st.filter(function (x) { return x.status === 'approved'; }).length, cur = st.filter(function (x) { return x.status !== 'approved'; })[0];
+    var basics = store(startKey(t)) !== null, startHere = !basics && !done;
+    function node(href, cls, dot, title, sub, end, go) {
+      var inner = dot + '<span class="pn-body"><b>' + title + '</b><span>' + sub + '</span>' + (go ? '<span class="btn btn-primary btn-sm pn-go">' + go + ' →</span>' : '') + '</span>' + (end || '<span></span>');
+      return href ? '<a class="pn ' + cls + '" href="' + href + '">' + inner + '</a>' : '<div class="pn ' + cls + '" aria-disabled="true">' + inner + '</div>';
+    }
+    var html = '<section class="page-head"><span class="eyebrow">Roadmap</span><h1>' + esc(tr.name) + '</h1><div class="row"><div class="bar" style="flex:1"><i style="width:' + Math.round(done / total * 100) + '%"></i></div><span class="small muted">' + done + ' of ' + total + '</span></div></section>' +
+      progSwitch(t) + '<div class="path">' +
+      node('#start-' + t, (basics ? 'approved' : 'current') + (startHere ? ' here' : ''), '<span class="sicon ' + (basics ? 'approved' : 'current') + '">' + ic(basics ? 'check' : 'book') + '</span>',
+        'Start here: the basics', 'What research is and how each step works · 10 min', basics ? '<span class="pill approved">Done</span>' : done ? '<span class="pill">Optional</span>' : '', startHere ? 'Start' : '') +
+      tr.phases.map(function (ph, k) {
+        var items = st.filter(function (x) { return stepOf(t, x.step).phase === ph.id; }), pd = items.filter(function (x) { return x.status === 'approved'; }).length;
+        return '<div class="path-ph"><span class="eyebrow">Phase ' + (k + 1) + '</span><b>' + esc(ph.name) + '</b><span class="small muted">' + pd + '/' + items.length + '</span></div>' + items.map(function (x) {
+          var d = stepOf(t, x.step), here = !startHere && cur && x.step === cur.step;
+          var go = !here ? '' : x.status === 'revision' ? 'Fix it' : x.status === 'review' ? 'View' : +store(playerKey('step', t, x.step)) ? 'Continue' : 'Start';
+          return node(x.status === 'locked' ? '' : '#step-' + t + '-' + x.step, x.status + (here ? ' here' : ''), sicon(x.status, x.step), x.step + '. ' + esc(d.title),
+            esc(here && d.goal ? d.goal : d.summary) + ' · ' + d.minutes + ' min', x.status === 'locked' || here ? '' : pill(x.status), go);
+        }).join('');
+      }).join('') + '</div>';
     return { html: html, mount: bindProg };
   }
 
@@ -1068,11 +1194,6 @@
     return '<details class="wg' + (cls ? ' ' + cls : '') + '"><summary><span class="li-main"><b>' + esc(title) + '</b>' + (sub ? '<span class="small muted">' + esc(sub) + '</span>' : '') + '</span>' + (chip ? '<span class="wchip">' + esc(chip) + '</span>' : '') + ic('chev', 'chev') + '</summary><div class="wg-body stack">' + body + '</div></details>';
   }
   function wordsLabel(w) { return w.words ? (w.words.unit === 'references' ? w.words.ideal + ' references' : w.words.ideal + ' words') : w.length; }
-  /* "How to write it" inside a step: the guides for that step, opened one at a time */
-  function stepGuides(t, n) {
-    var ids = (WSTEPS[t] || {})[n] || [];
-    return ids.map(function (id) { var w = guide(id); return w ? fold('Writing guide: ' + w.title, w.short, guideBody(w), wordsLabel(w), 'guide') : ''; }).join('');
-  }
   function vBasics() {
     var html = '<section class="page-head"><span class="eyebrow">Writing basics</span><h1>How to write each part</h1><p class="muted">Never written a research paper? Start here. Each part shows the pattern, how many words to write, sentence starters, an example and a template to fill in.</p></section>' +
       '<div class="glass list">' + W.map(function (w) {
@@ -1720,7 +1841,7 @@
     lessonTrack = t;
     var tr = T(t), total = tr.steps.length, key = t + ':' + n, ed = lessonEdits[key], d = stepOf(t, n);
     var fake = tr.steps.map(function (x) { return { step: x.n, status: x.n === n ? 'current' : 'approved', submission: null }; });
-    var card = stepCard(t, n, fake, true);
+    var card = player({ slides: stepSlides(t, n, fake, true), key: 'rt-preview', preview: true, title: 'Step ' + n + ' · ' + d.title });
     var nav = '<div class="row spread lesson-nav">' + (n > 1 ? '<a class="btn btn-quiet btn-sm" href="#lesson-' + t + '-' + (n - 1) + '">← Step ' + (n - 1) + '</a>' : '<span></span>') +
       (n < total ? '<a class="btn btn-quiet btn-sm" href="#lesson-' + t + '-' + (n + 1) + '">Step ' + (n + 1) + ' →</a>' : '<span></span>') + '</div>';
     var html = '<a class="back" href="#lessons">' + ic('back', 'chev') + 'Lessons</a>' +
@@ -1742,7 +1863,7 @@
     var lines = function (a) { return esc((a || []).join('\n')); };
     var point = function (l) { return '<div class="le-point"><input class="le-h" value="' + esc(l.h) + '" placeholder="Heading" aria-label="Point heading"><textarea class="le-p" rows="3" placeholder="Explanation" aria-label="Point text">' + esc(l.p) + '</textarea><button class="btn btn-quiet btn-sm le-del" type="button">Remove</button></div>'; };
     var area = function (id, label, val, rows, hint) { return '<div class="field"><label for="' + id + '">' + label + '</label>' + (hint ? '<span class="small muted">' + hint + '</span>' : '') + '<textarea id="' + id + '" rows="' + (rows || 3) + '">' + esc(val || '') + '</textarea></div>'; };
-    var box = m.querySelector('#stepcard');
+    var box = m.querySelector('#pl');
     box.outerHTML = '<form class="glass card stack-lg lesson-editor" id="lform" novalidate>' +
       '<div><h2>Edit step ' + n + '</h2><p class="small muted">Charts and tables stay as they are. Leave a box empty to hide that section.</p></div>' +
       '<div class="field"><label for="le-title">Title</label><input id="le-title" value="' + esc(d.title) + '"></div>' +

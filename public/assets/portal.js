@@ -1582,7 +1582,7 @@
         g.beginPath(); g.moveTo(9, 2); g.arcTo(22, 2, 22, 22, 7); g.arcTo(22, 22, 2, 22, 7); g.arcTo(2, 22, 2, 2, 7); g.arcTo(2, 2, 22, 2, 7); g.closePath(); g.fillStyle = '#134E4A'; g.fill();
         g.strokeStyle = '#fff'; g.lineWidth = 2; g.lineCap = g.lineJoin = 'round'; g.beginPath(); g.moveTo(5, 13); g.lineTo(8, 13); g.lineTo(10, 8); g.lineTo(13, 17); g.lineTo(15, 13); g.lineTo(19, 13); g.stroke(); g.restore();
         txt('researchette', lx + 82 + 22, 222, '800 64px ' + F.d, '#121820', 'left');
-        txt('CERTIFICATE OF COMPLETION', W / 2, 370, '700 40px ' + F.b, '#3F6212');
+        txt('CERTIFICATE OF COMPLETION', W / 2, 370, '700 40px ' + F.b, '#121820');
         g.fillStyle = '#134E4A'; g.fillRect(W / 2 - 60, 404, 120, 5);
         txt('This certifies that', W / 2, 500, '500 40px ' + F.b, '#4F5856');
         var ns = fit(c.name, '800', 132, W - 420); txt(c.name, W / 2, 500 + ns + 30, '800 ' + ns + 'px ' + F.d, '#121820');

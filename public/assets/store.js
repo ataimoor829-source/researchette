@@ -83,6 +83,12 @@ window.Store = (function () {
     updateResearch: function (id, data) { return post('/api/admin/research/' + q(id), data); },
     removeResearch: function (id) { cache = {}; return call('DELETE', '/api/admin/research/' + q(id)); },
 
+    /* student reviews (owners approve, hide, add from other platforms, edit and delete) */
+    adminReviews: function () { return call('GET', '/api/admin/reviews'); },
+    addReview: function (data) { return post('/api/admin/reviews', data); },
+    updateReview: function (id, data) { return post('/api/admin/reviews/' + q(id), data); },
+    removeReview: function (id) { cache = {}; return call('DELETE', '/api/admin/reviews/' + q(id)); },
+
     /* team and permissions (owners) */
     team: function () { return call('GET', '/api/admin/team'); },
     addMentor: function (data) { return post('/api/admin/team', data); },

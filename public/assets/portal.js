@@ -373,12 +373,13 @@
     if (me.role === 'member') statsP = S.unread().then(function (x) { return { unread: x.unread }; }, function () { return null; });
     if (me.role === 'admin') {
       statsP = S.stats(me.id).catch(function () { return null; });
-      if ((r === 'applications' && !can('applications')) || ((r === 'messages' || /^chat-/.test(r)) && !can('chat')) || ((r === 'team' || r === 'research' || /^admin-/.test(r)) && !isOwner()) || ((r === 'lessons' || /^lesson-/.test(r)) && !canViewLessons())) { r = 'overview'; setHash(r); }
+      if ((r === 'applications' && !can('applications')) || ((r === 'messages' || /^chat-/.test(r)) && !can('chat')) || ((r === 'team' || r === 'research' || r === 'testimonials' || /^admin-/.test(r)) && !isOwner()) || ((r === 'lessons' || /^lesson-/.test(r)) && !canViewLessons())) { r = 'overview'; setHash(r); }
       var lm = /^lesson-([a-z]+)-(\d+)$/.exec(r);
       if (/^review-/.test(r)) { view = vReview(r.slice(7)); tab = 'reviews'; }
       else if (r === 'team') { view = vTeam(); tab = 'overview'; }
       else if (r === 'lessons') { view = vLessons(); tab = 'overview'; }
       else if (r === 'research') { view = vResearch(); tab = 'overview'; }
+      else if (r === 'testimonials') { view = vTestimonials(); tab = 'overview'; }
       else if (lm) { view = vLesson(lm[1], +lm[2]); tab = 'overview'; }
       else if (/^admin-/.test(r)) { view = vTeamMember(r.slice(6)); tab = 'overview'; }
       else if (/^member-/.test(r)) { view = vMember(r.slice(7)); tab = 'members'; }
@@ -1304,7 +1305,9 @@
     ];
     var tools = [];
     if (canViewLessons()) tools.push(['#lessons', can('edit_lessons') ? 'Edit lessons' : 'Lessons', 'Proofread any step as students see it.', 'pen']);
-    if (isOwner()) tools.push(['#team', 'Team & permissions', 'Mentors, permissions and all activity.', 'users'], ['#research', 'Student publications', 'Your students’ papers on the website.', 'paper']);
+    var revWaiting = 0;
+    if (isOwner()) { try { revWaiting = (await S.adminReviews()).reviews.filter(function (r) { return r.status === 'pending'; }).length; } catch (e) {} }
+    if (isOwner()) tools.push(['#team', 'Team & permissions', 'Mentors, permissions and all activity.', 'users'], ['#research', 'Student publications', 'Your students’ papers on the website.', 'paper'], ['#testimonials', 'Student reviews', revWaiting ? revWaiting + ' new review' + (revWaiting > 1 ? 's' : '') + ' to approve.' : 'Approve reviews and add ones from other platforms.', 'award']);
     if (!tools.length) tools.push(['#members', 'Your students', 'Programmes, progress and chats.', 'users'], ['#messages', 'Messages', 'Reply to your students.', 'msgs']);
     var html = '<div class="ov">' +
       '<div class="ov-main stack-lg">' +
@@ -1811,6 +1814,86 @@
           if (v('rs-year') && !/^\d{4}$/.test(v('rs-year'))) return show('Enter the year as four digits, like 2026.');
           var data = { student: v('rs-student'), title: v('rs-title'), journal: v('rs-journal'), year: v('rs-year'), kind: v('rs-kind'), link: v('rs-link') };
           (p ? S.updateResearch(p.id, data) : S.addResearch(data)).then(function () { close(); toast(p ? 'Paper updated' : 'Added to the website'); render(); }, function (x) { show(x.message); });
+        });
+      });
+  }
+
+  /* ---------- owners: student reviews (the website's Reviews page) ----------
+     Reviews written on the website wait here until an owner approves them. Owners can also add a review a
+     student gave somewhere else, with the student's permission. */
+  var revFilter = 'pending';
+  function starRow(n) { var o = ''; for (var i = 1; i <= 5; i++) o += '<span class="' + (i <= n ? 'on' : '') + '">★</span>'; return '<span class="rv-stars" aria-label="' + n + ' out of 5">' + o + '</span>'; }
+  async function vTestimonials() {
+    var d = await S.adminReviews(), all = d.reviews;
+    var counts = { pending: 0, approved: 0, hidden: 0 }; all.forEach(function (r) { counts[r.status] = (counts[r.status] || 0) + 1; });
+    if (revFilter === 'pending' && !counts.pending && all.length) revFilter = 'approved';
+    var list = all.filter(function (r) { return r.status === revFilter; });
+    var tabs = [['pending', 'To approve'], ['approved', 'On the website'], ['hidden', 'Hidden']], idx = tabs.map(function (t) { return t[0]; }).indexOf(revFilter);
+    var rows = list.map(function (r) {
+      var meta = [r.detail, r.type].filter(Boolean).map(esc).join(' · ');
+      var acts = r.status === 'pending' ? (r.consent ? '<button class="btn btn-primary btn-sm" type="button" data-st="approved" data-id="' + esc(r.id) + '">Approve</button>' : '') + '<button class="btn btn-glass btn-sm" type="button" data-st="hidden" data-id="' + esc(r.id) + '">Hide</button>'
+        : r.status === 'approved' ? '<button class="btn btn-glass btn-sm" type="button" data-st="hidden" data-id="' + esc(r.id) + '">Hide from website</button>'
+        : (r.consent ? '<button class="btn btn-primary btn-sm" type="button" data-st="approved" data-id="' + esc(r.id) + '">Show on website</button>' : '');
+      return '<article class="glass card rv-card"><div class="rv-top">' + starRow(r.rating) + '<span class="pill ' + (r.source === 'website' ? '' : 'approved') + '">' + esc(r.source === 'website' ? 'Written on the website' : 'From ' + r.sourceLabel) + '</span></div>' +
+        '<blockquote>' + esc(r.text) + '</blockquote>' +
+        '<div class="rv-by"><b>' + esc(r.name) + '</b>' + (meta ? '<span class="small muted">' + meta + '</span>' : '') + '<span class="small muted">' + esc(r.date) + (r.sourceUrl ? ' · <a href="' + esc(r.sourceUrl) + '" target="_blank" rel="noopener">See the original</a>' : '') + '</span></div>' +
+        (!r.consent ? '<p class="small rv-warn">' + ic('alert') + 'The student didn’t agree to have this shown, so it can’t go on the website.</p>' : '') +
+        '<div class="row wrap rv-acts">' + acts + '<button class="btn btn-quiet btn-sm" type="button" data-edit="' + esc(r.id) + '">Edit</button><button class="btn btn-quiet btn-sm rv-del" type="button" data-del="' + esc(r.id) + '">Delete</button></div></article>';
+    }).join('');
+    var empty = { pending: ['Nothing to approve', 'New reviews students write on the website appear here first.'], approved: ['No reviews on the website yet', 'Approve one, or add a review a student gave you on another platform.'], hidden: ['Nothing hidden', 'Reviews you hide stay here, in case you want to show them later.'] }[revFilter];
+    return { html: '<a class="back" href="#overview">' + ic('back', 'chev') + 'Overview</a>' +
+      '<section class="page-head"><div class="row spread wrap"><div class="stack" style="gap:6px"><span class="eyebrow">Owners only</span><h1>Student reviews</h1></div><button class="btn btn-primary" type="button" id="add-rev">+ Add a review</button></div>' +
+      '<p class="muted">Reviews written on the website wait here for you. Approved ones show on the website’s <a href="reviews.html" target="_blank" rel="noopener">Reviews</a> page. You can also add a review a student gave you on WhatsApp, Instagram, Google or anywhere else, with their permission.</p></section>' +
+      '<div class="seg" id="rv-seg" style="--n:3;--i:' + idx + '">' + tabs.map(function (t) { return '<button type="button" data-f="' + t[0] + '"' + (t[0] === revFilter ? ' class="on"' : '') + '>' + t[1] + ' · ' + (counts[t[0]] || 0) + '</button>'; }).join('') + '</div>' +
+      (list.length ? '<div class="stack rv-list">' + rows + '</div>' : '<div class="glass empty">' + ic('award') + '<b>' + empty[0] + '</b><span>' + empty[1] + '</span></div>'),
+      mount: function (m) {
+        m.querySelectorAll('#rv-seg button').forEach(function (b) { b.addEventListener('click', function () { revFilter = b.dataset.f; render(); }); });
+        m.querySelector('#add-rev').addEventListener('click', function () { reviewSheet(null, d); });
+        m.querySelectorAll('[data-edit]').forEach(function (b) { b.addEventListener('click', function () { reviewSheet(all.filter(function (r) { return r.id === b.dataset.edit; })[0], d); }); });
+        m.querySelectorAll('[data-st]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            b.disabled = true;
+            S.updateReview(b.dataset.id, { status: b.dataset.st }).then(function () { toast(b.dataset.st === 'approved' ? 'Approved. It’s on the website now.' : 'Hidden from the website'); render(); }, function (e) { b.disabled = false; toast(e.message); });
+          });
+        });
+        m.querySelectorAll('[data-del]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            var r = all.filter(function (x) { return x.id === b.dataset.del; })[0];
+            sheet('<h2>Delete this review?</h2><p class="muted">The review from ' + esc(r.name) + ' is removed for good. To take it off the website but keep it, use Hide instead.</p><div class="row"><button class="btn btn-glass" type="button" data-close style="flex:1">Cancel</button><button class="btn btn-danger" type="button" id="yes" style="flex:1">Delete</button></div>',
+              function (el, close) { el.querySelector('#yes').addEventListener('click', function () { S.removeReview(r.id).then(function () { close(); toast('Review deleted'); render(); }, function (e) { toast(e.message); }); }); });
+          });
+        });
+      } };
+  }
+  function reviewSheet(r, d) {
+    var e = r || { rating: 5, source: 'whatsapp' }, own = !r || r.source !== 'website';
+    var srcs = Object.keys(d.sources).filter(function (k) { return k !== 'website'; });
+    sheet('<h2>' + (r ? 'Edit review' : 'Add a review') + '</h2><p class="muted small">' + (r ? 'Fix a typo or tidy the wording. Keep the student’s meaning.' : 'Copy a review a student gave you somewhere else. Only add real reviews, word for word, from students who agreed to be shown.') + '</p>' +
+      '<form id="rvf" class="stack" novalidate>' +
+        (own ? '<div class="rs-two"><div class="field"><label for="rv-src">Where they gave it</label><select id="rv-src">' + srcs.map(function (k) { return '<option value="' + k + '"' + (k === e.source ? ' selected' : '') + '>' + esc(d.sources[k]) + '</option>'; }).join('') + '</select></div>' +
+          '<div class="field"><label for="rv-date">Date <span class="muted">(optional)</span></label><input id="rv-date" type="date" value="' + esc(r ? r.date : '') + '"></div></div>' : '') +
+        '<div class="rs-two"><div class="field"><label for="rv-name">Student’s name</label><input id="rv-name" autocomplete="off" required placeholder="Eeman Dar" value="' + esc(e.name || '') + '"></div>' +
+        '<div class="field"><label for="rv-detail">College and year <span class="muted">(optional)</span></label><input id="rv-detail" autocomplete="off" placeholder="KEMU, 4th year MBBS" value="' + esc(e.detail || '') + '"></div></div>' +
+        '<div class="rs-two"><div class="field"><label for="rv-type">Worked on <span class="muted">(optional)</span></label><select id="rv-type"><option value="">Choose</option>' + d.types.map(function (k) { return '<option' + (k === e.type ? ' selected' : '') + '>' + esc(k) + '</option>'; }).join('') + '</select></div>' +
+        '<div class="field"><label for="rv-rate">Rating</label><select id="rv-rate">' + [5, 4, 3, 2, 1].map(function (n) { return '<option value="' + n + '"' + (n === e.rating ? ' selected' : '') + '>' + n + ' star' + (n > 1 ? 's' : '') + '</option>'; }).join('') + '</select></div></div>' +
+        '<div class="field"><label for="rv-text">Their review</label><textarea id="rv-text" rows="5" required placeholder="Paste exactly what they wrote">' + esc(e.text || '') + '</textarea></div>' +
+        (own ? '<div class="field"><label for="rv-url">Link to the original <span class="muted">(optional)</span></label><input id="rv-url" inputmode="url" autocomplete="off" placeholder="https://www.instagram.com/p/…" value="' + esc(e.sourceUrl || '') + '"></div>' +
+          '<label class="check-row"><input type="checkbox" id="rv-ok"' + (r && r.consent ? ' checked' : '') + '><span>The student agreed to have this review shown on the Researchette website.</span></label>' : '') +
+        '<p class="error" id="rv-err" role="alert" hidden></p>' +
+        '<button class="btn btn-primary btn-block" type="submit">' + (r ? 'Save changes' : 'Add to the website') + '</button><button class="btn btn-quiet btn-block btn-sm" type="button" data-close>Cancel</button>' +
+      '</form>',
+      function (el, close) {
+        var f = el.querySelector('#rvf'), err = el.querySelector('#rv-err'), v = function (id) { var x = el.querySelector('#' + id); return x ? x.value.trim() : ''; };
+        f.addEventListener('submit', function (ev) {
+          ev.preventDefault();
+          var show = function (msg) { err.textContent = msg; err.hidden = false; };
+          if (!v('rv-name')) return show('Enter the student’s name.');
+          if (v('rv-text').length < 10) return show('Paste the student’s review.');
+          var ok = el.querySelector('#rv-ok');
+          if (ok && !ok.checked) return show('Tick the box to confirm the student agreed to have this shown.');
+          var data = { name: v('rv-name'), detail: v('rv-detail'), type: v('rv-type'), rating: +v('rv-rate'), text: v('rv-text') };
+          if (own) { data.source = v('rv-src'); data.givenAt = v('rv-date'); data.sourceUrl = v('rv-url'); data.consent = true; }
+          (r ? S.updateReview(r.id, data) : S.addReview(data)).then(function () { close(); if (!r) revFilter = 'approved'; toast(r ? 'Review updated' : 'Added. It’s on the website now.'); render(); }, function (x) { show(x.message); });
         });
       });
   }

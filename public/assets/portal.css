@@ -800,3 +800,21 @@ input:focus, select:focus, textarea:focus { border-color: var(--pen); box-shadow
 .sc-art { background: var(--pen) !important; color: var(--on-pen) !important; }
 .avatar, .avatar.warm { background: var(--pen) !important; color: var(--on-pen) !important; }
 .path-ph .eyebrow { width: 54px; left: 4px; font-size: .56rem; letter-spacing: .06em; }
+
+/* owners: student reviews */
+.rv-list { gap: 12px; }
+.rv-card { display: grid; gap: 12px; }
+.rv-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.rv-stars { display: inline-flex; gap: 2px; font-size: 1.05rem; color: var(--line); letter-spacing: 0; }
+.rv-stars .on { color: #B45309; }
+.rv-card blockquote { margin: 0; font-family: "Newsreader", Georgia, serif; font-size: 1.1rem; line-height: 1.5; }
+.rv-by { display: grid; gap: 2px; }
+.rv-warn { display: flex; gap: 8px; align-items: flex-start; color: var(--redpen); }
+.rv-warn svg { width: 16px; height: 16px; flex: none; margin-top: 2px; }
+.rv-acts { gap: 8px; padding-top: 4px; border-top: 1px solid var(--line); padding-top: 12px; }
+.rv-del { color: var(--redpen); margin-left: auto; }
+.check-row { display: flex; gap: 10px; align-items: flex-start; font-weight: 400; font-size: .92rem; cursor: pointer; }
+.check-row input { width: 18px; height: 18px; margin-top: 2px; flex: none; accent-color: var(--pen); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .rv-stars .on { color: #E8A46A; } }
+:root[data-theme="dark"] .rv-stars .on { color: #E8A46A; }
+@media (max-width: 480px) { .rs-two { grid-template-columns: 1fr; } }

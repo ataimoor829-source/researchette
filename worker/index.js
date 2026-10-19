@@ -166,6 +166,8 @@ const EXTRA_SCHEMA = [
   'CREATE TABLE IF NOT EXISTS class_reads (class_id TEXT NOT NULL, reader_id TEXT NOT NULL, last_read TEXT NOT NULL, PRIMARY KEY (class_id, reader_id))',
   'CREATE TABLE IF NOT EXISTS lesson_edits (key TEXT PRIMARY KEY, data TEXT NOT NULL, updated_by TEXT, updated_at TEXT NOT NULL)',
   'CREATE TABLE IF NOT EXISTS step_unlocks (user_id TEXT NOT NULL, track TEXT NOT NULL, step INTEGER NOT NULL, unlocked_by TEXT, created_at TEXT NOT NULL, PRIMARY KEY (user_id, track, step))',
+  "CREATE TABLE IF NOT EXISTS testimonials (id TEXT PRIMARY KEY, name TEXT NOT NULL, detail TEXT DEFAULT '', type TEXT DEFAULT '', rating INTEGER NOT NULL, text TEXT NOT NULL, source TEXT NOT NULL DEFAULT 'website', source_url TEXT DEFAULT '', consent INTEGER NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'pending', given_at TEXT DEFAULT '', created_by TEXT, decided_by TEXT, decided_at TEXT, created_at TEXT NOT NULL)",
+  'CREATE INDEX IF NOT EXISTS testimonials_status ON testimonials (status, created_at)',
   "CREATE TABLE IF NOT EXISTS research (id TEXT PRIMARY KEY, student TEXT NOT NULL, title TEXT NOT NULL, journal TEXT NOT NULL, year INTEGER, kind TEXT DEFAULT '', link TEXT DEFAULT '', created_by TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)"
 ];
 let schemaReady = null;
@@ -663,6 +665,35 @@ async function listResearch(env) {
   return results.map(pubResearch);
 }
 
+/* ---------- student reviews ----------
+   Reviews students write on the website wait for an owner to approve them. Owners can also add reviews a
+   student gave them somewhere else (WhatsApp, Instagram, Google...), only with that student's permission.
+   Only approved reviews whose student agreed to be shown appear on reviews.html. */
+const REVIEW_SOURCES = { website: 'Website', whatsapp: 'WhatsApp', instagram: 'Instagram', facebook: 'Facebook', linkedin: 'LinkedIn', google: 'Google', email: 'Email', other: 'Other' };
+const REVIEW_TYPES = ['Original article', 'Synopsis', 'Thesis', 'Systematic review / meta-analysis', 'Case report', 'Letter to the editor', 'Mentorship in general'];
+function cleanReview(b, owner) {
+  const out = { name: str(b.name, 80), detail: str(b.detail, 120), type: REVIEW_TYPES.includes(b.type) ? b.type : '', rating: Math.round(+b.rating), text: str(b.text, 1500) };
+  if (!out.name) throw bad('Please add your name.');
+  if (!(out.rating >= 1 && out.rating <= 5)) throw bad('Please choose a star rating.');
+  if (out.text.length < 10) throw bad('Please write a few words about your experience.');
+  out.consent = b.consent === true || b.consent === 1 || b.consent === '1' ? 1 : 0;
+  if (owner) {
+    out.source = REVIEW_SOURCES[b.source] ? b.source : 'other';
+    let link = str(b.sourceUrl, 500);
+    if (link && !/^https?:\/\//i.test(link)) link = 'https://' + link;
+    if (link) { try { const u = new URL(link); if (!/^https?:$/.test(u.protocol) || !u.hostname.includes('.')) throw 0; link = u.href; } catch { throw bad('That link doesn’t look right. Paste the web address of the original review, or leave it empty.'); } }
+    out.sourceUrl = link;
+    const g = str(b.givenAt, 10);
+    out.givenAt = /^\d{4}-\d{2}-\d{2}$/.test(g) ? g : '';
+  } else { out.source = 'website'; out.sourceUrl = ''; out.givenAt = ''; }
+  return out;
+}
+function pubReview(r) {
+  return { id: r.id, name: r.name, detail: r.detail || '', type: r.type || '', rating: r.rating, text: r.text, source: r.source, sourceLabel: REVIEW_SOURCES[r.source] || 'Other',
+    sourceUrl: r.source_url || '', date: r.given_at || r.created_at.slice(0, 10) };
+}
+function adminReview(r) { return Object.assign(pubReview(r), { status: r.status, consent: !!r.consent, createdAt: r.created_at, decidedAt: r.decided_at || null, addedByOwner: !!r.created_by }); }
+
 /* ---------- routes ---------- */
 async function route(request, env, url, ctx) {
   const path = url.pathname.replace(/\/+$/, ''), method = request.method, DB = env.DB;
@@ -822,6 +853,26 @@ async function route(request, env, url, ctx) {
       ['Submission', id], ['Member', u.name], ['Programme', trackName(track)], ['Step', step], ['Words', text.split(/\s+/).filter(Boolean).length]
     ], 'review-' + id, u.id, u.id);
     return json({ id }, 201);
+  }
+
+  /* student reviews: public list of approved ones, and the form on reviews.html */
+  if (path === '/api/reviews' && method === 'GET') {
+    await ensureSchema(env);
+    const { results } = await DB.prepare("SELECT * FROM testimonials WHERE status = 'approved' AND consent = 1 ORDER BY COALESCE(NULLIF(given_at, ''), created_at) DESC LIMIT 200").all();
+    return json({ reviews: results.map(pubReview) });
+  }
+  if (path === '/api/reviews' && method === 'POST') {
+    await ensureSchema(env);
+    const b = await body(request);
+    if (str(b.website, 200)) return json({ ok: true }, 201); // a hidden field only bots fill in
+    const r = cleanReview(b, false);
+    const recent = await DB.prepare("SELECT COUNT(*) AS n FROM testimonials WHERE source = 'website' AND created_at > ?").bind(new Date(Date.now() - 3600e3).toISOString()).first();
+    if (recent && recent.n >= 20) throw new HttpError(429, 'We’ve had a lot of reviews in the last hour. Please try again a little later.');
+    const id = randomId('t');
+    await DB.prepare('INSERT INTO testimonials (id, name, detail, type, rating, text, source, source_url, consent, status, given_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(id, r.name, r.detail, r.type, r.rating, r.text, 'website', '', r.consent, 'pending', '', now()).run();
+    record(env, ctx, 'review.new', 'New student review from ' + r.name + ' (' + r.rating + '/5)', [['Name', r.name], ['College and year', r.detail], ['Worked on', r.type], ['Rating', r.rating + '/5'], ['Review', r.text], ['OK to show', r.consent ? 'Yes' : 'No']], 'testimonials');
+    return json({ ok: true }, 201);
   }
 
   /* published research: public, for research.html */
@@ -1066,6 +1117,50 @@ async function route(request, env, url, ctx) {
       .bind(key, JSON.stringify(data), admin.id, now()).run();
     record(env, ctx, 'lesson.edited', admin.name + ' edited ' + label, [['Step', label], ['Fields', Object.keys(data).join(', ')]], 'lesson-' + track + '-' + n, admin.id);
     return json({ ok: true, data });
+  }
+
+  /* student reviews: owners approve, hide, add (from other platforms), edit and delete */
+  if (path === '/api/admin/reviews' && method === 'GET') {
+    needOwner(admin);
+    await ensureSchema(env);
+    const { results } = await DB.prepare('SELECT * FROM testimonials ORDER BY created_at DESC LIMIT 500').all();
+    return json({ reviews: results.map(adminReview), sources: REVIEW_SOURCES, types: REVIEW_TYPES });
+  }
+  if (path === '/api/admin/reviews' && method === 'POST') {
+    needOwner(admin);
+    await ensureSchema(env);
+    const b = await body(request), r = cleanReview(b, true);
+    if (!r.consent) throw bad('Tick the box to confirm the student agreed to have this review shown.');
+    const id = randomId('t'), t = now();
+    await DB.prepare('INSERT INTO testimonials (id, name, detail, type, rating, text, source, source_url, consent, status, given_at, created_by, decided_by, decided_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(id, r.name, r.detail, r.type, r.rating, r.text, r.source, r.sourceUrl, 1, b.publish === false ? 'pending' : 'approved', r.givenAt, admin.id, admin.id, t, t).run();
+    record(env, ctx, 'review.added', admin.name + ' added a review from ' + r.name + ' (' + REVIEW_SOURCES[r.source] + ')', [['Name', r.name], ['From', REVIEW_SOURCES[r.source]], ['Rating', r.rating + '/5']], 'testimonials', admin.id);
+    return json(adminReview(await DB.prepare('SELECT * FROM testimonials WHERE id = ?').bind(id).first()), 201);
+  }
+  if ((m = path.match(/^\/api\/admin\/reviews\/([\w-]+)$/)) && (method === 'POST' || method === 'DELETE')) {
+    needOwner(admin);
+    await ensureSchema(env);
+    const old = await DB.prepare('SELECT * FROM testimonials WHERE id = ?').bind(m[1]).first();
+    if (!old) throw new HttpError(404, 'That review isn’t there any more.');
+    if (method === 'DELETE') {
+      await DB.prepare('DELETE FROM testimonials WHERE id = ?').bind(old.id).run();
+      record(env, ctx, 'review.deleted', admin.name + ' deleted the review from ' + old.name, [['Name', old.name]], 'testimonials', admin.id);
+      return json({ ok: true });
+    }
+    const b = await body(request);
+    if (b.status) {
+      if (!['approved', 'hidden', 'pending'].includes(b.status)) throw bad('Unknown status.');
+      if (b.status === 'approved' && !old.consent) throw bad('This student didn’t agree to have the review shown, so it can’t be published.');
+      await DB.prepare('UPDATE testimonials SET status = ?, decided_by = ?, decided_at = ? WHERE id = ?').bind(b.status, admin.id, now(), old.id).run();
+      record(env, ctx, 'review.' + b.status, admin.name + (b.status === 'approved' ? ' approved ' : b.status === 'hidden' ? ' hid ' : ' moved back to pending ') + 'the review from ' + old.name, [['Name', old.name]], 'testimonials', admin.id);
+    } else {
+      const r = cleanReview(Object.assign({ consent: !!old.consent, source: old.source }, b), true);
+      if (old.source === 'website') { r.source = 'website'; r.consent = old.consent; } // the student's own permission stays as they gave it
+      await DB.prepare('UPDATE testimonials SET name = ?, detail = ?, type = ?, rating = ?, text = ?, source = ?, source_url = ?, consent = ?, given_at = ? WHERE id = ?')
+        .bind(r.name, r.detail, r.type, r.rating, r.text, r.source, r.sourceUrl, r.consent, r.givenAt || old.given_at || '', old.id).run();
+      record(env, ctx, 'review.edited', admin.name + ' edited the review from ' + r.name, [['Name', r.name]], 'testimonials', admin.id);
+    }
+    return json(adminReview(await DB.prepare('SELECT * FROM testimonials WHERE id = ?').bind(old.id).first()));
   }
 
   /* published research: only owners add, change and remove papers */

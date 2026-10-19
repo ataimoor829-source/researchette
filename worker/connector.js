@@ -445,8 +445,8 @@ const TOOLS = [
 function page(title, inner, status = 200) {
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="robots" content="noindex"><title>${esc(title)}</title>
 <style>
-:root{--paper:#F4F7FC;--card:#fff;--ink:#0F1B2D;--muted:#5A6272;--line:rgba(24,32,61,.12);--pen:#14213D;--on:#fff;--red:#DD4460}
-@media (prefers-color-scheme:dark){:root{--paper:#0C1022;--card:#161C38;--ink:#EAEFFF;--muted:#A1AACB;--line:rgba(255,255,255,.12);--pen:#D2B07A;--on:#0C1022;--red:#FF8599}}
+:root{--paper:#F4F7FC;--card:#fff;--ink:#121820;--muted:#4F5856;--line:rgba(18, 24, 32,.12);--pen:#134E4A;--on:#fff;--red:#B91C1C}
+@media (prefers-color-scheme:dark){:root{--paper:#0C1022;--card:#161C38;--ink:#EAEFFF;--muted:#A1AACB;--line:rgba(255,255,255,.12);--pen:#9AD1CB;--on:#0C1022;--red:#FF8599}}
 *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px 16px;background:var(--paper);color:var(--ink);font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif}
 main{width:min(100%,460px);background:var(--card);border:1px solid var(--line);border-radius:22px;padding:28px;box-shadow:0 18px 40px -22px rgba(40,50,110,.35)}
 .logo{font-weight:800;letter-spacing:-.03em;font-size:1.15rem}.logo i{font-style:normal;color:var(--pen)}

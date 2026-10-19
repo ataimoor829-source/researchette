@@ -126,7 +126,7 @@
 .term:active > span { scale: .98; }
 
 /* the bottom bar: Back and Continue */
-.pl-nav { position: sticky; bottom: calc(12px + var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); z-index: 20; display: grid; grid-template-columns: 52px 1fr; gap: 10px; padding: 8px; border-radius: 999px; background: color-mix(in srgb, var(--paper) 82%, transparent); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); box-shadow: 0 10px 30px -18px rgba(24,32,61,.45); }
+.pl-nav { position: sticky; bottom: calc(12px + var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); z-index: 20; display: grid; grid-template-columns: 52px 1fr; gap: 10px; padding: 8px; border-radius: 999px; background: color-mix(in srgb, var(--paper) 82%, transparent); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); box-shadow: 0 10px 30px -18px rgba(18, 24, 32,.45); }
 .pl.preview .pl-nav { position: static; box-shadow: none; background: none; padding-inline: 0; }
 .pl-prev { width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--glass-edge); background: var(--glass-strong); color: var(--ink); display: grid; place-items: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .pl-prev svg { width: 20px; height: 20px; }
@@ -193,7 +193,7 @@ a.pn:active { transform: scale(.99); }
 @media (max-width: 520px) { .pn .pill { display: none; } }
 @media (prefers-reduced-motion: reduce) { .pl-slide.from-right, .pl-slide.from-left, .term > span, .pl-opt.right, .pl-opt.wrong, .pl-done-art { animation: none; transition: none; } }
 
-/* Midnight and Brass: the selected tab and your own chat bubbles follow the brand colour (navy, or brass in dark mode) */
+/* the selected tab and your own chat bubbles follow the brand colour (spruce, or light spruce in dark mode) */
 .dash .tabs .ind { background: var(--pen) !important; }
 .dash .tabs a.on { color: var(--on-pen) !important; }
 .dash main.view .msg.mine { background: var(--pen) !important; color: var(--on-pen) !important; }

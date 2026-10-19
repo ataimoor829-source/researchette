@@ -55,7 +55,7 @@ const extraCss = `<style>
 .wl .ideal { background: var(--teal-soft); border-color: transparent; color: var(--teal); }
 .wl .ideal span { color: var(--teal); }
 .ex { border-radius: 16px; padding: 14px 16px; }
-.ex.weak { background: var(--red-soft, rgba(221,68,96,.1)); }
+.ex.weak { background: var(--red-soft, rgba(185, 28, 28,.1)); }
 .ex.strong { background: var(--teal-soft); }
 .ex small { display: block; font: 700 .72rem var(--f-mono, monospace); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
 .ex.weak small { color: var(--redpen); } .ex.strong small { color: var(--teal); }
@@ -75,10 +75,10 @@ dl.gloss div:first-child { border-top: 0; }
 dl.gloss dt { font-weight: 700; color: var(--pen); }
 dl.gloss dd { margin: 2px 0 0; }
 .pager { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
-.cta-box { display: grid; gap: 10px; padding: clamp(20px, 3vw, 30px); border-radius: 24px; color: #fff; background: linear-gradient(140deg, #22355C, #0F1B2D 60%, #2F5545); }
+.cta-box { display: grid; gap: 10px; padding: clamp(20px, 3vw, 30px); border-radius: 24px; color: #fff; background: linear-gradient(140deg, #0E3E3B, #121820 60%, #2D6A4F); }
 .cta-box h2 { color: #fff; margin: 0; }
 .cta-box p { margin: 0; opacity: .9; }
-.cta-box .btn { justify-self: start; background: #fff; color: #0F1B2D; }
+.cta-box .btn { justify-self: start; background: #fff; color: #121820; }
 .crumbs { font-size: .88rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px; }
 .crumbs a { color: inherit; }
 .hub { display: grid; gap: 10px; }

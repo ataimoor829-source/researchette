@@ -36,7 +36,7 @@
     paper: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>'
   };
   function ic(n, cls) { return '<svg class="' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + P[n] + '</svg>'; }
-  var LOGO = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="7" fill="#14213D"/><path d="M5 13h3l2-5 3 9 2-4h4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var LOGO = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="7" fill="#134E4A"/><path d="M5 13h3l2-5 3 9 2-4h4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   var LABEL = { approved: 'Approved', review: 'In review', revision: 'Needs changes', current: 'To do', locked: 'Locked', new: 'New', declined: 'Declined' };
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -99,7 +99,7 @@
   function confetti(from) {
     if (reduce || !document.body.animate) return;
     var r = from && from.getBoundingClientRect ? from.getBoundingClientRect() : { left: innerWidth / 2, top: innerHeight / 2, width: 0, height: 0 };
-    var x0 = r.left + r.width / 2, y0 = r.top + r.height / 2, box = document.createElement('div'), cols = ['#14213D', '#3E6A57', '#F2B43A', '#DD4460', '#D2B07A', '#D2B07A'];
+    var x0 = r.left + r.width / 2, y0 = r.top + r.height / 2, box = document.createElement('div'), cols = ['#134E4A', '#3F6212', '#F2B43A', '#B91C1C', '#9AD1CB', '#9AD1CB'];
     box.className = 'confetti'; box.setAttribute('aria-hidden', 'true'); document.body.appendChild(box);
     for (var i = 0; i < 34; i++) {
       var p = document.createElement('i'), a = -Math.PI / 2 + (Math.random() - .5) * Math.PI * 1.3, v = 160 + Math.random() * 220;
@@ -622,7 +622,7 @@
   /* ---------- member: today ---------- */
   function ring(done, total) {
     var c = 2 * Math.PI * 32, off = c * (1 - done / total);
-    return '<div class="ring"><svg viewBox="0 0 76 76" aria-hidden="true"><defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3E6A57"/><stop offset="1" stop-color="#14213D"/></linearGradient></defs>' +
+    return '<div class="ring"><svg viewBox="0 0 76 76" aria-hidden="true"><defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3F6212"/><stop offset="1" stop-color="#134E4A"/></linearGradient></defs>' +
       '<circle class="track" cx="38" cy="38" r="32"/><circle class="fill" cx="38" cy="38" r="32" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + (reduce ? off : c).toFixed(1) + '" data-off="' + off.toFixed(1) + '"/></svg><b><span><span data-count="' + done + '">' + done + '</span>/' + total + '</span></b></div>';
   }
   function animateRing(root) { var f = root.querySelector('.ring .fill'); if (f) requestAnimationFrame(function () { requestAnimationFrame(function () { f.style.strokeDashoffset = f.dataset.off; }); }); }
@@ -706,7 +706,7 @@
     /* wide screens: a calm dashboard (three tiles, today's step, and a slim side panel); phones keep the summary card */
     var inReview = st.filter(function (x) { return x.status === 'review'; }).length, fix = st.filter(function (x) { return x.status === 'revision'; }).length;
     var tiles = '<div class="tiles three w-only">' +
-      '<div class="tile glass c-teal"><div class="tile-h"><span>Your progress</span><i>' + ic('done') + '</i></div>' + miniGauge(done, total, '#3E6A57') + '<div class="tile-n"><b data-count="' + done + '">' + done + '</b><small>of ' + total + ' steps approved</small></div></div>' +
+      '<div class="tile glass c-teal"><div class="tile-h"><span>Your progress</span><i>' + ic('done') + '</i></div>' + miniGauge(done, total, '#3F6212') + '<div class="tile-n"><b data-count="' + done + '">' + done + '</b><small>of ' + total + ' steps approved</small></div></div>' +
       '<a class="tile glass c-pen" href="' + stepHref + '"><div class="tile-h"><span>Working on</span><i>' + ic('pen') + '</i></div><p class="tile-t">' + esc(d.title) + '</p><div class="tile-n"><b>Step ' + cur.step + '</b><small>' + d.minutes + ' min</small></div></a>' +
       (fix ? '<a class="tile glass c-rose" href="#feedback"><div class="tile-h"><span>Needs changes</span><i>' + ic('alert') + '</i></div><p class="tile-t">Your mentor left notes to fix.</p><div class="tile-n"><b>' + fix + '</b><small>step' + (fix > 1 ? 's' : '') + '</small></div></a>'
         : '<a class="tile glass c-amber" href="#feedback"><div class="tile-h"><span>With your mentor</span><i>' + ic('clock') + '</i></div><p class="tile-t">' + (inReview ? 'Being reviewed now.' : 'Nothing waiting for review.') + '</p><div class="tile-n"><b>' + inReview + '</b><small>in review</small></div></a>') +
@@ -1273,7 +1273,7 @@
     var line = smooth(pts), area = line + 'L' + pts[pts.length - 1][0] + ' ' + (H - B) + 'L' + pts[0][0] + ' ' + (H - B) + 'Z';
     var tag = data[peak].n + (ovSeries === 'subs' ? ' submitted' : ' reviewed');
     return '<svg class="achart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + (ovSeries === 'subs' ? 'Submissions' : 'Your reviews') + ' per week, last 12 weeks">' +
-      '<defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22355C" stop-opacity=".28"/><stop offset="1" stop-color="#22355C" stop-opacity="0"/></linearGradient></defs>' +
+      '<defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0E3E3B" stop-opacity=".28"/><stop offset="1" stop-color="#0E3E3B" stop-opacity="0"/></linearGradient></defs>' +
       grid + xs + '<path d="' + area + '" fill="url(#ag)"/><path d="' + line + '" class="ln"/>' +
       (data[peak].n ? '<line x1="' + pk[0] + '" x2="' + pk[0] + '" y1="' + pk[1] + '" y2="' + (H - B) + '" class="pkl"/><circle cx="' + pk[0] + '" cy="' + pk[1] + '" r="6" class="pkc"/>' +
         '<g transform="translate(' + Math.min(W - 60, Math.max(60, pk[0])) + ' ' + Math.max(14, pk[1] - 22) + ')"><rect x="-52" y="-14" width="104" height="24" rx="12" class="pkb"/><text y="3" text-anchor="middle" class="pkt">' + tag + '</text></g>' : '') +
@@ -1297,10 +1297,10 @@
     var old = q[0], wave = '';
     var tiles = [
       ['#reviews', 'Waiting for review', stats.pending, 'clock', 'c-amber', miniBars(lastDays(stats.submissionsByDay, 10), '#E5883A'), stats.pendingMine ? stats.pendingMine + ' from your students' : 'submissions'],
-      ['#members', 'Your students', stats.myMembers, 'users', 'c-pen', miniGauge(stats.myMembers, stats.members, '#22355C'), 'of ' + stats.members + ' active'],
-      can('applications') ? ['#applications', 'New applications', stats.applications, 'mail', 'c-rose', miniLine(lastDays(stats.submissionsByDay, 14).map(function (v, i) { return v + (i % 3); }), '#DD4460'), 'to look at'] :
-        ['#messages', 'Unread messages', stats.unreadChats || 0, 'msgs', 'c-rose', miniLine(lastDays(stats.submissionsByDay, 14), '#DD4460'), 'in the chat'],
-      ['#reviews', 'Approved this week', stats.approvedWeek, 'done', 'c-teal', miniBars(lastDays(stats.reviewsByDay, 7), '#3E6A57'), 'steps approved']
+      ['#members', 'Your students', stats.myMembers, 'users', 'c-pen', miniGauge(stats.myMembers, stats.members, '#0E3E3B'), 'of ' + stats.members + ' active'],
+      can('applications') ? ['#applications', 'New applications', stats.applications, 'mail', 'c-rose', miniLine(lastDays(stats.submissionsByDay, 14).map(function (v, i) { return v + (i % 3); }), '#B91C1C'), 'to look at'] :
+        ['#messages', 'Unread messages', stats.unreadChats || 0, 'msgs', 'c-rose', miniLine(lastDays(stats.submissionsByDay, 14), '#B91C1C'), 'in the chat'],
+      ['#reviews', 'Approved this week', stats.approvedWeek, 'done', 'c-teal', miniBars(lastDays(stats.reviewsByDay, 7), '#3F6212'), 'steps approved']
     ];
     var tools = [];
     if (canViewLessons()) tools.push(['#lessons', can('edit_lessons') ? 'Edit lessons' : 'Lessons', 'Proofread any step as students see it.', 'pen']);
@@ -1567,41 +1567,41 @@
       loadQr(function () { cardFonts().then(function () {
         var W = 2000, H = 1414, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
         var g = cv.getContext('2d');
-        var F = { d: '"Fraunces", "Segoe UI", system-ui, sans-serif', b: '"Inter", "Segoe UI", system-ui, sans-serif', m: '"IBM Plex Mono", ui-monospace, Menlo, monospace' };
+        var F = { d: '"Newsreader", "Segoe UI", system-ui, sans-serif', b: '"Source Sans 3", "Segoe UI", system-ui, sans-serif', m: '"Space Mono", ui-monospace, Menlo, monospace' };
         function txt(t, x, y, font, color, align) { g.font = font; g.fillStyle = color; g.textAlign = align || 'center'; g.fillText(t, x, y); }
         function fit(t, w, size, max) { do { g.font = w + ' ' + size + 'px ' + F.d; size -= 4; } while (g.measureText(t).width > max && size > 40); return size + 4; }
         // paper and double border
         g.fillStyle = '#FCFBF8'; g.fillRect(0, 0, W, H);
-        g.strokeStyle = '#14213D'; g.lineWidth = 10; g.strokeRect(50, 50, W - 100, H - 100);
-        g.strokeStyle = 'rgba(20, 33, 61,.35)'; g.lineWidth = 3; g.strokeRect(80, 80, W - 160, H - 160);
+        g.strokeStyle = '#134E4A'; g.lineWidth = 10; g.strokeRect(50, 50, W - 100, H - 100);
+        g.strokeStyle = 'rgba(19, 78, 74,.35)'; g.lineWidth = 3; g.strokeRect(80, 80, W - 160, H - 160);
         // corner marks
-        g.fillStyle = '#14213D'; [[80, 80], [W - 80, 80], [80, H - 80], [W - 80, H - 80]].forEach(function (p) { g.beginPath(); g.arc(p[0], p[1], 9, 0, 7); g.fill(); });
+        g.fillStyle = '#134E4A'; [[80, 80], [W - 80, 80], [80, H - 80], [W - 80, H - 80]].forEach(function (p) { g.beginPath(); g.arc(p[0], p[1], 9, 0, 7); g.fill(); });
         // logo
         g.font = '800 64px ' + F.d; var tw = g.measureText('researchette').width, lx = W / 2 - (82 + 22 + tw) / 2;
         g.save(); g.translate(lx - 7, 150); g.scale(3.4, 3.4);
-        g.beginPath(); g.moveTo(9, 2); g.arcTo(22, 2, 22, 22, 7); g.arcTo(22, 22, 2, 22, 7); g.arcTo(2, 22, 2, 2, 7); g.arcTo(2, 2, 22, 2, 7); g.closePath(); g.fillStyle = '#14213D'; g.fill();
+        g.beginPath(); g.moveTo(9, 2); g.arcTo(22, 2, 22, 22, 7); g.arcTo(22, 22, 2, 22, 7); g.arcTo(2, 22, 2, 2, 7); g.arcTo(2, 2, 22, 2, 7); g.closePath(); g.fillStyle = '#134E4A'; g.fill();
         g.strokeStyle = '#fff'; g.lineWidth = 2; g.lineCap = g.lineJoin = 'round'; g.beginPath(); g.moveTo(5, 13); g.lineTo(8, 13); g.lineTo(10, 8); g.lineTo(13, 17); g.lineTo(15, 13); g.lineTo(19, 13); g.stroke(); g.restore();
-        txt('researchette', lx + 82 + 22, 222, '800 64px ' + F.d, '#0F1B2D', 'left');
-        txt('CERTIFICATE OF COMPLETION', W / 2, 370, '700 40px ' + F.b, '#3E6A57');
-        g.fillStyle = '#14213D'; g.fillRect(W / 2 - 60, 404, 120, 5);
-        txt('This certifies that', W / 2, 500, '500 40px ' + F.b, '#5A6272');
-        var ns = fit(c.name, '800', 132, W - 420); txt(c.name, W / 2, 500 + ns + 30, '800 ' + ns + 'px ' + F.d, '#0F1B2D');
+        txt('researchette', lx + 82 + 22, 222, '800 64px ' + F.d, '#121820', 'left');
+        txt('CERTIFICATE OF COMPLETION', W / 2, 370, '700 40px ' + F.b, '#3F6212');
+        g.fillStyle = '#134E4A'; g.fillRect(W / 2 - 60, 404, 120, 5);
+        txt('This certifies that', W / 2, 500, '500 40px ' + F.b, '#4F5856');
+        var ns = fit(c.name, '800', 132, W - 420); txt(c.name, W / 2, 500 + ns + 30, '800 ' + ns + 'px ' + F.d, '#121820');
         var y = 500 + ns + 120;
-        txt('has successfully completed the', W / 2, y, '500 40px ' + F.b, '#5A6272');
-        var ps = fit(c.programme, '700', 76, W - 500); txt(c.programme, W / 2, y + 100, '700 ' + ps + 'px ' + F.d, '#14213D');
-        txt('research mentorship programme, with every step reviewed and approved by a mentor.', W / 2, y + 170, '500 34px ' + F.b, '#5A6272');
+        txt('has successfully completed the', W / 2, y, '500 40px ' + F.b, '#4F5856');
+        var ps = fit(c.programme, '700', 76, W - 500); txt(c.programme, W / 2, y + 100, '700 ' + ps + 'px ' + F.d, '#134E4A');
+        txt('research mentorship programme, with every step reviewed and approved by a mentor.', W / 2, y + 170, '500 34px ' + F.b, '#4F5856');
         // signatures
         var sy = H - 260;
-        function sig(x, name, role) { g.strokeStyle = 'rgba(24,32,61,.35)'; g.lineWidth = 2; g.beginPath(); g.moveTo(x - 220, sy); g.lineTo(x + 220, sy); g.stroke(); txt(name, x, sy - 22, '700 38px ' + F.d, '#0F1B2D'); txt(role, x, sy + 48, '500 28px ' + F.b, '#5A6272'); }
+        function sig(x, name, role) { g.strokeStyle = 'rgba(18, 24, 32,.35)'; g.lineWidth = 2; g.beginPath(); g.moveTo(x - 220, sy); g.lineTo(x + 220, sy); g.stroke(); txt(name, x, sy - 22, '700 38px ' + F.d, '#121820'); txt(role, x, sy + 48, '500 28px ' + F.b, '#4F5856'); }
         sig(470, certDate(c.issuedAt), 'Date of issue');
         sig(1100, c.mentor || 'Zain Ramzan', c.mentor ? 'Mentor' : 'Founder, Researchette');
         // QR and code
         var qr = qrcode(0, 'M'); qr.addData(verifyUrl(c.code)); qr.make();
         var n = qr.getModuleCount(), size = 230, cell = size / n, qx = W - 250 - size / 2, qy = sy - 190;
-        g.fillStyle = '#fff'; g.fillRect(qx - 14, qy - 14, size + 28, size + 28); g.fillStyle = '#0F1B2D';
+        g.fillStyle = '#fff'; g.fillRect(qx - 14, qy - 14, size + 28, size + 28); g.fillStyle = '#121820';
         for (var r = 0; r < n; r++) for (var k = 0; k < n; k++) if (qr.isDark(r, k)) g.fillRect(qx + k * cell, qy + r * cell, Math.ceil(cell), Math.ceil(cell));
-        txt(c.code, qx + size / 2, qy + size + 58, '600 28px ' + F.m, '#0F1B2D');
-        g.font = '500 24px ' + F.b; var vt = 'Verify at ' + location.host + '/verify', vs = Math.min(24, Math.floor(24 * 300 / g.measureText(vt).width)); txt(vt, qx + size / 2, qy + size + 98, '500 ' + vs + 'px ' + F.b, '#5A6272');
+        txt(c.code, qx + size / 2, qy + size + 58, '600 28px ' + F.m, '#121820');
+        g.font = '500 24px ' + F.b; var vt = 'Verify at ' + location.host + '/verify', vs = Math.min(24, Math.floor(24 * 300 / g.measureText(vt).width)); txt(vt, qx + size / 2, qy + size + 98, '500 ' + vs + 'px ' + F.b, '#4F5856');
         done(cv);
       }); });
     });
@@ -2031,7 +2031,7 @@
   }
   function cardFonts() {
     if (!document.fonts || !document.fonts.load) return Promise.resolve();
-    return Promise.all(['800 40px "Fraunces"', '700 40px "Fraunces"', '600 20px "IBM Plex Mono"', '700 20px "Inter"', '600 20px "Inter"', '500 20px "Inter"', '500 20px "IBM Plex Mono"'].map(function (f) { return document.fonts.load(f).catch(function () {}); }));
+    return Promise.all(['800 40px "Newsreader"', '700 40px "Newsreader"', '600 20px "Space Mono"', '700 20px "Source Sans 3"', '600 20px "Source Sans 3"', '500 20px "Source Sans 3"', '500 20px "Space Mono"'].map(function (f) { return document.fonts.load(f).catch(function () {}); }));
   }
   function credentialsSheet(u, pw, title, note) {
     var reset = /password/i.test(title), msg = welcomeMessage(u, pw, reset), num = waNumber(u.phone), fn = short(u.name);

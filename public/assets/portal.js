@@ -99,7 +99,7 @@
   function confetti(from) {
     if (reduce || !document.body.animate) return;
     var r = from && from.getBoundingClientRect ? from.getBoundingClientRect() : { left: innerWidth / 2, top: innerHeight / 2, width: 0, height: 0 };
-    var x0 = r.left + r.width / 2, y0 = r.top + r.height / 2, box = document.createElement('div'), cols = ['#134E4A', '#3F6212', '#F2B43A', '#B91C1C', '#9AD1CB', '#9AD1CB'];
+    var x0 = r.left + r.width / 2, y0 = r.top + r.height / 2, box = document.createElement('div'), cols = ['#134E4A', '#3F6212', '#F2B43A', '#B91C1C', '#E8A46A', '#E8A46A'];
     box.className = 'confetti'; box.setAttribute('aria-hidden', 'true'); document.body.appendChild(box);
     for (var i = 0; i < 34; i++) {
       var p = document.createElement('i'), a = -Math.PI / 2 + (Math.random() - .5) * Math.PI * 1.3, v = 160 + Math.random() * 220;

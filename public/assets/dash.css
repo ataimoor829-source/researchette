@@ -133,7 +133,7 @@ a.ov-next:hover { transform: translateY(-3px); }
     --d-card-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 18px 34px -22px rgba(0,0,0,.7);
     --d-side: rgba(0,0,0,.2); --d-side-edge: rgba(255,255,255,.06); --d-inset: rgba(255,255,255,.06);
     --d-icon: rgba(255,255,255,.62); --d-hover: rgba(255,255,255,.08); --d-field: rgba(0,0,0,.28); --d-field-edge: rgba(255,255,255,.08);
-    --c-amber: #F2A65A; --c-pen: #9AA8FF; --c-rose: #FF8599; --c-teal: #95D4B3; --c-sb: #F2A65A;
+    --c-amber: #F2A65A; --c-pen: #9AA8FF; --c-rose: #FF8599; --c-teal: #A9C98B; --c-sb: #F2A65A;
   }
 }
 :root[data-theme="dark"] {
@@ -144,7 +144,7 @@ a.ov-next:hover { transform: translateY(-3px); }
   --d-card-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 18px 34px -22px rgba(0,0,0,.7);
   --d-side: rgba(0,0,0,.2); --d-side-edge: rgba(255,255,255,.06); --d-inset: rgba(255,255,255,.06);
   --d-icon: rgba(255,255,255,.62); --d-hover: rgba(255,255,255,.08); --d-field: rgba(0,0,0,.28); --d-field-edge: rgba(255,255,255,.08);
-  --c-amber: #F2A65A; --c-pen: #9AA8FF; --c-rose: #FF8599; --c-teal: #95D4B3; --c-sb: #F2A65A;
+  --c-amber: #F2A65A; --c-pen: #9AA8FF; --c-rose: #FF8599; --c-teal: #A9C98B; --c-sb: #F2A65A;
 }
 .c-amber { --c: var(--c-amber); } .c-pen { --c: var(--c-pen); } .c-rose { --c: var(--c-rose); } .c-teal { --c: var(--c-teal); }
 .mini .gt { stroke: var(--line); }

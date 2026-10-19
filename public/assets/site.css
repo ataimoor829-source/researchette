@@ -96,7 +96,7 @@ a.glass:hover, .track:hover, .mentor:hover, .guides-more:hover, .contact-item:ho
 .phase:not(.last) .phase-inner.glass { background: var(--surface) !important; box-shadow: 0 -18px 36px -30px rgba(18, 24, 32, .35) !important; }
 
 /* ---------- hero (landing) ---------- */
-.chip { display: none !important; }
+.hero-visual .chip, .chip-1, .chip-2 { display: none !important; }
 .manuscript { transform: none !important; box-shadow: var(--float) !important; }
 /* a small stack of pages under the manuscript, like a draft on a desk */
 .hero-visual::before, .hero-visual::after { content: ""; position: absolute; inset: 0; border-radius: var(--r); background: var(--surface); border: 1px solid var(--hair); z-index: -1; }

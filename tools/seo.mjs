@@ -75,10 +75,10 @@ dl.gloss div:first-child { border-top: 0; }
 dl.gloss dt { font-weight: 700; color: var(--pen); }
 dl.gloss dd { margin: 2px 0 0; }
 .pager { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
-.cta-box { display: grid; gap: 10px; padding: clamp(20px, 3vw, 30px); border-radius: 24px; color: #fff; background: linear-gradient(140deg, #4B5CF0, #2A38B8 60%, #0F6F66); }
+.cta-box { display: grid; gap: 10px; padding: clamp(20px, 3vw, 30px); border-radius: 24px; color: #fff; background: linear-gradient(140deg, #22355C, #0F1B2D 60%, #2F5545); }
 .cta-box h2 { color: #fff; margin: 0; }
 .cta-box p { margin: 0; opacity: .9; }
-.cta-box .btn { justify-self: start; background: #fff; color: #2A38B8; }
+.cta-box .btn { justify-self: start; background: #fff; color: #0F1B2D; }
 .crumbs { font-size: .88rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px; }
 .crumbs a { color: inherit; }
 .hub { display: grid; gap: 10px; }

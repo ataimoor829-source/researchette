@@ -3,34 +3,35 @@
    glass, solid colour instead of gradients, buttons that don't glow or jump, one quiet label style,
    and a clear type scale. Blue stays the brand colour; dark mode stays neutral charcoal. */
 :root {
-  --surface: #FFFFFF;
+  --accent: #8A6733;
+  --surface: #FBF8F2;
   --surface-2: #FBFAF7;
   --hair: rgba(24, 32, 61, .09);
   --hair-strong: rgba(24, 32, 61, .16);
-  --band: #141B3D;
+  --band: #0F1B2D;
   --band-ink: #F4F6FC;
   --band-muted: rgba(244, 246, 252, .68);
   --band-hair: rgba(255, 255, 255, .12);
-  --pen-hover: #2A3CC7;
+  --pen-hover: #22355C;
   --lift: 0 1px 2px rgba(24, 32, 61, .04);
   --float: 0 1px 2px rgba(24, 32, 61, .05), 0 24px 48px -28px rgba(24, 32, 61, .28);
   --r: 20px;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --surface: #17181D; --surface-2: #141519; --hair: rgba(255, 255, 255, .075); --hair-strong: rgba(255, 255, 255, .14);
+    --accent: #D2B07A; --surface: #17181D; --surface-2: #141519; --hair: rgba(255, 255, 255, .075); --hair-strong: rgba(255, 255, 255, .14);
     --band: #1B1D25; --band-ink: #ECEDF1; --band-muted: rgba(236, 237, 241, .66); --band-hair: rgba(255, 255, 255, .09);
-    --pen-hover: #A3B1FF; --lift: none; --float: 0 24px 48px -28px rgba(0, 0, 0, .7);
+    --pen-hover: #E0C493; --lift: none; --float: 0 24px 48px -28px rgba(0, 0, 0, .7);
   }
 }
 :root[data-theme="dark"] {
-  --surface: #17181D; --surface-2: #141519; --hair: rgba(255, 255, 255, .075); --hair-strong: rgba(255, 255, 255, .14);
+  --accent: #D2B07A; --surface: #17181D; --surface-2: #141519; --hair: rgba(255, 255, 255, .075); --hair-strong: rgba(255, 255, 255, .14);
   --band: #1B1D25; --band-ink: #ECEDF1; --band-muted: rgba(236, 237, 241, .66); --band-hair: rgba(255, 255, 255, .09);
-  --pen-hover: #A3B1FF; --lift: none; --float: 0 24px 48px -28px rgba(0, 0, 0, .7);
+  --pen-hover: #E0C493; --lift: none; --float: 0 24px 48px -28px rgba(0, 0, 0, .7);
 }
 
 /* ---------- type ---------- */
-body { font-feature-settings: "ss01", "cv11"; text-rendering: optimizeLegibility; }
+body { text-rendering: optimizeLegibility; }
 h1 { font-weight: 700; letter-spacing: -.045em; line-height: .98; }
 h2 { font-weight: 700; letter-spacing: -.038em; line-height: 1.04; }
 h3 { letter-spacing: -.018em; }
@@ -152,3 +153,21 @@ a:not(.btn):not(.logo):not(.legal) { text-underline-offset: .18em; text-decorati
 .empty-wall .ic { background: transparent !important; border: 1px solid var(--hair-strong); color: var(--ink) !important; }
 .cat h2, .cat h3 { letter-spacing: -.025em; }
 .vf-badge { box-shadow: none !important; }
+
+/* ---------- Midnight and Brass: refined serif headings, brass accents ---------- */
+h1, h2, h3, .logo, .why-quote, .amount { font-family: "Fraunces", Georgia, "Times New Roman", serif !important; font-optical-sizing: auto; }
+h1, .hero h1 { font-weight: 300 !important; letter-spacing: -.035em !important; line-height: 1 !important; }
+h2 { font-weight: 400 !important; letter-spacing: -.028em !important; line-height: 1.06 !important; }
+h3 { font-weight: 500 !important; letter-spacing: -.012em !important; }
+.why-quote { font-weight: 300 !important; letter-spacing: -.02em !important; }
+.amount { font-weight: 400 !important; }
+.hl, .why-quote em, h1 em, h2 em { color: var(--accent) !important; font-style: italic !important; }
+.logo { font-weight: 600 !important; letter-spacing: -.025em !important; }
+.logo i { color: var(--accent) !important; }
+.logo svg path { stroke: #D2B07A !important; }
+.eyebrow::before { background: var(--accent) !important; }
+.stat b { color: var(--ink) !important; font-family: "Fraunces", Georgia, serif !important; font-weight: 400 !important; }
+.mentor-facts b, .phase h3 { font-weight: 400 !important; }
+.btn { font-weight: 600; letter-spacing: 0; }
+.pubs-band h3, .price .amount { color: var(--band-ink) !important; }
+p a:not(.btn), .content a, .lede a, .f-note a, .crumbs a, dd a { color: var(--accent); }

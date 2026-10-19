@@ -21,14 +21,14 @@
   :root:not([data-theme="light"]) {
     --lg-a: rgba(255, 255, 255, .06); --lg-b: rgba(255, 255, 255, .025);
     --ring-a: rgba(255, 255, 255, .32); --ring-b: rgba(255, 255, 255, .03);
-    --lg-inner: rgba(150, 165, 255, .10); --spot: rgba(150, 168, 255, .16);
+    --lg-inner: rgba(210, 176, 122, .10); --spot: rgba(210, 176, 122, .16);
     --edge-fade: rgba(0, 0, 0, .35);
   }
 }
 :root[data-theme="dark"] {
   --lg-a: rgba(255, 255, 255, .06); --lg-b: rgba(255, 255, 255, .025);
   --ring-a: rgba(255, 255, 255, .32); --ring-b: rgba(255, 255, 255, .03);
-  --lg-inner: rgba(150, 165, 255, .10); --spot: rgba(150, 168, 255, .16);
+  --lg-inner: rgba(210, 176, 122, .10); --spot: rgba(210, 176, 122, .16);
   --edge-fade: rgba(0, 0, 0, .35);
 }
 @media (max-width: 760px) { :root { --lg-blur: 14px; } }

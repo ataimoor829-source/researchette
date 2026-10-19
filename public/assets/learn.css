@@ -192,3 +192,8 @@ a.pn:active { transform: scale(.99); }
 .pn-go { justify-self: start; margin-top: 8px; }
 @media (max-width: 520px) { .pn .pill { display: none; } }
 @media (prefers-reduced-motion: reduce) { .pl-slide.from-right, .pl-slide.from-left, .term > span, .pl-opt.right, .pl-opt.wrong, .pl-done-art { animation: none; transition: none; } }
+
+/* Midnight and Brass: the selected tab and your own chat bubbles follow the brand colour (navy, or brass in dark mode) */
+.dash .tabs .ind { background: var(--pen) !important; }
+.dash .tabs a.on { color: var(--on-pen) !important; }
+.dash main.view .msg.mine { background: var(--pen) !important; color: var(--on-pen) !important; }

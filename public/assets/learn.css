@@ -40,7 +40,7 @@
 /* numbered points inside a card */
 .pl-points { display: grid; gap: 10px; }
 .pl-pt { display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: start; padding: 12px 14px; border-radius: 16px; background: var(--paper); border: 1px solid var(--line); }
-.pl-pn { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; font: 700 .86rem var(--f-display); color: #fff; background: var(--pen); }
+.pl-pn { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; font: 700 .86rem var(--f-display); color: var(--on-pen); background: var(--pen); }
 .pl-pt b { display: block; font-weight: 600; }
 .pl-pt p { color: var(--muted); font-size: .95rem; line-height: 1.5; }
 .pl-note { display: grid; grid-template-columns: 20px 1fr; gap: 10px; padding: 14px 16px; border-radius: 16px; background: var(--amber-soft); font-size: .96rem; line-height: 1.5; }
@@ -126,7 +126,7 @@
 .term:active > span { scale: .98; }
 
 /* the bottom bar: Back and Continue */
-.pl-nav { position: sticky; bottom: calc(12px + var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); z-index: 20; display: grid; grid-template-columns: 52px 1fr; gap: 10px; padding: 8px; border-radius: 999px; background: color-mix(in srgb, var(--paper) 82%, transparent); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); box-shadow: 0 10px 30px -18px rgba(24,32,61,.45); }
+.pl-nav { position: sticky; bottom: calc(12px + var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); z-index: 20; display: grid; grid-template-columns: 52px 1fr; gap: 10px; padding: 8px; border-radius: 999px; background: color-mix(in srgb, var(--paper) 82%, transparent); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); box-shadow: 0 10px 30px -18px rgba(18, 24, 32,.45); }
 .pl.preview .pl-nav { position: static; box-shadow: none; background: none; padding-inline: 0; }
 .pl-prev { width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--glass-edge); background: var(--glass-strong); color: var(--ink); display: grid; place-items: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .pl-prev svg { width: 20px; height: 20px; }
@@ -168,7 +168,7 @@ html.focus .sheet { background: color-mix(in srgb, var(--paper) 97%, transparent
 .jr-track i { position: relative; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font: 700 .7rem var(--f-display); font-style: normal; background: var(--paper); border: 2px solid var(--line); color: var(--muted); }
 .jr-track i svg { width: 13px; height: 13px; }
 .jr-track i.approved { background: var(--teal); border-color: var(--teal); color: #fff; }
-.jr-track i.current { background: var(--pen); border-color: var(--pen); color: #fff; box-shadow: 0 0 0 4px var(--pen-soft); }
+.jr-track i.current { background: var(--pen); border-color: var(--pen); color: var(--on-pen); box-shadow: 0 0 0 4px var(--pen-soft); }
 .jr-track i.review { background: var(--amber-soft); border-color: var(--amber); color: var(--amber); }
 .jr-track i.revision { background: var(--red-soft); border-color: var(--redpen); color: var(--redpen); }
 
@@ -192,3 +192,8 @@ a.pn:active { transform: scale(.99); }
 .pn-go { justify-self: start; margin-top: 8px; }
 @media (max-width: 520px) { .pn .pill { display: none; } }
 @media (prefers-reduced-motion: reduce) { .pl-slide.from-right, .pl-slide.from-left, .term > span, .pl-opt.right, .pl-opt.wrong, .pl-done-art { animation: none; transition: none; } }
+
+/* the selected tab and your own chat bubbles follow the brand colour (spruce, or light spruce in dark mode) */
+.dash .tabs .ind { background: var(--pen) !important; }
+.dash .tabs a.on { color: var(--on-pen) !important; }
+.dash main.view .msg.mine { background: var(--pen) !important; color: var(--on-pen) !important; }

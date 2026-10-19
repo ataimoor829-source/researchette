@@ -60,8 +60,6 @@ body { font-size: 1.0625rem; line-height: 1.65; }
 .review .by span { color: var(--muted); font-size: .82rem; }
 .review .by .avatar { color: #fff; font-size: .76rem; }
 .review .tags { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.review .via { font: 700 .66rem "Space Mono", monospace; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); text-decoration: none; }
-a.via:hover { color: var(--ink); }
 .empty-wall { padding: clamp(32px, 6vw, 56px); display: grid; gap: 14px; justify-items: center; text-align: center; }
 .empty-wall .stars svg { width: 26px; height: 26px; }
 .empty-wall p { color: var(--muted); max-width: 46ch; }
@@ -219,9 +217,8 @@ form.card { display: grid; gap: 16px; padding: clamp(22px, 4vw, 36px); }
     sum.innerHTML = '<b>' + avg.toFixed(1) + '</b>' + stars(Math.round(avg)) + '<span class="muted small">from ' + list.length + ' review' + (list.length > 1 ? 's' : '') + '</span>';
     sum.hidden = false;
     wall.innerHTML = '<div class="wall">' + list.map(function (r) {
-      var via = r.source && r.source !== 'website' ? (r.sourceUrl ? '<a class="via" href="' + esc(r.sourceUrl) + '" target="_blank" rel="noopener">via ' + esc(r.sourceLabel) + '</a>' : '<span class="via">via ' + esc(r.sourceLabel) + '</span>') : '';
       return '<article class="review glass reveal in">' + stars(+r.rating || 5) +
-        '<blockquote>' + esc(r.text) + '</blockquote>' + (r.type || via ? '<div class="tags">' + (r.type ? '<span class="chip">' + esc(r.type) + '</span>' : '') + via + '</div>' : '') +
+        '<blockquote>' + esc(r.text) + '</blockquote>' + (r.type ? '<div class="tags"><span class="chip">' + esc(r.type) + '</span></div>' : '') +
         '<div class="by"><span class="avatar">' + initials(r.name) + '</span><div><b>' + esc(r.name) + '</b><span>' + esc(r.detail) + '</span></div></div></article>';
     }).join('') + '</div>';
   }

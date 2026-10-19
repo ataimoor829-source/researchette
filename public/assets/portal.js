@@ -448,7 +448,7 @@
   function loginView() {
     app.innerHTML =
       '<div class="login-wrap"><form class="login glass" id="login" novalidate>' +
-        '<a class="logo" href="index.html">' + LOGO + '<span>research<i>ette</i></span></a>' +
+        '<a class="logo" href="/">' + LOGO + '<span>research<i>ette</i></span></a>' +
         '<div class="stack" style="gap:6px"><h1>Welcome back.</h1><p class="muted">Log in to your Researchette portal.</p></div>' +
         '<div class="field"><label for="l-email">Email</label><input id="l-email" type="email" autocomplete="username" required placeholder="you@example.com"></div>' +
         '<div class="field"><label for="l-pw">Password</label><div class="pw"><input id="l-pw" type="password" autocomplete="current-password" required placeholder="Your password"><button type="button" id="l-show">Show</button></div></div>' +
@@ -456,8 +456,8 @@
         '<p class="error" id="l-err" role="alert" hidden></p>' +
         '<button class="btn btn-primary btn-block" type="submit">Log in</button>' +
         '<p class="small muted">Forgot your password? Email <a href="mailto:itszainr1@gmail.com">itszainr1@gmail.com</a> and we’ll reset it.</p>' +
-        '<p class="small">Not a member yet? <a href="index.html#join">Apply for membership</a></p>' +
-        '<p class="small muted legal-links"><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></p>' +
+        '<p class="small">Not a member yet? <a href="/#join">Apply for membership</a></p>' +
+        '<p class="small muted legal-links"><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>' +
       '</form></div>';
     var f = document.getElementById('login'), err = document.getElementById('l-err'), pw = document.getElementById('l-pw');
     document.getElementById('l-show').addEventListener('click', function () { var s = pw.type === 'password'; pw.type = s ? 'text' : 'password'; this.textContent = s ? 'Hide' : 'Show'; });
@@ -557,7 +557,7 @@
     var setup = t.twoFactor === 'setup', recovery = false;
     app.dataset.shell = '';
     app.innerHTML = '<div class="login-wrap"><form class="login glass two-step" id="ts" novalidate>' +
-      '<a class="logo" href="index.html">' + LOGO + '<span>research<i>ette</i></span></a>' +
+      '<a class="logo" href="/">' + LOGO + '<span>research<i>ette</i></span></a>' +
       (setup
         ? '<div class="stack" style="gap:6px"><span class="eyebrow">One-time setup</span><h1>Protect your account</h1><p class="muted">As an owner, you’ll confirm each new device with a code from Passwords on your iPhone. It takes a minute.</p></div>' +
           '<ol class="ts-steps"><li>On your iPhone, open the <b>Camera</b> and point it at this QR code, then tap <b>Add Verification Code in Passwords</b>.</li>' +
@@ -609,7 +609,7 @@
   function recoveryCodesView(codes) {
     var text = 'Researchette recovery codes (each works once)\n' + codes.join('\n');
     app.innerHTML = '<div class="login-wrap"><div class="login glass two-step">' +
-      '<a class="logo" href="index.html">' + LOGO + '<span>research<i>ette</i></span></a>' +
+      '<a class="logo" href="/">' + LOGO + '<span>research<i>ette</i></span></a>' +
       '<div class="stack" style="gap:6px"><span class="stamp">Two-step is on</span><h1>Save your recovery codes</h1><p class="muted">If you lose your iPhone, each of these lets you in once. Save them somewhere safe, like a note in Passwords. You won’t see them again.</p></div>' +
       '<ol class="rc-list" id="rc-list">' + codes.map(function (c) { return '<li><code>' + esc(c) + '</code></li>'; }).join('') + '</ol>' +
       '<button class="btn btn-glass btn-block" type="button" id="rc-copy">Copy codes</button>' +
@@ -1776,7 +1776,7 @@
     }).join('');
     return { html: '<a class="back" href="#overview">' + ic('back', 'chev') + 'Overview</a>' +
       '<section class="page-head"><div class="row spread wrap"><div class="stack" style="gap:6px"><span class="eyebrow">Owners only</span><h1>Student publications</h1></div><button class="btn btn-primary" type="button" id="add-paper">+ Add paper</button></div>' +
-      '<p class="muted">Papers your students published with you. They show on the website’s <a href="research.html" target="_blank" rel="noopener">Student publications</a> page straight away, newest year first. Add a paper only with the student’s permission.</p></section>' +
+      '<p class="muted">Papers your students published with you. They show on the website’s <a href="/research" target="_blank" rel="noopener">Student publications</a> page straight away, newest year first. Add a paper only with the student’s permission.</p></section>' +
       (list.length ? '<div class="glass list">' + rows + '</div>' : '<div class="glass empty"><b>No papers yet</b><span>Tap Add paper to put your first student’s publication on the website.</span></div>'),
       mount: function (m) {
         m.querySelector('#add-paper').addEventListener('click', function () { researchSheet(null); });
@@ -1843,7 +1843,7 @@
     var empty = { pending: ['Nothing to approve', 'New reviews students write on the website appear here first.'], approved: ['No reviews on the website yet', 'Approve one, or add a review a student gave you on another platform.'], hidden: ['Nothing hidden', 'Reviews you hide stay here, in case you want to show them later.'] }[revFilter];
     return { html: '<a class="back" href="#overview">' + ic('back', 'chev') + 'Overview</a>' +
       '<section class="page-head"><div class="row spread wrap"><div class="stack" style="gap:6px"><span class="eyebrow">Owners only</span><h1>Student reviews</h1></div><button class="btn btn-primary" type="button" id="add-rev">+ Add a review</button></div>' +
-      '<p class="muted">Reviews written on the website wait here for you. Approved ones show on the website’s <a href="reviews.html" target="_blank" rel="noopener">Reviews</a> page. You can also add a review a student gave you on WhatsApp, Instagram, Google or anywhere else, with their permission.</p></section>' +
+      '<p class="muted">Reviews written on the website wait here for you. Approved ones show on the website’s <a href="/reviews" target="_blank" rel="noopener">Reviews</a> page. You can also add a review a student gave you on WhatsApp, Instagram, Google or anywhere else, with their permission.</p></section>' +
       '<div class="seg" id="rv-seg" style="--n:3;--i:' + idx + '">' + tabs.map(function (t) { return '<button type="button" data-f="' + t[0] + '"' + (t[0] === revFilter ? ' class="on"' : '') + '>' + t[1] + ' · ' + (counts[t[0]] || 0) + '</button>'; }).join('') + '</div>' +
       (list.length ? '<div class="stack rv-list">' + rows + '</div>' : '<div class="glass empty">' + ic('award') + '<b>' + empty[0] + '</b><span>' + empty[1] + '</span></div>'),
       mount: function (m) {

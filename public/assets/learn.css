@@ -40,7 +40,7 @@
 /* numbered points inside a card */
 .pl-points { display: grid; gap: 10px; }
 .pl-pt { display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: start; padding: 12px 14px; border-radius: 16px; background: var(--paper); border: 1px solid var(--line); }
-.pl-pn { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; font: 700 .86rem var(--f-display); color: #fff; background: var(--pen); }
+.pl-pn { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; font: 700 .86rem var(--f-display); color: var(--on-pen); background: var(--pen); }
 .pl-pt b { display: block; font-weight: 600; }
 .pl-pt p { color: var(--muted); font-size: .95rem; line-height: 1.5; }
 .pl-note { display: grid; grid-template-columns: 20px 1fr; gap: 10px; padding: 14px 16px; border-radius: 16px; background: var(--amber-soft); font-size: .96rem; line-height: 1.5; }
@@ -168,7 +168,7 @@ html.focus .sheet { background: color-mix(in srgb, var(--paper) 97%, transparent
 .jr-track i { position: relative; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font: 700 .7rem var(--f-display); font-style: normal; background: var(--paper); border: 2px solid var(--line); color: var(--muted); }
 .jr-track i svg { width: 13px; height: 13px; }
 .jr-track i.approved { background: var(--teal); border-color: var(--teal); color: #fff; }
-.jr-track i.current { background: var(--pen); border-color: var(--pen); color: #fff; box-shadow: 0 0 0 4px var(--pen-soft); }
+.jr-track i.current { background: var(--pen); border-color: var(--pen); color: var(--on-pen); box-shadow: 0 0 0 4px var(--pen-soft); }
 .jr-track i.review { background: var(--amber-soft); border-color: var(--amber); color: var(--amber); }
 .jr-track i.revision { background: var(--red-soft); border-color: var(--redpen); color: var(--redpen); }
 

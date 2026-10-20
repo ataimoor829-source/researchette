@@ -688,11 +688,12 @@ function cleanReview(b, owner) {
   } else { out.source = 'website'; out.sourceUrl = ''; out.givenAt = ''; }
   return out;
 }
-function pubReview(r) {
-  return { id: r.id, name: r.name, detail: r.detail || '', type: r.type || '', rating: r.rating, text: r.text, source: r.source, sourceLabel: REVIEW_SOURCES[r.source] || 'Other',
-    sourceUrl: r.source_url || '', date: r.given_at || r.created_at.slice(0, 10) };
+// the public page shows the review itself; where it was given stays with the owners
+function pubReview(r) { return { id: r.id, name: r.name, detail: r.detail || '', type: r.type || '', rating: r.rating, text: r.text, date: r.given_at || r.created_at.slice(0, 10) }; }
+function adminReview(r) {
+  return Object.assign(pubReview(r), { source: r.source, sourceLabel: REVIEW_SOURCES[r.source] || 'Other', sourceUrl: r.source_url || '',
+    status: r.status, consent: !!r.consent, createdAt: r.created_at, decidedAt: r.decided_at || null, addedByOwner: !!r.created_by });
 }
-function adminReview(r) { return Object.assign(pubReview(r), { status: r.status, consent: !!r.consent, createdAt: r.created_at, decidedAt: r.decided_at || null, addedByOwner: !!r.created_by }); }
 
 /* ---------- routes ---------- */
 async function route(request, env, url, ctx) {

@@ -60,8 +60,6 @@ body { font-size: 1.0625rem; line-height: 1.65; }
 .review .by span { color: var(--muted); font-size: .82rem; }
 .review .by .avatar { color: #fff; font-size: .76rem; }
 .review .tags { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.review .via { font: 700 .66rem "Space Mono", monospace; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); text-decoration: none; }
-a.via:hover { color: var(--ink); }
 .empty-wall { padding: clamp(32px, 6vw, 56px); display: grid; gap: 14px; justify-items: center; text-align: center; }
 .empty-wall .stars svg { width: 26px; height: 26px; }
 .empty-wall p { color: var(--muted); max-width: 46ch; }
@@ -112,16 +110,16 @@ form.card { display: grid; gap: 16px; padding: clamp(22px, 4vw, 36px); }
 <header class="nav">
   <div class="wrap">
     <div class="nav-inner">
-      <a class="logo" href="index.html" aria-label="Researchette home">
+      <a class="logo" href="/" aria-label="Researchette home">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="7" fill="#134E4A"/><path d="M5 13h3l2-5 3 9 2-4h4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span>research<i>ette</i></span>
       </a>
       <nav class="nav-links" aria-label="Main">
-        <a class="home-link" href="index.html">Home</a>
+        <a class="home-link" href="/">Home</a>
         <a href="learn/">Learn research</a>
-        <a href="mentors.html">Mentors</a>
-        <a href="research.html">Student publications</a>
-        <a class="btn btn-primary btn-sm" href="index.html#join">Join</a>
+        <a href="/mentors">Mentors</a>
+        <a href="/research">Student publications</a>
+        <a class="btn btn-primary btn-sm" href="/#join">Join</a>
       </nav>
     </div>
   </div>
@@ -188,12 +186,12 @@ form.card { display: grid; gap: 16px; padding: clamp(22px, 4vw, 36px); }
       </div>
     </div>
     <div class="foot-row">
-      <a class="logo" href="index.html"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="7" fill="#134E4A"/><path d="M5 13h3l2-5 3 9 2-4h4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>research<i>ette</i></span></a>
+      <a class="logo" href="/"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="7" fill="#134E4A"/><path d="M5 13h3l2-5 3 9 2-4h4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>research<i>ette</i></span></a>
       <a class="legal" href="learn/">Learn research</a>
-      <a class="legal" href="guides.html">Free guides</a>
-      <a class="legal" href="verify.html">Verify a certificate</a>
-      <a class="legal" href="privacy.html">Privacy</a>
-      <a class="legal" href="terms.html">Terms</a>
+      <a class="legal" href="/guides">Free guides</a>
+      <a class="legal" href="/verify">Verify a certificate</a>
+      <a class="legal" href="/privacy">Privacy</a>
+      <a class="legal" href="/terms">Terms</a>
       <span>© 2026 Researchette</span>
     </div>
   </section>
@@ -219,9 +217,8 @@ form.card { display: grid; gap: 16px; padding: clamp(22px, 4vw, 36px); }
     sum.innerHTML = '<b>' + avg.toFixed(1) + '</b>' + stars(Math.round(avg)) + '<span class="muted small">from ' + list.length + ' review' + (list.length > 1 ? 's' : '') + '</span>';
     sum.hidden = false;
     wall.innerHTML = '<div class="wall">' + list.map(function (r) {
-      var via = r.source && r.source !== 'website' ? (r.sourceUrl ? '<a class="via" href="' + esc(r.sourceUrl) + '" target="_blank" rel="noopener">via ' + esc(r.sourceLabel) + '</a>' : '<span class="via">via ' + esc(r.sourceLabel) + '</span>') : '';
       return '<article class="review glass reveal in">' + stars(+r.rating || 5) +
-        '<blockquote>' + esc(r.text) + '</blockquote>' + (r.type || via ? '<div class="tags">' + (r.type ? '<span class="chip">' + esc(r.type) + '</span>' : '') + via + '</div>' : '') +
+        '<blockquote>' + esc(r.text) + '</blockquote>' + (r.type ? '<div class="tags"><span class="chip">' + esc(r.type) + '</span></div>' : '') +
         '<div class="by"><span class="avatar">' + initials(r.name) + '</span><div><b>' + esc(r.name) + '</b><span>' + esc(r.detail) + '</span></div></div></article>';
     }).join('') + '</div>';
   }
